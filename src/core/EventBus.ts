@@ -67,6 +67,21 @@ export interface GameEvents extends EventMap {
   'level:loaded': { readonly id: string };
   'level:solved': { readonly id: string; readonly moves: number };
   'player:moved': { readonly nodeId: string };
+  'mechanism:snap': {
+    readonly id: string;
+    readonly kind: string;
+    readonly value: number | string | boolean;
+    readonly notch: number;
+    readonly sound: string;
+  };
+  'mechanism:stateChanged': {
+    readonly id: string;
+    readonly kind: string;
+    readonly value: number | string | boolean;
+  };
+  'mechanism:drag': { readonly id: string; readonly kind: string; readonly active: boolean };
+  'borz:called': { readonly from: string | null; readonly to: string };
+  'borz:hint': { readonly active: boolean };
   'ui:toast': { readonly message: string; readonly duration?: number };
 }
 

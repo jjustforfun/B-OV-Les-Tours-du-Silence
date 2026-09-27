@@ -5,12 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { NavGraph } from '@world/NavGraph';
-import {
-  findClosestReachable,
-  findPath,
-  reachableFrom,
-  trimPathToSafe,
-} from '@world/Pathfinder';
+import { findClosestReachable, findPath, reachableFrom, trimPathToSafe } from '@world/Pathfinder';
 
 function grid(size: number): NavGraph {
   const graph = new NavGraph();
@@ -71,6 +66,32 @@ describe('findPath', () => {
     expect(withoutIllusion.cost).toBe(8);
   });
 
+  it("emprunte une arête dès qu'un mécanisme l'active", () => {
+    const graph = new NavGraph();
+    graph.addNode('start', { x: 0, y: 0, z: 0 });
+    graph.addNode('door', { x: 1, y: 0, z: 0 });
+    graph.addNode('goal', { x: 2, y: 0, z: 0 });
+    graph.connect('start', 'door');
+    graph.connect('door', 'goal', { condition: { mechanism: 'rotator', equals: 90 } });
+
+    expect(findPath(graph, 'start', 'goal').found).toBe(false);
+    graph.setMechanismState('rotator', 90);
+    expect(findPath(graph, 'start', 'goal').path).toEqual(['start', 'door', 'goal']);
+  });
+
+  it('trouve un chemin sur un mur avec gravité locale', () => {
+    const graph = new NavGraph();
+    const wallUp = { x: 0, y: 0, z: 1 };
+    graph.addNode('sol', { x: 0, y: 0, z: 0 });
+    graph.addNode('mur-1', { x: 0, y: 1, z: 0 }, [], wallUp);
+    graph.addNode('mur-2', { x: 0, y: 2, z: 0 }, [], wallUp, 'stone');
+    graph.connect('sol', 'mur-1');
+    graph.connect('mur-1', 'mur-2');
+
+    expect(findPath(graph, 'sol', 'mur-2').path).toEqual(['sol', 'mur-1', 'mur-2']);
+    expect(graph.getNode('mur-2')?.up).toEqual(wallUp);
+  });
+
   it('est déterministe', () => {
     const graph = grid(4);
     const first = findPath(graph, '0,0', '3,3');
@@ -109,7 +130,6 @@ describe('findClosestReachable', () => {
     expect(findClosestReachable(graph, '0,0', 'ile')).toBe('2,2');
   });
 });
-
 
 describe('trimPathToSafe (ADR-005)', () => {
   it('laisse le chemin intact si rien n’a bougé', () => {

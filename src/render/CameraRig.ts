@@ -18,6 +18,8 @@ export class CameraRig {
 
   private viewSize: number = CAMERA.viewSize;
   private readonly target = new Vector3(0, 0, 0);
+  private readonly frameCenter = new Vector3();
+  private readonly frameCorner = new Vector3();
 
   constructor(aspect = 1) {
     this.camera = new OrthographicCamera(-1, 1, 1, -1, CAMERA.near, CAMERA.far);
@@ -47,11 +49,12 @@ export class CameraRig {
    * cadrage entre portrait et paysage.
    */
   setAspect(aspect: number): void {
-    const portrait = aspect < 1;
-    const size = portrait ? this.viewSize / Math.max(aspect, 0.4) : this.viewSize;
+    const safeAspect = Math.max(aspect, 0.0001);
+    const portrait = safeAspect < 1;
+    const size = portrait ? this.viewSize / Math.max(safeAspect, 0.4) : this.viewSize;
 
-    this.camera.left = -size * aspect;
-    this.camera.right = size * aspect;
+    this.camera.left = -size * safeAspect;
+    this.camera.right = size * safeAspect;
     this.camera.top = size;
     this.camera.bottom = -size;
     this.camera.updateProjectionMatrix();
@@ -73,28 +76,29 @@ export class CameraRig {
    * facilement 30 % du cadre.
    */
   frameLevel(min: Vector3, max: Vector3, aspect: number, margin = 0.08): number {
-    const center = new Vector3().addVectors(min, max).multiplyScalar(0.5);
-    this.lookAtPoint(center);
+    this.frameCenter.addVectors(min, max).multiplyScalar(0.5);
+    this.lookAtPoint(this.frameCenter);
+    this.camera.updateMatrixWorld(true);
+    this.camera.matrixWorldInverse.copy(this.camera.matrixWorld).invert();
 
-    const corner = new Vector3();
     let halfWidth = 0;
     let halfHeight = 0;
 
     for (let i = 0; i < 8; i += 1) {
-      corner.set(i & 1 ? max.x : min.x, i & 2 ? max.y : min.y, i & 4 ? max.z : min.z);
-      corner.sub(center).applyQuaternion(this.camera.quaternion.clone().invert());
-      halfWidth = Math.max(halfWidth, Math.abs(corner.x));
-      halfHeight = Math.max(halfHeight, Math.abs(corner.y));
+      this.frameCorner.set(i & 1 ? max.x : min.x, i & 2 ? max.y : min.y, i & 4 ? max.z : min.z);
+      this.frameCorner.applyMatrix4(this.camera.matrixWorldInverse);
+      halfWidth = Math.max(halfWidth, Math.abs(this.frameCorner.x));
+      halfHeight = Math.max(halfHeight, Math.abs(this.frameCorner.y));
     }
 
+    const safeAspect = Math.max(aspect, 0.0001);
     const scale = 1 + margin;
-    const portrait = aspect < 1;
-    // setAspect() ré-élargit le champ vertical en portrait : on annule ce
-    // facteur ici pour que la marge demandée soit celle qu'on obtient.
-    const portraitFactor = portrait ? Math.max(aspect, 0.4) : 1;
-    const needed = Math.max(halfHeight, halfWidth / Math.max(aspect, 0.0001)) * scale;
+    const portrait = safeAspect < 1;
+    const needed = portrait
+      ? Math.max(halfWidth, halfHeight * Math.max(safeAspect, 0.4))
+      : Math.max(halfHeight, halfWidth / safeAspect);
 
-    this.setViewSize(needed * portraitFactor, aspect);
+    this.setViewSize(needed * scale, safeAspect);
     return this.viewSize;
   }
 
@@ -105,5 +109,6 @@ export class CameraRig {
   lookAtPoint(point: Vector3): void {
     this.target.copy(point);
     this.camera.lookAt(this.target);
+    this.camera.updateMatrixWorld();
   }
 }

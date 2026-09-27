@@ -12,7 +12,16 @@
 import type { Object3D } from 'three';
 
 /** Vocabulaire d'animation partagé par toutes les implémentations. */
-export type CharacterClip = 'idle' | 'idleLong' | 'walk' | 'stepUp' | 'contemplate' | 'arrive';
+export type CharacterClip =
+  | 'idle'
+  | 'idleLong'
+  | 'walk'
+  | 'stepUp'
+  | 'stepDown'
+  | 'salute'
+  | 'lookSky'
+  | 'contemplate'
+  | 'arrive';
 
 export interface ICharacterModel {
   /** Nœud à attacher à la scène. */

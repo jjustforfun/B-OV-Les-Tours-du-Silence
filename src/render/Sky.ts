@@ -1,12 +1,15 @@
 /**
- * Sky.ts — ciel en dégradé vertical et brouillard atmosphérique.
+ * Sky.ts — ciel en dégradé vertical, animation d'aube et brouillard.
  *
- * Pas de skybox, pas de HDRI : un dégradé en DataTexture (quelques octets)
- * suffit à poser l'heure du jour et coûte zéro fillrate significatif.
- * Chaque chapitre possède sa palette (aube, brume, crépuscule, neige).
+ * Pas de skybox, pas de HDRI : un dégradé en `DataTexture` 1×64 suffit à
+ * poser l'heure du jour. Le ciel respire très lentement en faisant varier la
+ * chaleur du bas du gradient ; la profondeur atmosphérique reste portée par
+ * `FogExp2`, tandis que le brouillard de hauteur est injecté dans
+ * `ToonStoneMaterial` pour baigner les bases de tour dans la brume.
  */
 import { Color, DataTexture, FogExp2, LinearFilter, RGBAFormat, SRGBColorSpace } from 'three';
 import type { Scene } from 'three';
+import { RENDER } from '@/config';
 
 export interface SkyPalette {
   readonly top: number;
@@ -18,7 +21,7 @@ export interface SkyPalette {
 /** Palettes de référence — la direction artistique complète est dans docs/ART_DIRECTION.md. */
 export const SKY_PALETTES = {
   /** Aube froide sur la gorge de l'Argun. */
-  dawn: { top: 0x1c2436, bottom: 0xd9a441, fog: 0x8d93a5, fogDensity: 0.018 },
+  dawn: { top: 0x1b2230, bottom: 0xe3b7a6, fog: 0x8d93a5, fogDensity: 0.018 },
   /** Brume de milieu de journée, la plus « silencieuse ». */
   mist: { top: 0x2b3446, bottom: 0xb9c2cc, fog: 0xa8b2bf, fogDensity: 0.03 },
   /** Crépuscule sur le lac Kezenoy-Am. */
@@ -29,22 +32,42 @@ export const SKY_PALETTES = {
 
 export type SkyPaletteName = keyof typeof SKY_PALETTES;
 
-const GRADIENT_STEPS = 64;
+const GRADIENT_STEPS = RENDER.sky.gradientSteps;
+const gradientScratch = new Color();
 
 export class Sky {
   private texture: DataTexture | null = null;
+  private readonly data = new Uint8Array(GRADIENT_STEPS * 4);
+  private readonly top = new Color();
+  private readonly bottom = new Color();
+  private readonly animatedTop = new Color();
+  private readonly animatedBottom = new Color();
 
   constructor(private readonly scene: Scene) {}
 
   apply(palette: SkyPalette): void {
+    this.top.setHex(palette.top);
+    this.bottom.setHex(palette.bottom);
+
     this.texture?.dispose();
-    this.texture = createGradientTexture(palette.top, palette.bottom);
+    this.texture = createGradientTexture(palette.top, palette.bottom, this.data);
     this.scene.background = this.texture;
     this.scene.fog = new FogExp2(palette.fog, palette.fogDensity);
   }
 
   applyNamed(name: SkyPaletteName): void {
     this.apply(SKY_PALETTES[name]);
+  }
+
+  update(elapsedSeconds: number): void {
+    if (!this.texture) return;
+
+    const wave =
+      Math.sin(elapsedSeconds * RENDER.sky.animationSpeed) * RENDER.sky.animationAmplitude;
+    this.animatedTop.copy(this.top).offsetHSL(0, wave * 0.08, wave * 0.18);
+    this.animatedBottom.copy(this.bottom).offsetHSL(0, wave * 0.06, wave * 0.11);
+    fillGradientData(this.data, this.animatedTop, this.animatedBottom);
+    this.texture.needsUpdate = true;
   }
 
   dispose(): void {
@@ -56,29 +79,37 @@ export class Sky {
 }
 
 /** Dégradé vertical 1×N, interpolé linéairement par le GPU. */
-export function createGradientTexture(topHex: number, bottomHex: number): DataTexture {
+export function createGradientTexture(
+  topHex: number,
+  bottomHex: number,
+  targetData?: Uint8Array,
+): DataTexture {
   const top = new Color(topHex);
   const bottom = new Color(bottomHex);
-  const data = new Uint8Array(GRADIENT_STEPS * 4);
-  const mixed = new Color();
+  const data = targetData ?? new Uint8Array(GRADIENT_STEPS * 4);
 
-  for (let i = 0; i < GRADIENT_STEPS; i += 1) {
-    // i = 0 en bas de l'écran, i = N-1 en haut.
-    const t = i / (GRADIENT_STEPS - 1);
-    mixed.copy(bottom).lerp(top, smoothstep(t));
-    const offset = i * 4;
-    data[offset] = Math.round(mixed.r * 255);
-    data[offset + 1] = Math.round(mixed.g * 255);
-    data[offset + 2] = Math.round(mixed.b * 255);
-    data[offset + 3] = 255;
-  }
+  fillGradientData(data, top, bottom);
 
   const texture = new DataTexture(data, 1, GRADIENT_STEPS, RGBAFormat);
+  texture.name = 'AnimatedGradientSky';
   texture.colorSpace = SRGBColorSpace;
   texture.magFilter = LinearFilter;
   texture.minFilter = LinearFilter;
   texture.needsUpdate = true;
   return texture;
+}
+
+function fillGradientData(data: Uint8Array, top: Color, bottom: Color): void {
+  for (let i = 0; i < GRADIENT_STEPS; i += 1) {
+    // i = 0 en bas de l'écran, i = N-1 en haut.
+    const t = i / (GRADIENT_STEPS - 1);
+    gradientScratch.copy(bottom).lerp(top, smoothstep(t));
+    const offset = i * 4;
+    data[offset] = Math.round(gradientScratch.r * 255);
+    data[offset + 1] = Math.round(gradientScratch.g * 255);
+    data[offset + 2] = Math.round(gradientScratch.b * 255);
+    data[offset + 3] = 255;
+  }
 }
 
 function smoothstep(t: number): number {

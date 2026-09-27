@@ -17,7 +17,8 @@ export function disposeMaterial(material: Material): void {
   const record = material as unknown as Record<string, unknown>;
   for (const value of Object.values(record)) {
     if (value && typeof value === 'object' && 'isTexture' in value) {
-      (value as Texture).dispose();
+      const texture = value as Texture;
+      if (texture.userData.bovSharedTexture !== 'toon-gradient') texture.dispose();
     }
   }
   material.dispose();

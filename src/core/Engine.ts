@@ -7,7 +7,7 @@
  * Tout le reste (niveaux, entités, UI, audio) se branche dessus et peut être
  * retiré sans que le moteur s'en aperçoive.
  */
-import { Scene } from 'three';
+import { Scene, Vector3 } from 'three';
 import { GameLoop } from './GameLoop';
 import { Quality } from './Quality';
 import { bus } from './EventBus';
@@ -16,13 +16,17 @@ import { CameraRig } from '@render/CameraRig';
 import { Lighting } from '@render/Lighting';
 import { PostFX } from '@render/PostFX';
 import { Renderer } from '@render/Renderer';
+import { disposeChapterLuts } from '@render/ChapterLut';
+import { disposeToonGradients } from '@render/materials/ToonStoneMaterial';
 import { Sky, SKY_PALETTES, type SkyPaletteName } from '@render/Sky';
 import { disposeObject } from '@utils/dispose';
+import type { ChapterPaletteName } from '@render/Palettes';
 
 export interface EngineOptions {
   readonly canvas: HTMLCanvasElement;
   readonly quality?: Quality;
   readonly skyPalette?: SkyPaletteName;
+  readonly chapterPalette?: ChapterPaletteName;
 }
 
 export class Engine {
@@ -37,6 +41,10 @@ export class Engine {
 
   private readonly updaters = new Set<(time: Time) => void>();
   private readonly resizeObserver: ResizeObserver | null = null;
+  private readonly framedMin = new Vector3();
+  private readonly framedMax = new Vector3();
+  private frameMargin = 0.08;
+  private hasFrameBounds = false;
   private disposed = false;
 
   constructor(options: EngineOptions) {
@@ -55,7 +63,13 @@ export class Engine {
     this.sky = new Sky(this.scene);
     this.sky.apply(SKY_PALETTES[options.skyPalette ?? 'dawn']);
 
-    this.postFx = new PostFX(this.renderer.gl, this.scene, this.cameraRig.camera, settings);
+    this.postFx = new PostFX(
+      this.renderer.gl,
+      this.scene,
+      this.cameraRig.camera,
+      settings,
+      options.chapterPalette ?? 'prologue',
+    );
 
     this.loop = new GameLoop({
       update: (time) => this.update(time),
@@ -83,6 +97,16 @@ export class Engine {
     return () => this.updaters.delete(fn);
   }
 
+  /** Cadre un niveau et garde ce cadrage stable lors des rotations d'écran. */
+  frameLevel(min: Vector3, max: Vector3, margin = 0.08): void {
+    this.framedMin.copy(min);
+    this.framedMax.copy(max);
+    this.frameMargin = margin;
+    this.hasFrameBounds = true;
+    const { width, height } = this.renderer.size;
+    this.cameraRig.frameLevel(this.framedMin, this.framedMax, width / Math.max(height, 1), margin);
+  }
+
   start(): void {
     this.handleResize();
     this.loop.start();
@@ -103,12 +127,15 @@ export class Engine {
     this.lighting.dispose();
     this.sky.dispose();
     disposeObject(this.scene);
+    disposeChapterLuts();
+    disposeToonGradients();
     this.renderer.dispose();
     this.updaters.clear();
   }
 
   private update(time: Time): void {
     this.quality.sample(time.fps, time.unscaledDelta * 1000);
+    this.sky.update(time.elapsed);
     for (const updater of this.updaters) updater(time);
   }
 
@@ -121,7 +148,12 @@ export class Engine {
   private readonly handleResize = (): void => {
     this.renderer.resize();
     const { width, height } = this.renderer.size;
-    this.cameraRig.setAspect(width / Math.max(height, 1));
+    const aspect = width / Math.max(height, 1);
+    if (this.hasFrameBounds) {
+      this.cameraRig.frameLevel(this.framedMin, this.framedMax, aspect, this.frameMargin);
+    } else {
+      this.cameraRig.setAspect(aspect);
+    }
     this.postFx.setSize(width, height);
     bus.emit('engine:resize', { width, height });
   };
