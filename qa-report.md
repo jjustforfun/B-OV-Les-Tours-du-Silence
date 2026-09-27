@@ -153,6 +153,149 @@ Actions correctives (avec responsable et échéance) :
 
 ---
 
+# Rapport QA — Phase 7 : FX et « juice »
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert, avec réserve de mesures navigateur**
+
+La phase FX est implémentée et branchée : un `FxRuntime` unique écoute l'EventBus
+(`mechanism:drag`, `mechanism:snap`, `path:connected`, `level:solved`) et
+traduit chaque événement en geste visuel. Tout vit dans des pools ou de
+l'instanciation : un draw call pour toutes les particules, un pour les éclats de
+pierre, un par nappe de brume, un par rais — le « juice » complet tient dans
+≤ 11 draw calls au-dessus du rendu du niveau. `prefers-reduced-motion` divise
+les durées par deux et coupe les dérives (neige, brume, errance des lucioles).
+Le mode jouable `?play` / `?level=<id>` assemble le tout : `LevelRuntime` +
+`FxRuntime` + `AudioDirector`.
+
+## Checks automatiques
+
+| Étape            | Commande               | Résultat | Valeur                                                      |
+| ---------------- | ---------------------- | -------- | ----------------------------------------------------------- |
+| Lint             | `pnpm lint`            | 🟢       | 0 erreur, 0 avertissement                                   |
+| Typecheck        | `pnpm typecheck`       | 🟢       | 0 erreur                                                    |
+| Tests unitaires  | `pnpm test`            | 🟢       | 183 tests / 25 fichiers, 4,9 s                              |
+| Couverture       | `pnpm test --coverage` | ⬜       | non mesurée                                                 |
+| Tests e2e        | `pnpm test:e2e`        | 🟠       | non exécutés : Chromium non installable dans le bac à sable |
+| Budget de bundle | `pnpm check-bundle`    | 🟢       | 326,3 ko gzip / 1 464,8 ko (22,3 %)                         |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → tests → build →
+budget, terminé sans erreur.
+
+Détail du bundle initial : `vendor-3d` 209,2 ko · entrée 44,6 ko ·
+`vendor-audio` 61,5 ko (chunk séparé, chargé au premier geste) ·
+`AudioManager` 5,8 ko (idem) · `index.html` 2,0 ko · CSS 1,5 ko ·
+`NavGraphViz` 1,4 ko · runtime 0,2 ko · `registerSW` 0,1 ko. Chunks de
+niveaux : 0,44–0,75 ko gzip par chapitre, à la demande.
+
+## Fonctionnel — effets de la phase
+
+| Effet                    | Attendu (tasks.md)                                    | Statut | Note                                                           |
+| ------------------------ | ----------------------------------------------------- | ------ | -------------------------------------------------------------- |
+| Pool de particules       | zéro allocation/image, `particleScale`                | 🟢     | tableaux préalloués, compactage par échange ; 420 × scale      |
+| Poussière de rotation    | 12 particules, 700 ms                                 | 🟢     | `FX.rotationDust = {count: 12, lifetimeMs: 700}`               |
+| Reconstruction de pierre | éclats **s'assemblent**, expo.out 700 ms              | 🟢     | `InstancedMesh` unique ; maintien 420 ms puis réduction 260 ms |
+| Traînée dorée            | 8 u/s, estompe 900 ms                                 | 🟢     | `FX.trail = {speed: 8, fadeMs: 900}` ; ×2 si mouvement réduit  |
+| Micro-célébration        | son + lumière + vibration en 1,6 s                    | 🟢     | timeline manuelle (ADR-026), `haptic('celebrate')`             |
+| Illumination de fin      | cascade 250 ms, de la plus lointaine à la plus proche | 🟢     | + 2 rais de grâce depuis la plus haute tour                    |
+| Brume                    | 1–3 nappes, opacité ≤ 0,12, dérive 0,05 u/s           | 🟢     | partagée avec la scène vitrine ; dérive coupée si réduit       |
+| Neige                    | un `Points`, 140–400 flocons                          | 🟢     | 140 + 260 × `particleScale` (231 en basse, 400 en haute)       |
+| Lucioles                 | pulsations désynchronisées, chapitres 4 et 7          | 🟢     | phase par sommet dans le shader, `chapters: [4, 7]`            |
+| Rais de lumière          | meurtrières, off en qualité basse                     | 🟢     | `setVisible(quality.postFx)` ; poussière 6/s dans le volume    |
+| Indices visuels          | lueur 90 s, regard 180 s, effacement 900 ms           | 🟢     | `fx/Hints` testé (paliers, reset, interaction)                 |
+
+## Performance
+
+| Mesure                  | Valeur (conception)                | Budget      | Statut                               |
+| ----------------------- | ---------------------------------- | ----------- | ------------------------------------ |
+| Draw calls FX           | ≤ 11 au-dessus du niveau           | < 120 total | 🟠 théorique, non mesurée navigateur |
+| Allocations par image   | 0 (vecteurs et options réutilisés) | 0           | 🟢 par revue de code ; ⬜ en mesure  |
+| Particules vivantes max | 420 (haute) / 147 (basse)          | —           | 🟢 plafond structurel                |
+
+## Risques / anomalies
+
+| ID     | Sévérité | Description                                                                                                                                             | Statut                                                |
+| ------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| P7-001 | mineur   | Captures et mesures FPS impossibles dans le bac à sable (pas de navigateur).                                                                            | ouvert — à refaire hors sandbox                       |
+| P7-002 | mineur   | Les 8 chapitres data-only n'ont pas encore de mécanismes : l'illumination en cascade se dégrade en célébration « solve » (comportement voulu de repli). | sera pleinement visible en phase 9 (niveaux complets) |
+
+## Décision
+
+**Phase validée : oui** — les 11 tâches sont cochées, les checks automatiques
+sont verts, les constantes correspondent aux critères et les comportements
+purs (indices, progression, mix) sont couverts par tests unitaires. Les
+mesures navigateur (FPS, draw calls réels, captures) restent à archiver hors
+bac à sable.
+
+---
+
+# Rapport QA — Phase 6 : Audio
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert, avec réserve d'écoute subjective**
+
+La phase Audio est implémentée de bout en bout : buses et gains (ADR-025),
+déverrouillage au premier geste avec fondu de 1,2 s, réverbération « vallée »
+partagée, pondar Karplus-Strong accordé par chapitre (±4 cents), musique
+adaptative à quatre couches (fondus 6 s), ambiances à périodes premières, pas
+selon la surface, rotation musicale (chaque cran joue la note suivante de la
+gamme) et sons de récompense avec ducking. Tone.js est hors bundle initial
+(chunk `vendor-audio` de 61,5 ko gzip, chargé au premier geste). Les modules
+purs (mix, gammes, motifs, plan d'ambiance) sont testés sans Tone ; les
+graphes Tone ne peuvent pas s'instancier dans Node (pas d'AudioContext) et
+sont donc construits uniquement dans `start()`.
+
+## Checks automatiques
+
+| Étape            | Commande               | Résultat | Valeur                                                      |
+| ---------------- | ---------------------- | -------- | ----------------------------------------------------------- |
+| Lint             | `pnpm lint`            | 🟢       | 0 erreur, 0 avertissement                                   |
+| Typecheck        | `pnpm typecheck`       | 🟢       | 0 erreur                                                    |
+| Tests unitaires  | `pnpm test`            | 🟢       | 183 tests / 25 fichiers, 4,9 s (dont 21 tests audio purs)   |
+| Couverture       | `pnpm test --coverage` | ⬜       | non mesurée                                                 |
+| Tests e2e        | `pnpm test:e2e`        | 🟠       | non exécutés : Chromium non installable dans le bac à sable |
+| Budget de bundle | `pnpm check-bundle`    | 🟢       | 326,3 ko gzip / 1 464,8 ko (22,3 %)                         |
+
+## Audio
+
+| Point                                                     | Statut | Note                                                                    |
+| --------------------------------------------------------- | ------ | ----------------------------------------------------------------------- |
+| Déverrouillage au premier geste, fondu 1,2 s, pas d'icône | 🟢     | `onFirstGesture → AudioDirector.unlock()` ; état rejoué au chargement   |
+| Buses et gains par défaut                                 | 🟢     | 0 / −9 / −14 / −6 dB vérifiés à 1e−9 près par test unitaire             |
+| Coupure rapide (M) et persistance                         | 🟢     | `toggleMute()` + `SettingsStore.saveAudio`                              |
+| Onglet caché : silence 250 ms, reprise 400 ms, Transport  | 🟢     | `watchLifecycle()` ; perte de focus −12 dB (blurAttenuationDb)          |
+| Réverbération « vallée » unique                           | 🟢     | decay 9 s, wet 0,42 ; music+ambience en wet, sfx en send 0,25           |
+| Pondar Karplus-Strong, 3 cordes, ±4 cents                 | 🟢     | `PluckSynth` ×3, accordages par chapitre (ch. 7 = retour du prologue)   |
+| Couches musicales 4, fondus inaudibles                    | 🟢     | `layerFadeSeconds = 6` ; progression 1→4 par `music:progress`           |
+| Ambiances à périodes premières                            | 🟢     | 7 / 11 / 13 / 17 / 23 s testées premières entre elles                   |
+| Pas selon la surface, ±2 demi-tons                        | 🟢     | pierre / herbe / neige / bois, `player:moved`                           |
+| Rotation musicale (cran = note suivante)                  | 🟢     | `notchDelta` gère le bouclage du cycle, testé                           |
+| Accord de connexion, signature de chapitre, ducking       | 🟢     | accord ascendant ; 5 notes + proverbe retardé ; duck −4 dB / −3 dB, 9 s |
+
+## Risques / anomalies
+
+| ID     | Sévérité | Description                                                                                | Statut                                                  |
+| ------ | -------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| P6-001 | mineur   | Écoute subjective impossible dans le bac à sable (pas de sortie audio).                    | ouvert — validation à l'oreille locale                  |
+| P6-002 | mineur   | Les graphes Tone ne s'instancient pas sous Node : pas de test unitaire du graphe lui-même. | compensé par des modules purs testés + typecheck strict |
+
+## Décision
+
+**Phase validée : oui, avec réserve d'écoute** — les 13 tâches sont cochées,
+les checks sont verts, et tout ce qui est mesurable sans navigateur l'a été.
+L'oreille reste l'arbitre final du timbre du pondar et de l'équilibre du mix ;
+à valider hors bac à sable.
+
+---
+
 # Rapport QA — Phase 4 : Mécanismes et Borz
 
 **Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena

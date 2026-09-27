@@ -155,35 +155,35 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 
 ## Phase 6 — Audio
 
-- [ ] **`AudioManager` : bus et gains** — _Critère : master 0,9 / music 0,7 / ambience 0,6 / sfx 0,85, réglables séparément._
-- [ ] **Déverrouillage de l'`AudioContext`** — _Critère : `Tone.start()` au premier geste, fondu d'entrée 1,2 s, aucune icône « activer le son »._
-- [ ] **Pause automatique sur onglet caché** — _Critère : master à 0 en 250 ms, reprise en 400 ms, rien ne joue en arrière-plan._
-- [ ] **Réverbération « vallée » partagée** — _Critère : une seule instance (decay 9 s, wet 0,42) pour tous les bus._
-- [ ] **`PondarSynth` : 3 cordes Karplus-Strong** — _Critère : accordage par chapitre, inharmonicité ±4 cents, ne sonne pas numérique._
-- [ ] **Couche `drone`** — _Critère : bourdon de quinte, présent dès l'entrée, −12 dB._
-- [ ] **Couche `pondar`** — _Critère : motif non métrique de 5 à 7 notes, jamais deux fois identique._
-- [ ] **Couche `doul`** — _Critère : percussion douce, ~48 BPM implicite, apparaît à mi-résolution._
-- [ ] **Couche `melody` + `setProgress()`** — _Critère : fondus de 4 à 8 s, aucune couche n'apparaît de façon audible._
-- [ ] **Ambiances par lieu** — _Critère : périodes premières entre elles, aucune répétition perceptible sur 10 min._
-- [ ] **Pas selon la surface** — _Critère : 4 timbres (pierre, herbe, neige, bois) lus depuis `NavNode`, variation ±2 demi-tons._
-- [ ] **Rotation musicale** — _Critère : chaque cran joue la note suivante de la gamme ; tourner à l'envers la redescend._
-- [ ] **Sons de récompense** — _Critère : accord ascendant à la connexion, motif complet en fin de chapitre, ducking −4 dB sous les textes._
+- [x] **`AudioManager` : bus et gains** — _Critère : master 0,9 / music 0,7 / ambience 0,6 / sfx 0,85, réglables séparément._ — `src/audio/mixing.ts` + `AudioManager.setVolume()` ; gains nominaux 0/−9/−14/−6 dB (ADR-025).
+- [x] **Déverrouillage de l'`AudioContext`** — _Critère : `Tone.start()` au premier geste, fondu d'entrée 1,2 s, aucune icône « activer le son »._ — `AudioDirector.unlock()` sur `input.onFirstGesture()`, Tone importé dynamiquement (chunk séparé).
+- [x] **Pause automatique sur onglet caché** — _Critère : master à 0 en 250 ms, reprise en 400 ms, rien ne joue en arrière-plan._ — `AudioManager.watchLifecycle()` (visibilité + `platform.onLifecycle`), Transport suspendu.
+- [x] **Réverbération « vallée » partagée** — _Critère : une seule instance (decay 9 s, wet 0,42) pour tous les bus._ — `AudioGraph` : un `Reverb`, music+ambience en wet, sfx en send 0,25.
+- [x] **`PondarSynth` : 3 cordes Karplus-Strong** — _Critère : accordage par chapitre, inharmonicité ±4 cents, ne sonne pas numérique._ — `Tone.PluckSynth` ×3, `randomDetuneCents`, accordages par chapitre ±4 cents.
+- [x] **Couche `drone`** — _Critère : bourdon de quinte, présent dès l'entrée, −12 dB._ — `MusicSystem` couche 1, `setProgress()` ≥ 1.
+- [x] **Couche `pondar`** — _Critère : motif non métrique de 5 à 7 notes, jamais deux fois identique._ — `generatePondarMotif()` (tests : 5–7 notes, écarts non métriques).
+- [x] **Couche `doul`** — _Critère : percussion douce, ~48 BPM implicite, apparaît à mi-résolution._ — `generateDoulPattern()`, ternaire lâche, couche 3 de `computeMusicLayers()`.
+- [x] **Couche `melody` + `setProgress()`** — _Critère : fondus de 4 à 8 s, aucune couche n'apparaît de façon audible._ — fondus 6 s (`AUDIO.layerFadeSeconds`), `music:progress` → `setProgress(max)`.
+- [x] **Ambiances par lieu** — _Critère : périodes premières entre elles, aucune répétition perceptible sur 10 min._ — `ambiencePlan.ts` (périodes 7/11/13/17/23 s) + `Ambience.ts` (LFO par couche).
+- [x] **Pas selon la surface** — _Critère : 4 timbres (pierre, herbe, neige, bois) lus depuis `NavNode`, variation ±2 demi-tons._ — `SfxBank.step(surface)`, `player:moved`.
+- [x] **Rotation musicale** — _Critère : chaque cran joue la note suivante de la gamme ; tourner à l'envers la redescend._ — `mechanism:snap` → `ScaleCursor.step(notchDelta(...))` (tests : bouclage du cycle).
+- [x] **Sons de récompense** — _Critère : accord ascendant à la connexion, motif complet en fin de chapitre, ducking −4 dB sous les textes._ — `path:connected` → accord, `level:solved` → signature + proverbe, ducking −4/−3 dB 9 s.
 
 ---
 
 ## Phase 7 — FX et « juice »
 
-- [ ] **`fx/Particles.ts` : pool générique** — _Critère : zéro allocation par image, respecte `particleScale`._
-- [ ] **Poussière de rotation** — _Critère : 12 particules au démarrage d'un mécanisme, disparition en 700 ms._
-- [ ] **Reconstruction de pierre** — _Critère : les éclats **s'assemblent** vers leur position (`expo.out`, 700 ms) — jamais une explosion._
-- [ ] **Traînée dorée sur chemin connecté** — _Critère : court à 8 u/s du départ vers l'arrivée, s'estompe en 900 ms._
-- [ ] **`fx/Celebrate.ts` : micro-célébration** — _Critère : son + lumière + vibration en 1,6 s, ni plus ni moins._
-- [ ] **Illumination de fin de chapitre** — _Critère : tours allumées de la plus lointaine à la plus proche, 250 ms d'écart._
-- [ ] **`fx/Mist.ts`** — _Critère : 1 à 3 nappes selon la qualité, opacité ≤ 0,12, dérive 0,05 u/s._
-- [ ] **`fx/Snow.ts`** — _Critère : un seul `Points`, recyclage en boucle, 140 à 400 flocons._
-- [ ] **`fx/Fireflies.ts`** — _Critère : pulsations désynchronisées, chapitres 4 et 7 seulement._
-- [ ] **`fx/LightShafts.ts`** — _Critère : uniquement là où un rayon traverse une meurtrière, désactivé en qualité basse._
-- [ ] **Indices visuels** (lueur 90 s, regard de Borz 180 s) — _Critère : réinitialisés à toute interaction, s'effacent en 900 ms._
+- [x] **`fx/Particles.ts` : pool générique** — _Critère : zéro allocation par image, respecte `particleScale`._ — un `Points` unique, tableaux typés préalloués, compactage par échange ; 420 × scale particules.
+- [x] **Poussière de rotation** — _Critère : 12 particules au démarrage d'un mécanisme, disparition en 700 ms._ — `mechanism:drag` → émission `FX.rotationDust`.
+- [x] **Reconstruction de pierre** — _Critère : les éclats **s'assemblent** vers leur position (`expo.out`, 700 ms) — jamais une explosion._ — `StoneFragments.assemble()` : `InstancedMesh` unique, expo.out puis maintien puis réduction.
+- [x] **Traînée dorée sur chemin connecté** — _Critère : court à 8 u/s du départ vers l'arrivée, s'estompe en 900 ms._ — `GoldenTrail.run()` ; ×2 en mouvement réduit.
+- [x] **`fx/Celebrate.ts` : micro-célébration** — _Critère : son + lumière + vibration en 1,6 s, ni plus ni moins._ — timeline manuelle 1,6 s (ADR-026), `haptic('celebrate')`.
+- [x] **Illumination de fin de chapitre** — _Critère : tours allumées de la plus lointaine à la plus proche, 250 ms d'écart._ — `Celebrate.chapterEnd()` + rais de grâce `spawnGraceShafts()`.
+- [x] **`fx/Mist.ts`** — _Critère : 1 à 3 nappes selon la qualité, opacité ≤ 0,12, dérive 0,05 u/s._ — voile de bruit shader, dérive coupée en mouvement réduit ; partagée avec la scène vitrine.
+- [x] **`fx/Snow.ts`** — _Critère : un seul `Points`, recyclage en boucle, 140 à 400 flocons._ — recyclage par le haut, 140 + 260 × `particleScale`.
+- [x] **`fx/Fireflies.ts`** — _Critère : pulsations désynchronisées, chapitres 4 et 7 seulement._ — pulsation par sommet (phase propre), errance autour d'ancres, `FX.fireflies.chapters = [4, 7]`.
+- [x] **`fx/LightShafts.ts`** — _Critère : uniquement là où un rayon traverse une meurtrière, désactivé en qualité basse._ — cônes additifs à flous vertical/latéral, `setVisible(quality.postFx)`, poussière flottante dans le volume.
+- [x] **Indices visuels** (lueur 90 s, regard de Borz 180 s) — _Critère : réinitialisés à toute interaction, s'effacent en 900 ms._ — `fx/Hints` + `Mechanism.setHintGlow()`, tests du cycle de paliers.
 
 ---
 

@@ -11,7 +11,7 @@ Statut : `Proposé` | `Accepté` | `Remplacé par ADR-YYY`.
 > numéros à quatre chiffres (`ADR-0001`…). Ils ont été refondus dans la
 > numérotation à trois chiffres ci-dessous, qui fait désormais seule
 > autorité : **ADR-001 à ADR-014** couvrent les décisions de conception du
-> jeu, **ADR-015 à ADR-022** les décisions d'outillage et de production.
+> jeu, **ADR-015 à ADR-026** les décisions d'outillage et de production.
 > Toutes les références du dépôt ont été mises à jour.
 
 **Index**
@@ -40,6 +40,10 @@ Statut : `Proposé` | `Accepté` | `Remplacé par ADR-YYY`.
 | [020](#adr-020--briefyaml-est-la-spécification-faisant-autorité)                 | `brief.yaml` fait autorité                              | Accepté |
 | [021](#adr-021--des-tours--fracturées--jamais-en-ruine)                          | Des tours « fracturées », jamais en ruine               | Accepté |
 | [022](#adr-022--aucune-shadow-map-dynamique-sur-mobile)                          | Aucune shadow map dynamique sur mobile                  | Accepté |
+| [023](#adr-023--raccourcis-clavier-liés-aux-touches-physiques)                   | Raccourcis clavier liés aux touches physiques           | Accepté |
+| [024](#adr-024--le-picking-se-fait-sur-la-projection-écran-des-nœuds-pas-sur-la-géométrie) | Picking par projection écran des nœuds | Accepté |
+| [025](#adr-025--tonejs-chargé-après-le-premier-geste-gains-nominaux-en-décibels) | Tone.js après le premier geste, gains en dB             | Accepté |
+| [026](#adr-026--timelines-manuelles-pour-le--juice--pas-de-gsap)                 | Timelines manuelles pour le « juice », pas de gsap      | Accepté |
 
 ---
 
@@ -964,3 +968,126 @@ table et à la persister.
   remappage manuel.
 - `Shift+Tab` est traité comme une inversion de `Tab` plutôt que comme un
   binding distinct — même touche physique, sens opposé.
+
+## ADR-024 : Le picking se fait sur la projection écran des nœuds, pas sur la géométrie
+
+- **Date** : 2026-09-27 · **Statut** : Accepté
+
+### Contexte
+
+Toutes les interactions tactiles (aller ici, tourner ce mécanisme, appeler
+Borz) doivent désigner un objet du monde. L'approche standard du 3D est le
+raycast contre la géométrie. Or la géométrie visible (blocs de pierre, tours)
+n'existe pas encore au moment où les interactions doivent marcher (phase 5),
+et surtout le graphe de navigation **est** la vérité du monde : Turpal ne
+marche jamais « sur de la géométrie », il marche sur des nœuds (ADR-003).
+
+### Décision
+
+Le picking projettes les **positions monde des nœuds en pixels écran** via
+`NodeProjection` (buffers préalloués, une projection par image), puis compare
+la distance écran entre le tap et chaque nœud, avec une tolérance adaptée à
+l'écart du voisin le plus proche (rayon 16–46 px). Le picking des mécanismes
+suit le même principe : le `LevelRuntime` projette la racine du mécanisme et
+teste l'appartenance au disque de saisie. Aucun raycast géométrique dans le
+jeu de simulation.
+
+### Alternatives considérées
+
+| Option                           | Pourquoi écartée                                                                   |
+| -------------------------------- | ---------------------------------------------------------------------------------- |
+| **Raycast contre les meshes**    | La géométrie arrive en phase 9 ; et deux meshes superposées créent des ambiguïtés  |
+| **Colliders invisibles dédiés**  | Deux mondes à maintenir en synchronisation, pour retrouver l'information du graphe |
+| **Picking en coordonnées monde** | L'écran iso déforme les distances ; le doigt juge en pixels, pas en unités monde   |
+
+### Conséquences
+
+- Le picking est insensible à la complexité de la géométrie : 300 nœuds
+  projetés en < 0,2 ms (test unitaire), quels que soient les blocs affichés.
+- La tolérance est exprimée en pixels, donc le confort tactile reste constant
+  sur tous les DPI et toutes les distances de caméra.
+- Les mécanismes doivent exposer une position monde simple (`root.position`) :
+  c'est déjà le contrat de `Mechanism`.
+
+## ADR-025 : Tone.js chargé après le premier geste, gains nominaux en décibels
+
+- **Date** : 2026-09-27 · **Statut** : Accepté
+
+### Contexte
+
+Le navigateur interdit tout son avant un geste utilisateur. Charger Tone.js
+(≈ 62 ko gzip) dans le bundle initial, c'est payer deux fois un silence. Par
+ailleurs, docs/AUDIO.md § 1 donne deux tables qui ne sont pas linéaires
+l'une envers l'autre : les curseurs par défaut (master 0,9 · music 0,7 ·
+ambience 0,6 · sfx 0,85) et les gains nominaux du mix (0 · −9 · −14 · −6 dB).
+
+### Décision
+
+1. **Chargement paresseux** : `AudioDirector` importe `AudioManager` (et donc
+   Tone) dynamiquement à `unlock()`, appelé par `input.onFirstGesture()`. Le
+   moteur audio vit dans son propre chunk (`vendor-audio`), hors chemin
+   critique. Avant le déverrouillage, le directeur mémorise l'état (chapitre,
+   progression, ambiance) et le rejoue au chargement — le premier geste du
+   joueur installe le monde sonore avec un fondu de 1,2 s.
+2. **Mapping curseur → dB** (`mixing.ts`) : le gain nominal du bus est celui
+   du curseur par défaut ; le curseur atténue ou amplifie **autour**, en
+   décibels (`nominal + 20·log10(slider/référence)`). Seul le master reste
+   linéaire (0,9 → −0,9 dB), comme un vrai master. Un bus, une réverbération
+   « vallée » partagée (decay 9 s, wet 0,42 ; sfx en send 0,25).
+
+### Alternatives considérées
+
+| Option                                         | Pourquoi écartée                                                        |
+| ---------------------------------------------- | ----------------------------------------------------------------------- |
+| **Tone dans le bundle initial, muet au début** | 62 ko gzip payés pour rien pendant le silence d'ouverture               |
+| **Icône « activer le son »**                   | Interdite par le brief : le premier geste du jeu est un geste de jeu    |
+| **Curseurs linéaires × gains fixes**           | Une moitié de curseur ne fait pas −6 dB ; les réglages paraissent morts |
+| **Une réverbération par bus**                  | Trois convolutions pour un seul lieu : coût GPU sans bénéfice audible   |
+
+### Conséquences
+
+- Le bundle initial ne contient aucune dépendance audio ; `vendor-audio`
+  arrive au premier geste, en parallèle du fondu d'entrée.
+- Les tests unitaires du mix tournent sans Tone (module pur `mixing.ts`).
+- Tout nouveau nœud audio doit être créé dans `AudioManager.start()` (et non
+  au constructeur) : le graphe n'existe qu'après le geste.
+
+## ADR-026 : Timelines manuelles pour le « juice », pas de gsap
+
+- **Date** : 2026-09-27 · **Statut** : Accepté
+
+### Contexte
+
+Les célébrations de fin de chapitre demandent des séquences : tours allumées
+en cascade (250 ms d'écart, de la plus lointaine à la plus proche), pétales,
+accords retardés, lueurs qui s'éteignent. gsap est déjà une dépendance du
+projet — la tentation est grande. Mais le « juice » vit dans la boucle de
+rendu, à côté de modules déjà écrits en timelines manuelles
+(`LevelRuntime`, `Turpal`), avec une discipline stricte : zéro allocation par
+image, pas de magie, tout relit `prefers-reduced-motion`.
+
+### Décision
+
+Les modules FX (`Celebrate`, `StoneFragments`, `GoldenTrail`, `LightShafts`)
+pilotent **leurs propres timelines** : un temps local avancé par
+`update(delta)`, des seuils constants tirés de `config.ts`
+(`FX.illumination.staggerMs`…), des courbes d'easing pures
+(`utils/easing.ts`). Aucun moteur d'animation dans le chemin du jeu. gsap
+reste réservé aux futurs écrans d'UI (phase 8), hors boucle de simulation.
+
+### Alternatives considérées
+
+| Option                            | Pourquoi écartée                                                                                                                          |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **gsap partout**                  | 24 ko de plus, des timelines qui échappent au `timeScale` du moteur, et des tweens qui survivent à un changement de niveau                |
+| **CSS/WAAPI pour le monde 3D**    | N'atteint pas les matériaux et uniformes three                                                                                            |
+| **Événements `setTimeout` seuls** | Conservés uniquement pour les pétales retardés de la cascade ; le cœur du geste est dans `update(delta)` pour rester synchronisé au rendu |
+
+### Conséquences
+
+- Une célébration interrompue par un changement de niveau s'arrête net :
+  `reset()`/`dispose()` suffisent, aucun tween orphelin.
+- Le mouvement réduit s'applique une fois pour toutes (`motionDurationScale`)
+  au lieu d'être re-décidé par chaque tween.
+- Les durées restent des données de `config.ts` : accorder le jeu se fait
+  sans toucher au code des timelines.
