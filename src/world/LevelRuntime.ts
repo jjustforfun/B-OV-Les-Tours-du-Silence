@@ -22,7 +22,7 @@ import { bus } from '@core/EventBus';
 import { isReducedMotion } from '@core/motion';
 import { KEYBOARD, PACING, POINTER } from '@/config';
 import { haptic } from '@input/Haptics';
-import type { InputManager, PointerIntent } from '@input/InputManager';
+import type { InputEvents, InputManager, PointerIntent } from '@input/InputManager';
 import { PointerInput, type PickableScreenTarget } from '@input/PointerInput';
 import { pickNeighborByScreenDirection, type DirectionalCandidate } from '@input/screenMove';
 import { FocusRing } from '@ui/FocusRing';
@@ -152,6 +152,9 @@ export class LevelRuntime {
 
   /** Une image de simulation. `elapsed` et `delta` en secondes. */
   update(elapsed: number, delta: number): void {
+    // Pause : la simulation gèle, jamais le rendu — le monde reste visible,
+    // simplement immobile derrière le voile du menu (docs/GDD.md).
+    if (this.paused) return;
     const { width, height } = this.viewport();
     const camera = this.camera;
     this.level.projectNodes(
@@ -191,20 +194,27 @@ export class LevelRuntime {
 
   private bindInput(): void {
     const input = this.input;
+    // Pendant la pause, plus aucune intention de jeu — seule la touche
+    // Pause elle-même traverse (elle rouvre le monde).
+    const live = <K extends keyof InputEvents>(event: K, handler: (payload: InputEvents[K]) => void) =>
+      input.on(event, (payload) => {
+        if (this.paused) return;
+        handler(payload);
+      });
     this.unsubscribe.push(
-      input.on('tap', (intent) => this.onTap(intent)),
-      input.on('longPress', () => this.hints.request()),
-      input.on('action', (action) => {
+      live('tap', (intent) => this.onTap(intent)),
+      live('longPress', () => this.hints.request()),
+      live('action', (action) => {
         // Touche d'indice (H) : même indice que l'appui long (docs/CONTROLS.md).
         if (action === 'hint') this.hints.request();
       }),
-      input.on('dragStart', (intent) => this.onDragStart(intent)),
-      input.on('drag', (intent) => this.onDrag(intent)),
-      input.on('dragEnd', () => this.onDragEnd()),
-      input.on('move', (direction) => this.onMoveDirection(direction.dx, direction.dy)),
-      input.on('confirm', () => this.actuateFocused(1)),
-      input.on('cancel', () => this.clearFocus()),
-      input.on('action', (action) => this.onAction(action)),
+      live('dragStart', (intent) => this.onDragStart(intent)),
+      live('drag', (intent) => this.onDrag(intent)),
+      live('dragEnd', () => this.onDragEnd()),
+      live('move', (direction) => this.onMoveDirection(direction.dx, direction.dy)),
+      live('confirm', () => this.actuateFocused(1)),
+      live('cancel', () => this.clearFocus()),
+      live('action', (action) => this.onAction(action)),
       input.on('pause', () => this.togglePause()),
     );
   }
@@ -339,8 +349,26 @@ export class LevelRuntime {
   }
 
   private togglePause(): void {
-    this.paused = !this.paused;
-    bus.emit('game:pause', { paused: this.paused });
+    if (this.paused) this.resume();
+    else this.pause();
+  }
+
+  /** Gèle la simulation (menu pause). Idempotent. */
+  pause(): void {
+    if (this.paused) return;
+    this.paused = true;
+    bus.emit('game:pause', { paused: true });
+  }
+
+  /** Relance la simulation. Idempotent. */
+  resume(): void {
+    if (!this.paused) return;
+    this.paused = false;
+    bus.emit('game:pause', { paused: false });
+  }
+
+  get isPaused(): boolean {
+    return this.paused;
   }
 
   // ————————————————————————————————— Sélection clavier des mécanismes

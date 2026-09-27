@@ -199,6 +199,31 @@ export const PACING = {
 } as const;
 
 /**
+ * Interface (docs/ART_DIRECTION.md § 6 : 180 / 420 / 900 / 1800 ms — les
+ * durées CSS vivent dans `ui/styles/tokens.css`, les durées du flux ici).
+ */
+export const UI = {
+  /** Le titre attend ce délai avant d'apparaître sur la vallée (ms). */
+  titleDelayMs: 600,
+  /** Le carton de chapitre reste affiché seul (ms), écourté au tap. */
+  cardHoldMs: 2800,
+  /** Le texte d'introduction reste affiché (ms), écourté au tap. */
+  introHoldMs: 9000,
+  /** Délai anti-tap accidentel avant que l'intro devienne écourtable (ms). */
+  introMinHoldMs: 1600,
+  /** La célébration de fin de chapitre vit ce temps avant la sauvegarde (ms). */
+  solvedHoldMs: 2800,
+  /** Une notification discrète reste à l'écran (ms) — jamais bloquante. */
+  toastMs: 2600,
+  /** La coupure rapide du son se confirme brièvement (ms). */
+  muteToastMs: 1600,
+  /** Taille du texte réglable (docs/ART_DIRECTION.md § 7). */
+  fontScales: { small: 0.875, normal: 1, large: 1.25 } as const,
+  /** Échelles de texte proposées, dans l'ordre d'affichage. */
+  fontScaleOrder: ['small', 'normal', 'large'] as const,
+} as const;
+
+/**
  * Clavier (docs/CONTROLS.md § 2). Les bindings vivent dans
  * `input/KeyboardInput.ts` : ce ne sont pas des constantes de rythme.
  */

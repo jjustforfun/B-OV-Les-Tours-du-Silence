@@ -112,6 +112,8 @@ export interface GameEvents extends EventMap {
   'borz:called': { readonly from: string | null; readonly to: string };
   'borz:hint': { readonly active: boolean };
   'ui:toast': { readonly message: string; readonly duration?: number };
+  /** L'interface parle (carton de chapitre) : la musique s'efface derrière. */
+  'ui:speaking': { readonly speaking: boolean };
 }
 
 /** Bus partagé par l'application. */

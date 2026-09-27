@@ -23,6 +23,21 @@ export interface StoredSettings {
   readonly bindings?: Readonly<Record<string, string>>;
   readonly audio?: StoredAudioSettings;
   readonly haptics?: { readonly enabled?: boolean };
+  readonly ui?: StoredUiSettings;
+}
+
+/** Réglages d'interface (phase 8) : qualité, mouvement, texte, contraste. */
+export interface StoredUiSettings {
+  /** Tier figé par le joueur ; omis = adaptation automatique (ADR-013). */
+  readonly quality?: 'low' | 'medium' | 'high' | undefined;
+  /** Mouvement : omis = suivre le système (docs/CONTROLS.md § 5). */
+  readonly reducedMotion?: 'auto' | 'reduced' | 'full' | undefined;
+  /** Taille du texte (docs/ART_DIRECTION.md § 7). */
+  readonly fontScale?: 'small' | 'normal' | 'large' | undefined;
+  /** Contraste renforcé (accessibilité). */
+  readonly highContrast?: boolean | undefined;
+  /** Sous-titres des événements sonores (aucun puzzle ne dépend du son). */
+  readonly subtitles?: boolean | undefined;
 }
 
 export interface SettingsStorage {
@@ -44,6 +59,7 @@ function sanitize(raw: unknown): StoredSettings {
     bindings?: Record<string, string>;
     audio?: StoredAudioSettings;
     haptics?: { enabled?: boolean };
+    ui?: StoredUiSettings;
   } = {
     version: 1,
   };
@@ -75,6 +91,33 @@ function sanitize(raw: unknown): StoredSettings {
   const haptics = raw.haptics;
   if (isRecord(haptics) && typeof haptics.enabled === 'boolean') {
     result.haptics = { enabled: haptics.enabled };
+  }
+
+  const ui = raw.ui;
+  if (isRecord(ui)) {
+    const kept: {
+      quality?: 'low' | 'medium' | 'high';
+      reducedMotion?: 'auto' | 'reduced' | 'full';
+      fontScale?: 'small' | 'normal' | 'large';
+      highContrast?: boolean;
+      subtitles?: boolean;
+    } = {};
+    if (ui.quality === 'low' || ui.quality === 'medium' || ui.quality === 'high') {
+      kept.quality = ui.quality;
+    }
+    if (
+      ui.reducedMotion === 'auto' ||
+      ui.reducedMotion === 'reduced' ||
+      ui.reducedMotion === 'full'
+    ) {
+      kept.reducedMotion = ui.reducedMotion;
+    }
+    if (ui.fontScale === 'small' || ui.fontScale === 'normal' || ui.fontScale === 'large') {
+      kept.fontScale = ui.fontScale;
+    }
+    if (typeof ui.highContrast === 'boolean') kept.highContrast = ui.highContrast;
+    if (typeof ui.subtitles === 'boolean') kept.subtitles = ui.subtitles;
+    if (Object.keys(kept).length > 0) result.ui = kept;
   }
 
   return result;
@@ -116,6 +159,12 @@ export class SettingsStore {
 
   async saveHapticsEnabled(enabled: boolean): Promise<void> {
     this.data = { ...this.data, haptics: { enabled } };
+    await this.persist();
+  }
+
+  /** Remplace la section ui et persiste. */
+  async saveUi(ui: StoredUiSettings): Promise<void> {
+    this.data = { ...this.data, ui };
     await this.persist();
   }
 

@@ -104,4 +104,37 @@ describe('SettingsStore', () => {
     expect(await store.load()).toEqual({ version: 1 });
     expect(store.snapshot.bindings).toBeUndefined();
   });
+
+  it('section ui : sauvegarde, reliture, et rejet du mal typé', async () => {
+    const storage = memoryStorage();
+    await storage.setItem(
+      STORAGE_KEYS.settings,
+      JSON.stringify({
+        version: 1,
+        ui: {
+          quality: 'high',
+          reducedMotion: 'reduced',
+          fontScale: 'large',
+          highContrast: true,
+          weather: 'sunny', // inconnu : jeté
+        },
+      }),
+    );
+    const store = new SettingsStore(storage);
+    const settings = await store.load();
+    expect(settings.ui).toEqual({
+      quality: 'high',
+      reducedMotion: 'reduced',
+      fontScale: 'large',
+      highContrast: true,
+    });
+
+    // La section se remplace entière : revenir à « auto » efface la clé.
+    await store.saveUi({ quality: undefined, fontScale: 'large', highContrast: true });
+    const raw = JSON.parse(
+      storage.dump().get(STORAGE_KEYS.settings) ?? '{}',
+    ) as { ui?: Record<string, unknown> };
+    expect(raw.ui).toEqual({ fontScale: 'large', highContrast: true });
+    expect(Object.hasOwn(raw.ui ?? {}, 'quality')).toBe(false);
+  });
 });

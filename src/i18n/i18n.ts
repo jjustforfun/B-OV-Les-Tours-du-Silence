@@ -37,9 +37,17 @@ export class I18n {
   private locale: Locale = 'fr';
   private dictionary: Dictionary = {};
   private fallback: Dictionary = {};
+  private initialized = false;
+  private readonly listeners = new Set<() => void>();
 
   get current(): Locale {
     return this.locale;
+  }
+
+  /** Prévenu à chaque changement de langue (les panneaux se réétiquettent). */
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
   async init(preferred?: Locale): Promise<void> {
@@ -50,10 +58,17 @@ export class I18n {
   }
 
   async setLocale(locale: Locale): Promise<void> {
+    // Re-sélectionner la langue affichée ne fait rien : pas de rechargement
+    // de dictionnaire, pas d'avis redondant aux panneaux.
+    if (this.initialized && this.locale === locale) return;
     this.locale = locale;
     this.dictionary = locale === 'fr' ? this.fallback : (await LOADERS[locale]()).default;
+    this.initialized = true;
     await platform.setItem(STORAGE_KEYS.locale, locale);
-    document.documentElement.lang = locale;
+    // Garde Node/worker (tests unitaires, SSR de prérendu) : le DOM n'existe
+    // pas toujours (AGENTS.md § 9).
+    if (typeof document !== 'undefined') document.documentElement.lang = locale;
+    for (const listener of this.listeners) listener();
   }
 
   /** Traduit une clé. Les valeurs manquantes retombent sur le français, puis sur la clé. */

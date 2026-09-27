@@ -14,6 +14,7 @@
  */
 import { bus } from '@core/EventBus';
 import { AUDIO } from '@/config';
+import { DEFAULT_VOLUMES } from './mixing';
 import type { SettingsStore } from '@save/SettingsStore';
 import { resolveAmbienceLayers } from './ambiencePlan';
 import {
@@ -66,8 +67,18 @@ export class AudioDirector {
 
   async setVolume(channel: 'master' | 'music' | 'ambience' | 'sfx', value: number): Promise<void> {
     this.manager?.setVolume(channel, value);
-    const volumes = { ...this.manager?.volumesSnapshot };
-    await this.store.saveAudio({ volumes });
+    // Avant le déverrouillage le graphe n'existe pas encore : on persiste
+    // quand même un enregistrement COMPLET (persisté + défauts + modification),
+    // sinon `loadManager()` lirait une table vide — ou chaque curseur écraserait
+    // les précédents réglés depuis l'écran titre.
+    const audio = (await this.store.load()).audio;
+    const volumes = {
+      ...DEFAULT_VOLUMES,
+      ...audio?.volumes,
+      ...this.manager?.volumesSnapshot,
+      [channel]: value,
+    };
+    await this.store.saveAudio({ ...audio, volumes });
   }
 
   /** Petit son d'interface (boutons, validations). */
@@ -193,6 +204,11 @@ export class AudioDirector {
         manager.sfx.proverb();
       }, PROVERB_DELAY_SECONDS * 1000);
       setTimeout(() => manager.duck(false), PROVERB_DUCK_SECONDS * 1000);
+    });
+
+    bus.on('ui:speaking', (event) => {
+      // Carton de chapitre : la musique s'efface derrière la voix du texte.
+      this.manager?.duck(event.speaking);
     });
 
     bus.on('ui:toast', (event) => {

@@ -71,6 +71,8 @@ export class PointerInput {
   private dragging = false;
   private longPressTimer: ReturnType<typeof setTimeout> | null = null;
   private suppressTap = false;
+  /** Suspendu : un panneau UI couvre le canvas, plus aucune intention. */
+  private suspended = false;
   private readonly lastIntent = { x: 0, y: 0, ndcX: 0, ndcY: 0 };
 
   constructor(
@@ -165,7 +167,12 @@ export class PointerInput {
     };
   }
 
+  setSuspended(suspended: boolean): void {
+    this.suspended = suspended;
+  }
+
   private readonly onPointerDown = (event: PointerEvent): void => {
+    if (this.suspended) return;
     if (this.activePointerId !== null) return;
     this.activePointerId = event.pointerId;
     try {

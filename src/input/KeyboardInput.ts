@@ -92,8 +92,13 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return target.isContentEditable;
 }
 
+/** Actions de confort qui traversent la suspension (menus ouverts). */
+const COMFORT_ACTIONS: ReadonlySet<InputAction> = new Set(['muteToggle', 'fullscreenToggle']);
+
 export class KeyboardInput {
   private bindings: Readonly<Record<string, InputAction>> = DEFAULT_BINDINGS;
+  /** Suspendu : plus aucune intention de jeu tant qu'un panneau UI est ouvert. */
+  private suspended = false;
 
   constructor(
     private readonly bus: EventBus<InputEvents>,
@@ -105,6 +110,10 @@ export class KeyboardInput {
   /** Remappage : une table complète remplace la précédente (réglages). */
   setBindings(bindings: Readonly<Record<string, InputAction>>): void {
     this.bindings = bindings;
+  }
+
+  setSuspended(suspended: boolean): void {
+    this.suspended = suspended;
   }
 
   /** Bouton « rétablir les touches par défaut » des réglages. */
@@ -132,6 +141,9 @@ export class KeyboardInput {
 
     // Shift+Tab remonte la sélection : même touche physique, sens inverse.
     const resolved: InputAction = action === 'cycleNext' && event.shiftKey ? 'cyclePrev' : action;
+
+    // Suspension UI : seules les touches de confort passent (ADR-027).
+    if (this.suspended && !COMFORT_ACTIONS.has(resolved)) return;
 
     if (PREVENT_DEFAULT.has(resolved)) event.preventDefault();
 

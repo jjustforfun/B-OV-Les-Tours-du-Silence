@@ -94,6 +94,8 @@ export class InputManager extends EventBus<InputEvents> {
   private readonly gamepad: GamepadInput;
   private readonly gestureLock: GestureLock;
   private readonly store: SettingsStore;
+  /** Vrai quand un panneau d'interface a le focus : le jeu n'écoute plus. */
+  private suspended = false;
 
   constructor(
     private readonly element: HTMLElement & GestureLockTarget,
@@ -109,7 +111,24 @@ export class InputManager extends EventBus<InputEvents> {
 
   /** Doit être appelé chaque image : la manette se sonde, elle n'émet pas. */
   update(): void {
+    if (this.suspended) return;
     this.gamepad.poll();
+  }
+
+  /**
+   * Suspend les intentions de jeu pendant qu'un panneau d'interface est
+   * ouvert (ADR-027). Les touches de confort « muet » et « plein écran »
+   * passent toujours : elles ne concernent pas la simulation.
+   */
+  setSuspended(suspended: boolean): void {
+    if (this.suspended === suspended) return;
+    this.suspended = suspended;
+    this.keyboard.setSuspended(suspended);
+    this.pointer.setSuspended(suspended);
+  }
+
+  get isSuspended(): boolean {
+    return this.suspended;
   }
 
   /**
