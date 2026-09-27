@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BӀOV" />
+
+    <title>BӀOV : Les Tours du Silence</title>
+    <meta
+      name="description"
+      content="Un jeu de puzzle contemplatif : gravissez les tours vainakhs du Caucase tchétchène, pliez l'architecture, et découvrez le Nokhchalla."
+    />
+
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+
+    <style>
+      /* ——————————————————————————————————————————————————————————————
+         Écran de chargement : CSS pur, zéro JS, zéro image, zéro police
+         externe. Il doit s'afficher avant même que le bundle soit parsé.
+         Il est retiré par src/main.ts (classe `is-ready` sur <html>).
+         ——————————————————————————————————————————————————————————————— */
+      :root {
+        --boot-sky-top: #10161f;
+        --boot-sky-bottom: #2c3444;
+        --boot-ink: #e8e0d2;
+        --boot-ember: #d9a441;
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-right: env(safe-area-inset-right, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-left: env(safe-area-inset-left, 0px);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #0d1117;
+        color: var(--boot-ink);
+        font-family: ui-serif, Georgia, 'Times New Roman', serif;
+        -webkit-font-smoothing: antialiased;
+        overscroll-behavior: none;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #app {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      #game-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        gap: 0;
+        padding: calc(var(--safe-top) + 2rem) calc(var(--safe-right) + 1.5rem)
+          calc(var(--safe-bottom) + 2rem) calc(var(--safe-left) + 1.5rem);
+        background: linear-gradient(170deg, var(--boot-sky-top) 0%, var(--boot-sky-bottom) 100%);
+        transition:
+          opacity 900ms ease,
+          visibility 900ms ease;
+      }
+
+      .boot__inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.75rem;
+        text-align: center;
+      }
+
+      /* Une tour vainakh stylisée, dessinée uniquement en CSS. */
+      .boot__tower {
+        position: relative;
+        width: 44px;
+        height: 96px;
+        opacity: 0.92;
+        animation: boot-breathe 4.5s ease-in-out infinite;
+      }
+      .boot__tower::before {
+        content: '';
+        position: absolute;
+        inset: 18px 0 0 0;
+        background: linear-gradient(180deg, #6f7789 0%, #3c4354 100%);
+        clip-path: polygon(14% 100%, 86% 100%, 74% 0%, 26% 0%);
+      }
+      .boot__tower::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 26px;
+        height: 24px;
+        transform: translateX(-50%);
+        background: linear-gradient(180deg, #98a0b2 0%, #5a627a 100%);
+        clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+      }
+
+      .boot__title {
+        margin: 0;
+        font-size: clamp(1.4rem, 5vw, 2.1rem);
+        font-weight: 500;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+
+      .boot__subtitle {
+        margin: -1.1rem 0 0;
+        font-size: clamp(0.72rem, 2.6vw, 0.86rem);
+        letter-spacing: 0.34em;
+        text-transform: uppercase;
+        opacity: 0.55;
+      }
+
+      .boot__bar {
+        width: min(220px, 60vw);
+        height: 2px;
+        background: rgba(232, 224, 210, 0.16);
+        overflow: hidden;
+      }
+      .boot__bar::after {
+        content: '';
+        display: block;
+        width: 40%;
+        height: 100%;
+        background: var(--boot-ember);
+        animation: boot-sweep 1.6s ease-in-out infinite;
+      }
+
+      .boot__hint {
+        margin: 0;
+        max-width: 28ch;
+        font-size: 0.8rem;
+        line-height: 1.7;
+        opacity: 0.45;
+        font-style: italic;
+      }
+
+      @keyframes boot-sweep {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(250%);
+        }
+      }
+
+      @keyframes boot-breathe {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .boot__tower,
+        .boot__bar::after {
+          animation: none;
+        }
+      }
+
+      html.is-ready #boot {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .noscript {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+        text-align: center;
+        background: #0d1117;
+        line-height: 1.8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game-canvas" aria-label="Scène de jeu" role="img"></canvas>
+    </div>
+
+    <div id="boot" role="status" aria-live="polite">
+      <div class="boot__inner">
+        <div class="boot__tower" aria-hidden="true"></div>
+        <h1 class="boot__title">BӀOV</h1>
+        <p class="boot__subtitle">Les Tours du Silence</p>
+        <div class="boot__bar" aria-hidden="true"></div>
+        <p class="boot__hint">La pierre se souvient de ceux qui l'ont posée.</p>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="noscript">
+        <p>
+          BӀOV a besoin de JavaScript et de WebGL pour élever ses tours.<br />
+          Activez JavaScript, puis rechargez la page.
+        </p>
+      </div>
+    </noscript>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

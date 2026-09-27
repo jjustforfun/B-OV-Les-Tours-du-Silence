@@ -1,0 +1,186 @@
+/**
+ * main.css — styles de l'interface.
+ *
+ * Règles : aucune valeur brute (tout vient de tokens.css), tout est
+ * respectueux des safe-areas, et chaque cible tactile fait au moins 44 px.
+ * L'interface flotte au-dessus du canvas sans jamais le capturer : seuls
+ * les panneaux visibles reçoivent les événements pointeur.
+ */
+
+@import './tokens.css';
+
+.ui-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-ui);
+  display: block;
+  pointer-events: none;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  transition: opacity var(--duration-slow) var(--ease-soft);
+}
+
+.ui-root--hidden {
+  opacity: 0;
+}
+
+.ui-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-8);
+  text-align: center;
+  pointer-events: auto;
+  transition:
+    opacity var(--duration-base) var(--ease-soft),
+    visibility var(--duration-base) var(--ease-soft);
+}
+
+.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Écran titre */
+.ui-title__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.ui-title__subtitle {
+  margin: 0;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.ui-title__start,
+.ui-pause__item {
+  min-height: var(--touch-min);
+  min-width: calc(var(--touch-min) * 4);
+  padding: var(--space-3) var(--space-6);
+  border: 1px solid rgba(232, 224, 210, 0.25);
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-soft),
+    color var(--duration-fast) var(--ease-soft);
+}
+
+.ui-title__start:hover,
+.ui-pause__item:hover,
+.ui-title__start:focus-visible,
+.ui-pause__item:focus-visible {
+  border-color: var(--color-ember);
+  color: var(--color-ember-soft);
+  outline: none;
+}
+
+/* Carte de chapitre */
+.ui-chapter {
+  background: rgba(16, 22, 31, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.ui-chapter__number {
+  margin: 0;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.ui-chapter__virtue {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.ui-chapter__title {
+  margin: 0;
+  max-width: 32ch;
+  font-style: italic;
+  line-height: 1.8;
+  opacity: 0.7;
+}
+
+/* Pause */
+.ui-pause {
+  background: rgba(16, 22, 31, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+/* Proverbes */
+.ui-proverbs__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin: 0;
+  padding: 0;
+  max-width: 40ch;
+  list-style: none;
+}
+
+.ui-proverbs__text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  line-height: 1.9;
+}
+
+.ui-proverbs__virtue {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-ember);
+  opacity: 0.8;
+}
+
+/* Toast */
+.ui-toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + var(--space-8));
+  transform: translateX(-50%);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 2px;
+  background: rgba(16, 22, 31, 0.85);
+  font-size: var(--text-sm);
+  pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-soft);
+}
+
+/* Paysage sur petit écran : on remonte tout pour éviter la barre de geste. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .ui-panel {
+    padding: var(--space-4);
+    gap: var(--space-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-root,
+  .ui-panel,
+  .ui-toast {
+    transition-duration: 1ms;
+  }
+}

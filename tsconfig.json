@@ -1,0 +1,7 @@
+{
+  // Fichier « solution » : le code du jeu et l'outillage Node ont des
+  // environnements différents (DOM d'un côté, process/fs de l'autre).
+  // Les séparer évite que `process` soit visible depuis le gameplay.
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
+}

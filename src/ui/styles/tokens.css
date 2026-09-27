@@ -1,0 +1,73 @@
+/**
+ * tokens.css — jetons de design.
+ *
+ * Source unique de vérité visuelle de l'interface : couleurs, rythme
+ * typographique, durées, safe-areas. Aucune valeur brute (#hex, px de
+ * marge) ne doit apparaître ailleurs que dans ce fichier.
+ *
+ * Palette : pierre froide, ciel de vallée, braise. La braise est la seule
+ * couleur chaude — elle signale toujours ce qui est vivant ou actionnable.
+ */
+
+:root {
+  /* Couleurs */
+  --color-stone-900: #10161f;
+  --color-stone-800: #1a212c;
+  --color-stone-700: #2c3444;
+  --color-stone-500: #5a627a;
+  --color-stone-300: #98a0b2;
+  --color-stone-100: #d7dee7;
+  --color-ink: #e8e0d2;
+  --color-ember: #d9a441;
+  --color-ember-soft: #f0c87a;
+  --color-water: #24485c;
+
+  /* Typographie */
+  --font-display: ui-serif, Georgia, 'Times New Roman', serif;
+  --font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: clamp(1.1rem, 3.2vw, 1.5rem);
+  --text-xl: clamp(1.5rem, 6vw, 2.4rem);
+  --tracking-wide: 0.22em;
+  --tracking-wider: 0.34em;
+
+  /* Espacements */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  /* Durées — tout est lent, rien n'est brusque. */
+  --duration-fast: 180ms;
+  --duration-base: 420ms;
+  --duration-slow: 900ms;
+  --duration-contemplative: 1800ms;
+  --ease-soft: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-stone: cubic-bezier(0.16, 0.84, 0.44, 1);
+
+  /* Safe areas (encoches, barres système, Capacitor) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* Cible tactile minimale (WCAG 2.2 : 44 px) */
+  --touch-min: 44px;
+
+  --z-world: 0;
+  --z-ui: 10;
+  --z-overlay: 20;
+  --z-debug: 90;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-ink: #fffaf0;
+    --color-ember: #ffc35c;
+  }
+}
