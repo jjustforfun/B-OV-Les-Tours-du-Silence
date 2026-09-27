@@ -244,8 +244,10 @@
 
 /* ————————————————————————————————— Carton de chapitre */
 
-/* Le noir d'entrée : pur, c'est un carton — pas un voile. Il s'ouvre sur
-   le chapitre au rythme contemplatif. */
+/* Le noir d'entrée : pur, c'est un carton — pas un voile. Il se pose
+   d'un coup (le voile de transition était déjà noir) et ne s'ouvre qu'au
+   rythme contemplatif : la transition vit dans l'état ouvert, jamais dans
+   l'état d'entrée. */
 .ui-chapter__black {
   position: absolute;
   inset: 0;
@@ -253,15 +255,17 @@
   background: #000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--duration-contemplative) var(--ease-stone);
+  transition: none;
 }
 
 .ui-chapter.is-entering .ui-chapter__black {
   opacity: 1;
+  transition: none;
 }
 
 .ui-chapter.is-entering.is-open .ui-chapter__black {
   opacity: 0;
+  transition: opacity var(--duration-contemplative) var(--ease-stone);
 }
 
 .ui-chapter__texts {
