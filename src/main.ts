@@ -2,35 +2,26 @@
  * main.ts — point d'entrée.
  *
  * Deux mondes cohabitent :
- *  - `?play` (ou `?level=<id>`) : le mode jouable. Un chapitre se charge,
- *    Turpal marche, les mécanismes chantent (AudioDirector), le monde respire
- *    (FxRuntime). C'est la porte des phases 6–7.
- *  - sinon : la revue de direction artistique (`?showcase=turpal` pour la
- *    revue du personnage, `?showcase=demo` pour la tour).
+ *  - `?play` ou `?level=<id>` : le mode jouable complet — écran titre,
+ *    chapitres, pause, réglages, carnet (GameFlow, phase 8). Sans paramètre,
+ *    le jeu s'ouvre aussi sur le titre : c'est le mode par défaut.
+ *  - `?showcase=...` : la revue de direction artistique (`turpal` pour le
+ *    personnage, `demo` pour la tour) — sans interface de jeu.
  *
  * Le moteur garde le même cadrage auto-fit dans les deux cas. En dev,
  * `?debug=nav` ou la touche G affichent l'overlay de graphe.
  */
-import { Vector3, type Object3D } from 'three';
 import { Engine } from '@core/Engine';
+import { GameFlow } from '@core/GameFlow';
 import { bus } from '@core/EventBus';
 import { Level, type Level as RuntimeLevel } from '@world/Level';
 import { LevelLoader } from '@world/LevelLoader';
-import { LevelRuntime } from '@world/LevelRuntime';
 import { DemoScene } from '@render/DemoScene';
 import { TurpalShowcaseScene } from '@render/TurpalShowcaseScene';
-import { FxRuntime } from '@fx/FxRuntime';
-import { InputManager, type InputAction } from '@input/InputManager';
-import { AudioDirector } from '@audio/AudioDirector';
-import { SettingsStore } from '@save/SettingsStore';
-import { CHAPTER_PALETTES, type ChapterPaletteName } from '@render/Palettes';
 import { LEVEL_IDS, type LevelId } from '@levels/index';
 import { DEV_FLAGS } from '@/config';
 import type { NavGraphViz as NavGraphVizOverlay } from '@debug/NavGraphViz';
 import '@ui/styles/main.css';
-
-const PLAYABLE_EXTRA_LEVEL = 'penrose-demo' as const;
-type PlayableLevelId = LevelId | typeof PLAYABLE_EXTRA_LEVEL;
 
 function requireCanvas(): HTMLCanvasElement {
   const canvas = document.getElementById('game-canvas');
@@ -41,14 +32,12 @@ function requireCanvas(): HTMLCanvasElement {
 }
 
 /**
- * Niveau demandé : `?play` seul ouvre le prologue, `?level=<id>` ouvre ce
- * chapitre (les deux mènent au mode jouable). `penrose-demo` reste le banc
- * d'essai des mécanismes.
+ * Chapitre demandé en dev : `?play` seul ouvre le prologue, `?level=<id>`
+ * ouvre ce chapitre directement (sans passer par le titre). `null` = titre.
  */
-function wantedLevelId(): PlayableLevelId | null {
+function wantedLevelId(): LevelId | null {
   const params = new URLSearchParams(window.location.search);
   const level = params.get('level');
-  if (level === PLAYABLE_EXTRA_LEVEL) return level;
   const isChapterLevel = (LEVEL_IDS as readonly string[]).includes(level ?? '');
   if (params.has('play')) return isChapterLevel ? (level as LevelId) : '00-prologue';
   return isChapterLevel ? (level as LevelId) : null;
@@ -56,7 +45,7 @@ function wantedLevelId(): PlayableLevelId | null {
 
 function wantsTurpalShowcase(): boolean {
   const showcase = new URLSearchParams(window.location.search).get('showcase');
-  if (import.meta.env.DEV) return showcase !== 'demo';
+  if (import.meta.env.DEV) return showcase === 'turpal';
   return showcase === 'turpal';
 }
 
@@ -68,133 +57,25 @@ function wantsNavGraphDebug(): boolean {
   return false;
 }
 
-/** Palette de chapitre pour la LUT (l'ordre de LEVEL_IDS = l'ordre des clés). */
-function paletteForChapter(chapter: number): ChapterPaletteName {
-  const names = Object.keys(CHAPTER_PALETTES) as ChapterPaletteName[];
-  return names[chapter] ?? 'prologue';
-}
-
-/** Emprise du graphe (min/max des nœuds) pour le cadrage de la caméra. */
-function frameLevelBounds(engine: Engine, level: RuntimeLevel): void {
-  const nodes = level.graph.allNodes();
-  if (nodes.length === 0) return;
-  let minX = Number.POSITIVE_INFINITY;
-  let minY = Number.POSITIVE_INFINITY;
-  let minZ = Number.POSITIVE_INFINITY;
-  let maxX = Number.NEGATIVE_INFINITY;
-  let maxY = Number.NEGATIVE_INFINITY;
-  let maxZ = Number.NEGATIVE_INFINITY;
-  for (const node of nodes) {
-    minX = Math.min(minX, node.position.x);
-    minY = Math.min(minY, node.position.y);
-    minZ = Math.min(minZ, node.position.z);
-    maxX = Math.max(maxX, node.position.x);
-    maxY = Math.max(maxY, node.position.y);
-    maxZ = Math.max(maxZ, node.position.z);
-  }
-  engine.frameLevel(new Vector3(minX, minY, minZ), new Vector3(maxX, maxY + 2, maxZ), 0.1);
-}
-
-async function bootPlayMode(canvas: HTMLCanvasElement, levelId: PlayableLevelId): Promise<void> {
-  // Le prologue fait partie du bundle initial ; les autres chapitres sont des
-  // chunks séparés qui n'arrivent qu'à la demande (ADR-010).
-  const loader = new LevelLoader();
-  const level =
-    levelId === PLAYABLE_EXTRA_LEVEL
-      ? new Level((await import('@levels/penrose-demo')).level)
-      : await loader.load(levelId);
-
-  const engine = new Engine({
-    canvas,
-    skyPalette: level.definition.sky,
-    chapterPalette: paletteForChapter(level.definition.chapter),
-  });
-
-  const input = new InputManager(canvas);
-  const director = new AudioDirector(new SettingsStore());
-
-  // Le premier geste du joueur déverrouille l'audio (docs/AUDIO.md § 6) : le
-  // silence d'ouverture n'est rompu que par une action volontaire.
-  const unsubscribeFirstGesture = input.onFirstGesture(() => {
-    void director.unlock();
-  });
-
-  // Touche M (et l'action manette « muet ») : coupure rapide, persistée.
-  const onAction = (action: InputAction): void => {
-    if (action !== 'muteToggle') return;
-    void director.toggleMute().then((muted) => {
-      bus.emit('ui:toast', {
-        message: muted ? 'Son coupé' : 'Son rétabli',
-        duration: 1600,
-      });
-    });
-  };
-  const unsubscribeMute = input.on('action', onAction);
-
-  const runtime = new LevelRuntime({
-    level,
-    sceneRoot: engine.scene,
-    camera: engine.cameraRig.camera,
-    input,
-    viewport: () => engine.renderer.size,
-  });
-
-  // Les tours du chapitre : les mécanismes portés par les tours (rotation de
-  // tour…). Les niveaux n'ayant pas encore de mécanisme tombent sur la
-  // célébration « solve » — la cascade complète viendra avec les niveaux.
-  const towerRoots: readonly Object3D[] = [...level.mechanisms.values()].map(
-    (mechanism) => mechanism.root,
-  );
-  const fx = new FxRuntime({
-    scene: engine.scene,
-    camera: engine.cameraRig.camera,
-    viewportHeight: () => engine.renderer.size.y,
-    quality: engine.quality.settings,
-    getTowers: () => towerRoots,
-  });
-  fx.attachLevel(level);
-
-  const unsubscribeQuality = engine.quality.onChange(() =>
-    fx.applyQuality(engine.quality.settings),
-  );
-  const unsubscribeResize = bus.on('engine:resize', () => fx.updatePixelScale());
-
-  engine.onUpdate((time) => {
-    input.update(); // la manette se sonde, elle n'émet pas d'elle-même
-    runtime.update(time.elapsed, time.delta);
-    fx.update(time.elapsed, time.delta);
-  });
-
-  frameLevelBounds(engine, level);
-  engine.start();
+async function bootPlayMode(): Promise<void> {
+  const flow = new GameFlow(requireCanvas());
+  await flow.start(wantedLevelId() ?? undefined);
 
   if (DEV_FLAGS.showStats) {
     const { Stats } = await import('@debug/Stats');
-    const stats = new Stats(engine.renderer.gl);
-    engine.onUpdate((time) => stats.update(time.fps, time.unscaledDelta));
+    const stats = new Stats(flow.engine.renderer.gl);
+    flow.engine.onUpdate((time) => stats.update(time.fps, time.unscaledDelta));
   }
 
   if (DEV_FLAGS.showDebugPanel) {
     const { DebugPanel } = await import('@debug/DebugPanel');
-    const panel = new DebugPanel(engine);
+    const panel = new DebugPanel(flow.engine);
     window.addEventListener('beforeunload', () => panel.dispose());
   }
 
   markBooted();
 
-  window.addEventListener('beforeunload', () => {
-    unsubscribeFirstGesture();
-    unsubscribeMute();
-    unsubscribeQuality();
-    unsubscribeResize();
-    runtime.dispose();
-    fx.dispose();
-    director.dispose();
-    input.dispose();
-    if (levelId === PLAYABLE_EXTRA_LEVEL) level.dispose();
-    else loader.unload();
-    engine.dispose();
-  });
+  window.addEventListener('beforeunload', () => flow.dispose());
 }
 
 /** L'écran de chargement CSS s'efface une fois la première image affichée. */
@@ -293,12 +174,13 @@ async function bootShowcaseMode(): Promise<void> {
 }
 
 async function boot(): Promise<void> {
-  const levelId = wantedLevelId();
-  if (levelId !== null) {
-    await bootPlayMode(requireCanvas(), levelId);
+  const showcase = new URLSearchParams(window.location.search).get('showcase');
+  if (showcase !== null) {
+    await bootShowcaseMode();
     return;
   }
-  await bootShowcaseMode();
+  // Par défaut : le jeu. (?play / ?level=<id> court-circuite le titre.)
+  await bootPlayMode();
 }
 
 void boot().catch((error: unknown) => {
