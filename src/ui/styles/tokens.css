@@ -2,11 +2,18 @@
  * tokens.css — jetons de design.
  *
  * Source unique de vérité visuelle de l'interface : couleurs, rythme
- * typographique, durées, safe-areas. Aucune valeur brute (#hex, px de
- * marge) ne doit apparaître ailleurs que dans ce fichier.
+ * typographique, durées, verres, safe-areas. Aucune valeur brute (#hex, px
+ * de marge) ne doit apparaître ailleurs que dans ce fichier.
  *
  * Palette : pierre froide, ciel de vallée, braise. La braise est la seule
- * couleur chaude — elle signale toujours ce qui est vivant ou actionnable.
+ * couleur chaude — elle signale toujours ce qui est vivant ou actionnable
+ * (docs/ART_DIRECTION.md § 3).
+ *
+ * Typographie (docs/ART_DIRECTION.md § 7) : Cormorant Garamond pour les
+ * titres, Inter pour l'interface. Les fichiers woff2 auto-hébergés vivent
+ * dans `public/assets/fonts/` (voir son README) ; tant qu'ils manquent, les
+ * piles de repli ci-dessous restent honorables — le jeu ne va jamais les
+ * chercher en ligne.
  */
 
 :root {
@@ -22,16 +29,27 @@
   --color-ember-soft: #f0c87a;
   --color-water: #24485c;
 
-  /* Typographie */
-  --font-display: ui-serif, Georgia, 'Times New Roman', serif;
-  --font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-md: 1rem;
-  --text-lg: clamp(1.1rem, 3.2vw, 1.5rem);
-  --text-xl: clamp(1.5rem, 6vw, 2.4rem);
+  /* Typographie — tailles en em, relatives à .ui-root (taille réglable). */
+  --font-display: 'Cormorant Garamond', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --text-xs: 0.75em;
+  --text-sm: 0.875em;
+  --text-md: 1em;
+  --text-lg: clamp(1.1em, 3.2vw, 1.5em);
+  --text-xl: clamp(1.5em, 6vw, 2.4em);
   --tracking-wide: 0.22em;
   --tracking-wider: 0.34em;
+
+  /* Taille du texte réglable : petite / normale / grande (§ 7). */
+  --font-scale: 1;
+
+  /* Verre (§ 7) : tout texte est posé sur un voile translucide. */
+  --veil-bg: rgba(13, 17, 23, 0.72);
+  --veil-bg-strong: rgba(13, 17, 23, 0.85);
+  --veil-blur: 8px;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --border-hairline: 1px solid rgba(232, 224, 210, 0.22);
 
   /* Espacements */
   --space-1: 0.25rem;
@@ -42,7 +60,7 @@
   --space-8: 2rem;
   --space-12: 3rem;
 
-  /* Durées — tout est lent, rien n'est brusque. */
+  /* Durées — tout est lent, rien n'est brusque (§ 6). */
   --duration-fast: 180ms;
   --duration-base: 420ms;
   --duration-slow: 900ms;
@@ -65,6 +83,18 @@
   --z-debug: 90;
 }
 
+/* Contraste renforcé (réglage utilisateur — la classe est posée sur <html>). */
+html.ui-hc {
+  --color-ink: #fffaf0;
+  --color-ember: #ffc35c;
+  --color-stone-300: #c4cbd6;
+  --veil-bg: #10161f;
+  --veil-bg-strong: #10161f;
+  --veil-blur: 0px;
+  --border-hairline: 1px solid rgba(255, 250, 240, 0.55);
+}
+
+/* Deux filets pour les environnements qui le demandent aussi. */
 @media (prefers-contrast: more) {
   :root {
     --color-ink: #fffaf0;
