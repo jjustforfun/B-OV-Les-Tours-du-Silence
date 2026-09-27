@@ -1,39 +1,35 @@
 /**
- * TurpalAnimator.ts — pilotage des animations de Turpal.
+ * TurpalAnimator.ts — façade d'animation de Turpal.
  *
- * Statut : squelette. Le jeu de clips visé est court et volontairement
- * sobre : idle (respiration), idle_long (il regarde la vallée), walk,
- * step_up, contemplate (main sur le cœur — geste de respect), arrive.
- *
- * Règle d'animation : les transitions durent 250 à 400 ms. Turpal ne
- * « claque » jamais d'une pose à l'autre : sa dignité est dans la continuité.
+ * Le modèle procédural possède déjà ses clips et ses fondus ; cette classe
+ * isole le gameplay de cette implémentation. Quand Turpal passera en GLB, la
+ * façade pilotera des `AnimationAction` three.js sans changer `Turpal.ts`.
  */
-import { AnimationMixer, type Object3D } from 'three';
+import type { CharacterClip, ICharacterModel } from '@entities/ICharacterModel';
+import { TURPAL } from '@/config';
 
-export type TurpalClip = 'idle' | 'idleLong' | 'walk' | 'stepUp' | 'contemplate' | 'arrive';
+export type TurpalClip = CharacterClip;
 
 export class TurpalAnimator {
-  private readonly mixer: AnimationMixer;
   private currentClip: TurpalClip = 'idle';
 
-  constructor(target: Object3D) {
-    this.mixer = new AnimationMixer(target);
-  }
+  constructor(private readonly model: ICharacterModel) {}
 
   get clip(): TurpalClip {
     return this.currentClip;
   }
 
-  play(clip: TurpalClip, _fadeSeconds = 0.3): void {
-    // TODO(phase Animation) : crossFadeTo sur les AnimationActions du glTF.
+  play(clip: TurpalClip, fadeSeconds = TURPAL.animationBlendMs / 1000): void {
+    if (clip === this.currentClip) return;
     this.currentClip = clip;
+    this.model.play(clip, fadeSeconds);
   }
 
   update(delta: number): void {
-    this.mixer.update(delta);
+    this.model.update(delta);
   }
 
   dispose(): void {
-    this.mixer.stopAllAction();
+    this.model.dispose();
   }
 }

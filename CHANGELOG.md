@@ -32,6 +32,51 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ### Ajouté
 
+- Phase 1 rendue jouable visuellement : scène de démonstration avec tour
+  vainakh stylisée sur piton rocheux, Turpal pour l'échelle, brume d'aube et
+  cadrage orthographique auto-fit en portrait comme en paysage.
+- `ToonStoneMaterial` enrichi : rampe toon 3 bandes avec plancher à 0,32,
+  vertex colors, AO de sommets cuit, rim light, bruit procédural de pierre et
+  brouillard de hauteur dans le shader.
+- Chaîne `PostFX` pilotée par `Quality` : bloom subtil, vignette, LUT 3D de
+  chapitre, SMAA et SSAO en haute qualité, avec LUTs 16×16×16 générées
+  paresseusement depuis les palettes.
+- Ombres blob instanciées (`BlobShadows`) orientées selon le vecteur `up`, pour
+  ancrer les personnages sans shadow map mobile.
+- Ciel en dégradé animé et raccordé à la brume, mis à jour sans recréer de
+  texture à chaque frame.
+- Phase 3 Turpal complète : modèle procédural flat shading d'environ
+  3 000 triangles, squelette hanches/jambes/bras/tête, clips procéduraux
+  (marche, idle, escaliers, salut, regard vers le ciel), orientation selon le
+  `up`, suivi de chemin et marqueur de destination.
+- Scène de revue `?showcase=turpal` : quatre Turpal simultanés (face, profil,
+  dos, trois-quarts) pour vérifier la lisibilité à petite taille.
+- Projection écran des nœuds de navigation (`NodeProjection`) branchée sur
+  `Level.projectNodes()` : buffers préalloués, 300 nœuds en moins de 0,2 ms en
+  test unitaire, prête pour illusions, picking et debug nav.
+- Activation automatique des arêtes illusoires : `Level.projectNodes()` ouvre
+  ou coupe les liaisons selon l'alignement écran courant, y compris avec les
+  conditions de mécanisme ; `debugIllusionMismatches()` signale les illusions
+  non alignées pour l'overlay debug.
+- Picking tactile tolérant dans `PointerInput` : rayon central puis quatre
+  rayons de secours à 12 px pour les leviers, raycast des surfaces marchables
+  avec tolérance élargie sur mobile, puis snap au nœud le plus proche.
+- Visualiseur `NavGraphViz` activable par `?debug=nav` ou par la touche G en
+  dev : nœuds, arêtes actives en vert, inactives en rouge, conditions et
+  illusions.
+- Validateur automatique « aucune impasse » (`validateNoDeadEnds`) : exploration
+  des positions et états de mécanismes atteignables, rapport exploitable en
+  tests, et couverture de tous les niveaux déclarés.
+- Démo de graphe `penrose-demo` : escalier de Penrose minimal où un rotateur
+  ouvre une liaison illusoire entre deux chemins impossibles.
+- Phase 4 mécanismes complète : affordance lumineuse commune, drag par angle
+  écran, snap élastique, événements `mechanism:*` pour les sons de cran,
+  recâblage du `NavGraph`, transport temporaire de Turpal, rotator, slider,
+  pressure plate, tower rotation et gravity path.
+- Borz jouable côté logique : graphe propre limité aux nœuds `borz`, appel par
+  tap, suivi, pont/marche, portage temporaire et yeux d'ambre pulsants pour les
+  indices.
+
 - Échafaudage complet du projet : Vite + TypeScript strict, three.js,
   postprocessing, Tone.js, GSAP, lil-gui, vite-plugin-pwa.
 - Chaîne qualité : ESLint (flat config, lint typé), Prettier, husky,

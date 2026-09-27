@@ -153,6 +153,442 @@ Actions correctives (avec responsable et échéance) :
 
 ---
 
+# Rapport QA — Phase 4 : Mécanismes et Borz
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert avec réserve visuelle locale**
+
+La phase Mécanismes est implémentée côté logique et rendu debug : chaque
+mécanisme possède une poignée lumineuse, un drag basé sur l'angle du pointeur
+autour du centre écran, un snap élastique discret, un événement de cran sur
+`EventBus` pour la future Phase 6 audio et une mise à jour du `NavGraph`. Le
+transport temporaire par parenting est disponible pour les éléments mobiles.
+Borz dispose de son propre graphe, suit Turpal quand il est appelé, peut servir
+de marche ou de pont, et ses yeux d'ambre pulsent lorsqu'il porte un indice.
+
+## Checks automatiques
+
+| Étape            | Commande               | Résultat | Valeur                                                      |
+| ---------------- | ---------------------- | -------- | ----------------------------------------------------------- |
+| Lint             | `pnpm lint`            | 🟢       | 0 erreur, 0 avertissement                                   |
+| Typecheck        | `pnpm typecheck`       | 🟢       | 0 erreur                                                    |
+| Tests unitaires  | `pnpm test`            | 🟢       | 115 tests / 15 fichiers, 4,01 s                             |
+| Couverture       | `pnpm test --coverage` | ⬜       | non mesurée                                                 |
+| Tests e2e        | `pnpm test:e2e`        | 🟠       | non exécutés : Chromium non installable dans le bac à sable |
+| Budget de bundle | `pnpm check-bundle`    | 🟢       | 235,9 ko gzip / 1 464,8 ko (16,1 %)                         |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → tests → build →
+budget, terminé sans erreur.
+
+Détail du bundle initial : `vendor-3d` 208,1 ko · entrée 22,8 ko ·
+`NavGraphViz` 1,4 ko · `index.html` 2,0 ko · CSS 1,3 ko · runtime 0,2 ko ·
+`registerSW` 0,1 ko.
+
+## Appareils et viewports testés
+
+| Viewport              | Orientation | Statut | Remarques                                    |
+| --------------------- | ----------- | ------ | -------------------------------------------- |
+| 390 × 844 (mobile)    | portrait    | 🟠     | capture bloquée : navigateur indisponible    |
+| 844 × 390 (mobile)    | paysage     | 🟠     | capture bloquée : navigateur indisponible    |
+| 1920 × 1080 (desktop) | paysage     | 🟠     | live preview possible ; archive non produite |
+
+## Fonctionnel — mécaniques de la phase
+
+| Mécanique / fonctionnalité | Attendu                                                       | Statut | Note                                    |
+| -------------------------- | ------------------------------------------------------------- | ------ | --------------------------------------- |
+| Cycle commun               | `actuate`, `update`, `applyToGraph`, `dispose`, blocage input | 🟢     | `BaseMechanism`, `isAnimating`, tests   |
+| Affordance                 | poignée claire, ornement lumineux                             | 🟢     | anneau ambre pulsant commun             |
+| Rotator                    | drag angle écran, résistance, snap 90°, recâblage             | 🟢     | événement `stone-notch`, état en degrés |
+| Slider                     | course bornée, suivi au doigt, snap à l'unité, transport      | 🟢     | parentage temporaire testé              |
+| PressurePlate              | 0,08 unité / 180 ms, maintenue/verrouillante, lien lumineux   | 🟢     | événement `stone-plate`, état booléen   |
+| TowerRotation              | sous-arbre + nœuds transformés, mise en scène                 | 🟢     | soulèvement 0,05, silence 400 ms        |
+| GravityPath                | bascule de `up`, indices réalignés                            | 🟢     | nœuds pivots mis à jour                 |
+| Revalidation Turpal        | un changement de mécanisme ne fait pas chuter Turpal          | 🟢     | écoute `mechanism:stateChanged`         |
+| Borz                       | graphe propre, appel, suivi, marche/pont, yeux d'ambre        | 🟢     | `tests/unit/borz.test.ts`               |
+
+## Risques / anomalies
+
+| ID     | Sévérité | Description                                                              | Reproduction                            | Statut                          |
+| ------ | -------- | ------------------------------------------------------------------------ | --------------------------------------- | ------------------------------- |
+| P4-001 | majeur   | Captures portrait/paysage impossibles dans le bac à sable sans Chromium. | `pnpm exec playwright install chromium` | ouvert — à refaire hors sandbox |
+
+## Décision
+
+**Phase validée : oui, avec réserve de captures locales** — les 16 tâches sont
+cochées, les checks automatiques sont verts et les comportements critiques sont
+couverts par tests unitaires. Les captures portrait/paysage restent à archiver
+dès qu'un navigateur Playwright est disponible.
+
+---
+
+# Rapport QA — Phase 2 : Navigation complète
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert avec réserve visuelle locale**
+
+La phase Navigation est complète : graphe typé, A* déterministe, vecteur `up`,
+arêtes conditionnelles, illusions auditables et activées à l'écran, projection
+zéro allocation, picking tactile tolérant, visualiseur `?debug=nav` et
+validateur automatique « aucune impasse ». Le validateur explore les états
+étendus position + mécanismes et est branché sur tous les niveaux déclarés.
+
+## Checks automatiques
+
+| Étape            | Commande               | Résultat | Valeur                                                      |
+| ---------------- | ---------------------- | -------- | ----------------------------------------------------------- |
+| Lint             | `pnpm lint`            | 🟢       | 0 erreur, 0 avertissement                                   |
+| Typecheck        | `pnpm typecheck`       | 🟢       | 0 erreur                                                    |
+| Tests unitaires  | `pnpm test`            | 🟢       | 104 tests / 13 fichiers, 2,88 s                             |
+| Couverture       | `pnpm test --coverage` | ⬜       | non mesurée                                                 |
+| Tests e2e        | `pnpm test:e2e`        | 🟠       | non exécutés : Chromium non installable dans le bac à sable |
+| Budget de bundle | `pnpm check-bundle`    | 🟢       | 232,5 ko gzip / 1 464,8 ko (15,9 %)                         |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → tests → build →
+budget, terminé sans erreur.
+
+Détail du bundle initial : `vendor-3d` 208,1 ko · entrée 19,5 ko ·
+`NavGraphViz` 1,4 ko · `index.html` 2,0 ko · CSS 1,3 ko · runtime 0,2 ko ·
+`registerSW` 0,1 ko.
+
+## Appareils et viewports testés
+
+| Viewport              | Orientation | Statut | Remarques                                    |
+| --------------------- | ----------- | ------ | -------------------------------------------- |
+| 390 × 844 (mobile)    | portrait    | 🟠     | capture bloquée : navigateur indisponible    |
+| 844 × 390 (mobile)    | paysage     | 🟠     | capture bloquée : navigateur indisponible    |
+| 1920 × 1080 (desktop) | paysage     | 🟠     | live preview possible ; archive non produite |
+
+## Fonctionnel — mécaniques de la phase
+
+| Mécanique / fonctionnalité | Attendu (critère de `tasks.md`)                            | Statut | Note                                                   |
+| -------------------------- | ---------------------------------------------------------- | ------ | ------------------------------------------------------ |
+| `NavGraph`                 | nœuds, position, `up`, surface, tags, conditions           | 🟢     | tests de base, conditions et surfaces                  |
+| Vecteur `up`               | gravité locale par nœud                                    | 🟢     | murs/plafonds typés                                    |
+| A* déterministe            | optimalité, stabilité, graphe déconnecté                   | 🟢     | `findPath`, `reachableFrom`, `trimPathToSafe`          |
+| Illusions                  | détection pure + activation runtime                        | 🟢     | audit, projection écran, ouverture/coupure automatique |
+| Picking tolérant           | levier 20 px, raycast mobile, snap au nœud                 | 🟢     | `pickWithTolerance()` + `pickWalkableNode()`           |
+| `NavGraphViz`              | nœuds, arêtes vert/rouge, conditions, illusions, touche G  | 🟢     | overlay `?debug=nav`, import dynamique                 |
+| Validateur d'impasse       | états atteignables de mécanismes, but toujours récupérable | 🟢     | 8 niveaux + démo Penrose validés                       |
+| Démo Penrose               | rotateur reliant deux chemins impossibles                  | 🟢     | `?debug=nav&demo=penrose`, touche G en dev             |
+
+## Risques / anomalies
+
+| ID     | Sévérité | Description                                                              | Reproduction                            | Statut                          |
+| ------ | -------- | ------------------------------------------------------------------------ | --------------------------------------- | ------------------------------- |
+| P2-001 | majeur   | Captures portrait/paysage impossibles dans le bac à sable sans Chromium. | `pnpm exec playwright install chromium` | ouvert — à refaire hors sandbox |
+
+## Décision
+
+**Phase validée : oui, avec réserve de captures locales** — tous les checks
+automatiques sont verts et les 13 tâches Navigation sont cochées. Les captures
+portrait/paysage restent à archiver dès qu'un navigateur Playwright est
+disponible.
+
+---
+
+# Rapport QA — Phase 3 : Turpal
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert avec réserve visuelle locale**
+
+Turpal dispose désormais d'un modèle procédural plus abouti, d'un squelette
+simple, de clips procéduraux fondus, d'un suivi de chemin constant, de la
+bascule de `up`, du salut, du regard vers le ciel et du marqueur de destination.
+La revue `?showcase=turpal` montre quatre angles en développement. Les checks
+automatiques sont verts ; les captures navigateur restent bloquées dans ce bac
+à sable par l'absence de Chromium Playwright installable.
+
+## Checks automatiques
+
+| Étape            | Commande               | Résultat | Valeur                                                      |
+| ---------------- | ---------------------- | -------- | ----------------------------------------------------------- |
+| Lint             | `pnpm lint`            | 🟢       | 0 erreur, 0 avertissement                                   |
+| Typecheck        | `pnpm typecheck`       | 🟢       | 0 erreur                                                    |
+| Tests unitaires  | `pnpm test`            | 🟢       | 84 tests / 11 fichiers, 2,22 s                              |
+| Couverture       | `pnpm test --coverage` | ⬜       | non mesurée                                                 |
+| Tests e2e        | `pnpm test:e2e`        | 🟠       | non exécutés : Chromium non installable dans le bac à sable |
+| Budget de bundle | `pnpm check-bundle`    | 🟢       | 230,1 ko gzip / 1 464,8 ko (15,7 %)                         |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → tests → build →
+budget, terminé sans erreur.
+
+Détail du bundle initial : `vendor-3d` 207,5 ko · entrée 19,0 ko ·
+`index.html` 2,0 ko · CSS 1,3 ko · runtime 0,2 ko · `registerSW` 0,1 ko.
+
+## Performance
+
+| Mesure                    | Desktop | Mobile émulé (CPU ×4) | Mobile réel | Budget     |
+| ------------------------- | ------- | --------------------- | ----------- | ---------- |
+| FPS moyen                 | ⬜      | ⬜                    | ⬜          | 60         |
+| FPS minimum (1 % low)     | ⬜      | ⬜                    | ⬜          | ≥ 50       |
+| Draw calls                | ⬜      | ⬜                    | ⬜          | < 120      |
+| Triangles                 | 🟢      | 🟢                    | ⬜          | < 150 000  |
+| Mémoire GPU               | ⬜      | ⬜                    | ⬜          | < 256 Mo   |
+| CPU / image               | ⬜      | ⬜                    | ⬜          | ≤ 6 ms     |
+| Temps de chargement (TTI) | ⬜      | ⬜                    | ⬜          | < 3 s (4G) |
+| Allocations par image     | 🟢      | 🟢                    | ⬜          | 0          |
+
+Le budget de triangles est verrouillé par test : `TurpalModel.triangleCount`
+reste dans la fenêtre `3 000 ± 700` et sous 6 000. Les boucles d'animation et
+de path following réutilisent des vecteurs/champs privés ; aucune allocation
+volontaire n'a été ajoutée par image.
+
+## Appareils et viewports testés
+
+| Viewport              | Orientation | Statut | Remarques                                    |
+| --------------------- | ----------- | ------ | -------------------------------------------- |
+| 390 × 844 (mobile)    | portrait    | 🟠     | auto-fit couvert par tests ; capture bloquée |
+| 844 × 390 (mobile)    | paysage     | 🟠     | live preview disponible ; capture bloquée    |
+| 768 × 1024 (tablette) | portrait    | ⬜     | à mesurer hors bac à sable                   |
+| 1024 × 768 (tablette) | paysage     | ⬜     | à mesurer hors bac à sable                   |
+| 1366 × 768 (laptop)   | paysage     | ⬜     | à mesurer hors bac à sable                   |
+| 1920 × 1080 (desktop) | paysage     | 🟠     | auto-fit couvert par tests ; capture bloquée |
+| Appareil physique     | —           | ⬜     | non disponible dans le bac à sable           |
+
+## Fonctionnel — mécaniques de la phase
+
+| Mécanique / fonctionnalité | Attendu (critère de `tasks.md`)                | Statut | Note                                                  |
+| -------------------------- | ---------------------------------------------- | ------ | ----------------------------------------------------- |
+| `ICharacterModel`          | contrat remplaçable par GLB                    | 🟢     | clips étendus, modèle testé                           |
+| Modèle procédural          | Turpal lisible, ~3 000 triangles, flat shading | 🟢     | tcherkesska, gazyri, ceinture, papakha, barbe, bottes |
+| Squelette simple           | hanches, jambes, bras, tête                    | 🟢     | groupes nommés et testés                              |
+| Marche procédurale         | balancement subtil, pan de tcherkesska         | 🟢     | clip `walk`, test de stabilité                        |
+| Idle vivant                | respiration, regard, ajustement papakha        | 🟢     | scheduler déterministe 8–15 s                         |
+| Escaliers                  | montée/descente, pied levé                     | 🟢     | clips `stepUp` / `stepDown`, test montée              |
+| Salut                      | main sur le cœur ≤ 2 unités                    | 🟢     | `saluteElder()`, non bloquant                         |
+| Regard ciel                | fin de chapitre                                | 🟢     | `lookAtSky()` + clip `lookSky`                        |
+| Suivi de chemin            | 2,1 cellules/s constant                        | 🟢     | test sur polyligne A→B→C                              |
+| Orientation `up`           | bascule 450 ms, murs/plafonds                  | 🟢     | test dot(up, cible) > 0,95                            |
+| Marqueur destination       | anneau 0,4, 420 ms, silencieux si impossible   | 🟢     | `DestinationMarker`, testé                            |
+| Revue quatre angles        | montrer Turpal face/profil/dos/trois-quarts    | 🟢     | scène dev `?showcase=turpal`                          |
+
+## Contrôles
+
+| Entrée         | Testé | Remarques                                  |
+| -------------- | ----- | ------------------------------------------ |
+| Souris         | 🟠    | destination logique prête, picking phase 5 |
+| Tactile        | 🟠    | idem                                       |
+| Clavier QWERTY | ⬜    | hors phase 3                               |
+| Clavier AZERTY | ⬜    | hors phase 3                               |
+| Manette        | ⬜    | hors phase 3                               |
+
+## Audio
+
+| Point                                               | Statut | Note    |
+| --------------------------------------------------- | ------ | ------- |
+| Déverrouillage de l'AudioContext au premier geste   | ⬜     | phase 6 |
+| Niveaux par bus (master / musique / ambiance / sfx) | ⬜     | phase 6 |
+| Pause automatique quand l'onglet est caché          | ⬜     | phase 6 |
+| Reprise propre au retour                            | ⬜     | phase 6 |
+| Aucun clic ni saturation                            | ⬜     | phase 6 |
+
+## Accessibilité
+
+| Point                                      | Statut | Note                                        |
+| ------------------------------------------ | ------ | ------------------------------------------- |
+| `prefers-reduced-motion`                   | 🟠     | Turpal n'a pas encore de variantes réduites |
+| Contraste ≥ 7:1 sur les textes             | 🟢     | UI inchangée                                |
+| Navigation clavier complète, focus visible | ⬜     | phase 8                                     |
+| Sous-titres des événements sonores         | ⬜     | phase 8                                     |
+| Mode daltonien (braise doublée)            | ⬜     | phase 10                                    |
+| Cibles tactiles ≥ 44 px                    | 🟢     | jeton existant                              |
+
+## Culture
+
+| Point (docs/CULTURE.md)                                      | Statut |
+| ------------------------------------------------------------ | ------ |
+| Aucune référence à la guerre, à la politique, aux armes      | 🟢     |
+| Aucune tour en ruine ni vocabulaire d'effondrement (ADR-021) | 🟢     |
+| Aucun proverbe présenté comme authentique                    | 🟢     |
+| Mots tchétchènes non validés marqués `[À VÉRIFIER]`          | 🟢     |
+| Relecture par un locuteur natif                              | 🔴     |
+
+## Bugs trouvés
+
+| ID     | Gravité | Description                                                                                                  | Étapes de reproduction                  | Statut                         |
+| ------ | ------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------- | ------------------------------ |
+| P3-001 | majeur  | Captures quatre angles impossibles dans le bac à sable : Chromium Playwright non installable (`ECONNRESET`). | `pnpm exec playwright install chromium` | ouvert — live preview utilisée |
+
+## Décision
+
+**Phase validée : oui, avec réserve de captures locales** — les mécaniques de
+Turpal sont codées, testées et intégrées. La revue quatre angles est disponible
+en live preview de développement ; les captures doivent être archivées dès que
+Chromium Playwright est disponible.
+
+Actions correctives :
+
+1. Capturer `?showcase=turpal` en 390×844 et 1920×1080 sur un poste avec
+   Chromium Playwright, puis archiver les images.
+2. Ajouter un mode `prefers-reduced-motion` aux gestes non essentiels de Turpal.
+3. Brancher la destination réelle depuis `PointerInput` en phase 5.
+
+---
+
+# Rapport QA — Phase 1 : Rendu et caméra
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟠 orange**
+
+La phase 1 livre le rendu cible : caméra orthographique isométrique auto-fit,
+matériau toon pierre enrichi, ciel animé, brouillard de hauteur, PostFX piloté
+par la qualité et scène démo de tour vainakh à l'aube. Les checks automatiques
+sont verts. Écart non bloquant dans ce bac à sable : les captures Playwright
+portrait/paysage n'ont pas pu être générées faute de navigateur installable
+(`ECONNRESET` sur le téléchargement Chromium).
+
+## Checks automatiques
+
+| Étape            | Commande               | Résultat | Valeur                                                      |
+| ---------------- | ---------------------- | -------- | ----------------------------------------------------------- |
+| Lint             | `pnpm lint`            | 🟢       | 0 erreur, 0 avertissement                                   |
+| Typecheck        | `pnpm typecheck`       | 🟢       | 0 erreur                                                    |
+| Tests unitaires  | `pnpm test`            | 🟢       | 66 tests / 7 fichiers, 1,38 s                               |
+| Couverture       | `pnpm test --coverage` | ⬜       | non mesurée                                                 |
+| Tests e2e        | `pnpm test:e2e`        | 🟠       | non exécutés : Chromium non installable dans le bac à sable |
+| Budget de bundle | `pnpm check-bundle`    | 🟢       | 224,9 ko gzip / 1 464,8 ko (15,4 %)                         |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → tests → build →
+budget, terminé sans erreur.
+
+Détail du bundle initial : `vendor-3d` 207,2 ko · entrée 14,0 ko ·
+`index.html` 2,0 ko · CSS 1,3 ko · runtime 0,2 ko · `registerSW` 0,1 ko.
+Chunks hors bundle initial : 8 chunks `level-*` (0,29 à 0,42 ko gzip),
+`DebugPanel` 8,22 ko et `Stats` 0,65 ko.
+
+## Performance
+
+| Mesure                    | Desktop | Mobile émulé (CPU ×4) | Mobile réel | Budget     |
+| ------------------------- | ------- | --------------------- | ----------- | ---------- |
+| FPS moyen                 | ⬜      | ⬜                    | ⬜          | 60         |
+| FPS minimum (1 % low)     | ⬜      | ⬜                    | ⬜          | ≥ 50       |
+| Draw calls                | ⬜      | ⬜                    | ⬜          | < 120      |
+| Triangles                 | ⬜      | ⬜                    | ⬜          | < 150 000  |
+| Mémoire GPU               | ⬜      | ⬜                    | ⬜          | < 256 Mo   |
+| CPU / image               | ⬜      | ⬜                    | ⬜          | ≤ 6 ms     |
+| Temps de chargement (TTI) | ⬜      | ⬜                    | ⬜          | < 3 s (4G) |
+| Allocations par image     | 🟢      | 🟢                    | ⬜          | 0          |
+
+Conditions prévues : build de production + `pnpm preview`, 20 s de scène,
+throttling CPU ×4. Mesure visuelle bloquée ici par l'absence de navigateur ;
+les allocations par image ajoutées par la phase 1 ont été relues : `Sky.update`,
+`CameraRig.frameLevel`, `DemoScene.update` et `BlobShadows.set` réutilisent des
+temporaires.
+
+## Appareils et viewports testés
+
+| Viewport              | Orientation | Statut | Remarques                                              |
+| --------------------- | ----------- | ------ | ------------------------------------------------------ |
+| 390 × 844 (mobile)    | portrait    | 🟠     | couvert par tests unitaires auto-fit ; capture bloquée |
+| 844 × 390 (mobile)    | paysage     | 🟠     | live preview disponible, capture bloquée               |
+| 768 × 1024 (tablette) | portrait    | ⬜     | à mesurer hors bac à sable                             |
+| 1024 × 768 (tablette) | paysage     | ⬜     | à mesurer hors bac à sable                             |
+| 1366 × 768 (laptop)   | paysage     | ⬜     | à mesurer hors bac à sable                             |
+| 1920 × 1080 (desktop) | paysage     | 🟠     | couvert par tests unitaires auto-fit ; capture bloquée |
+| Appareil physique     | —           | ⬜     | non disponible dans le bac à sable                     |
+
+Tentative de captures : `pnpm exec playwright install chromium` 🔴 — échec de
+téléchargement (`ECONNRESET` vers `cdn.playwright.dev`). Le serveur de dev a été
+lancé sur `0.0.0.0:5173` pour inspection via le live preview Arena.
+
+## Fonctionnel — mécaniques de la phase
+
+| Mécanique / fonctionnalité | Attendu (critère de `tasks.md`)             | Statut | Note                                                    |
+| -------------------------- | ------------------------------------------- | ------ | ------------------------------------------------------- |
+| Renderer WebGL2 + DPR      | Resize sans déformation, DPR plafonné       | 🟢     | `Renderer.applyQuality()` recalcule le DPR              |
+| Caméra isométrique         | 45° / 35,264°, x et z égaux                 | 🟢     | test unitaire conservé                                  |
+| Auto-fit portrait/paysage  | niveau entier + marge 8 %                   | 🟢     | `Engine.frameLevel()` persiste les bounds au resize     |
+| Ciel + brouillard          | dégradé animé, `FogExp2`, brume de hauteur  | 🟢     | `Sky.update()` + injection shader pierre                |
+| Palettes chapitre          | 8 palettes, 5 couleurs                      | 🟢     | inchangé, utilisé par LUT et scène démo                 |
+| Rampe toon partagée        | une rampe 3 bandes, plancher 0,32           | 🟢     | test `rendering.test.ts`                                |
+| Rim light                  | silhouettes détachées                       | 🟢     | uniforme shader, Turpal rim braise                      |
+| AO de sommets              | attribut `aAo`, coût runtime nul            | 🟢     | bake CPU à la construction                              |
+| Ombres blob                | 1 draw call instancié, orientation par `up` | 🟢     | `BlobShadows` + test unitaire                           |
+| PostFX pmndrs              | bloom, vignette, LUT, SMAA, SSAO            | 🟢     | activé selon tier `Quality`                             |
+| Branchement Quality        | PostFX/Renderer/FX à chaud                  | 🟢     | qualité change → renderer, lighting, postFX, brume démo |
+| LUT de chapitre            | 16×16×16, lazy, poids asset < 4 ko          | 🟢     | génération runtime : 0 ko d'asset par LUT               |
+| Scène de démo              | tour vainakh sur piton, brume, aube         | 🟢     | `DemoScene`, Turpal inclus pour l'échelle               |
+
+## Contrôles
+
+| Entrée         | Testé | Remarques                                                  |
+| -------------- | ----- | ---------------------------------------------------------- |
+| Souris         | 🟠    | aucune interaction de jeu en phase 1                       |
+| Tactile        | 🟠    | canvas plein écran déjà couvert en e2e CI, non relancé ici |
+| Clavier QWERTY | ⬜    | hors phase 1                                               |
+| Clavier AZERTY | ⬜    | hors phase 1                                               |
+| Manette        | ⬜    | hors phase 1                                               |
+
+## Audio
+
+| Point                                               | Statut | Note    |
+| --------------------------------------------------- | ------ | ------- |
+| Déverrouillage de l'AudioContext au premier geste   | ⬜     | phase 6 |
+| Niveaux par bus (master / musique / ambiance / sfx) | ⬜     | phase 6 |
+| Pause automatique quand l'onglet est caché          | ⬜     | phase 6 |
+| Reprise propre au retour                            | ⬜     | phase 6 |
+| Aucun clic ni saturation                            | ⬜     | phase 6 |
+
+## Accessibilité
+
+| Point                                      | Statut | Note                                                |
+| ------------------------------------------ | ------ | --------------------------------------------------- |
+| `prefers-reduced-motion`                   | 🟠     | profil lu par `Quality`, FX démo non encore réduits |
+| Contraste ≥ 7:1 sur les textes             | 🟢     | UI inchangée                                        |
+| Navigation clavier complète, focus visible | ⬜     | phase 8                                             |
+| Sous-titres des événements sonores         | ⬜     | phase 8                                             |
+| Mode daltonien (braise doublée)            | ⬜     | phase 10                                            |
+| Cibles tactiles ≥ 44 px                    | 🟢     | jeton existant                                      |
+
+## Culture
+
+| Point (docs/CULTURE.md)                                      | Statut |
+| ------------------------------------------------------------ | ------ |
+| Aucune référence à la guerre, à la politique, aux armes      | 🟢     |
+| Aucune tour en ruine ni vocabulaire d'effondrement (ADR-021) | 🟢     |
+| Aucun proverbe présenté comme authentique                    | 🟢     |
+| Mots tchétchènes non validés marqués `[À VÉRIFIER]`          | 🟢     |
+| Relecture par un locuteur natif                              | 🔴     |
+
+## Bugs trouvés
+
+| ID     | Gravité | Description                                                                                              | Étapes de reproduction                  | Statut                                                     |
+| ------ | ------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------- |
+| P1-001 | majeur  | Captures Playwright impossibles dans le bac à sable : téléchargement Chromium interrompu (`ECONNRESET`). | `pnpm exec playwright install chromium` | ouvert — à refaire sur poste/CI avec navigateur disponible |
+
+## Décision
+
+**Phase validée : oui, avec réserve QA visuelle locale** — le code de rendu est
+livré et `pnpm check` est vert. Les captures portrait/paysage et les mesures
+FPS CPU ×4 doivent être régénérées hors bac à sable ou dès qu'un navigateur
+Playwright est disponible.
+
+Actions correctives :
+
+1. Relancer les captures `390×844` et `1920×1080` sur un environnement avec
+   Chromium Playwright installé, puis les archiver sous `docs/qa/`.
+2. Profiler la scène de démo en production (`pnpm preview`) avec CPU ×4 et
+   reporter FPS, draw calls et triangles.
+3. Réviser `prefers-reduced-motion` pour les nappes de brume de démo en phase 7.
+
+---
+
 # Rapport QA — Phase 0 : Fondations
 
 **Date** : 2026-09-27 · **Commit** : `3d14555` · **Auteur du rapport** : agent Arena

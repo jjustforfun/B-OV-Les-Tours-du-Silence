@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_UP, NavGraph, distance } from '@world/NavGraph';
-import { auditIllusions } from '@world/Illusion';
+import { auditIllusions, debugIllusionMismatches } from '@world/Illusion';
 
 function buildLine(): NavGraph {
   const graph = new NavGraph();
@@ -81,9 +81,10 @@ describe('NavGraph', () => {
     expect(graph.nearest({ x: 50, y: 0, z: 0 }, 1)).toBeUndefined();
   });
 
-  it('donne à chaque nœud une gravité normale par défaut (ADR-004)', () => {
+  it('donne à chaque nœud une gravité normale et une surface pierre par défaut', () => {
     const graph = buildLine();
     expect(graph.getNode('a')?.up).toEqual(DEFAULT_UP);
+    expect(graph.getNode('a')?.surface).toBe('stone');
   });
 
   it('accepte un « up » arbitraire : mur et plafond (ADR-004)', () => {
@@ -99,7 +100,6 @@ describe('NavGraph', () => {
     expect(distance({ x: 0, y: 0, z: 0 }, { x: 3, y: 4, z: 0 })).toBe(5);
   });
 });
-
 
 describe('NavGraph — arêtes conditionnelles (ADR-003)', () => {
   function withRotator(): NavGraph {
@@ -178,5 +178,19 @@ describe('auditIllusions (ADR-003)', () => {
     const audit = auditIllusions(new Map([['a', { x: 0, y: 0 }]]), [{ a: 'a', b: 'absent' }]);
     expect(audit[0]?.reason).toBe('missing-projection');
     expect(audit[0]?.aligned).toBe(false);
+  });
+
+  it('liste en debug les illusions qui ne sont pas alignées', () => {
+    const issues = debugIllusionMismatches(
+      new Map([
+        ['a', { x: 0, y: 0 }],
+        ['b', { x: 20, y: 0 }],
+      ]),
+      [{ a: 'a', b: 'b' }],
+      6,
+    );
+
+    expect(issues).toHaveLength(1);
+    expect(issues[0]?.message).toContain('trop éloignée');
   });
 });

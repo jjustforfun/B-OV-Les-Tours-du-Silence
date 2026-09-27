@@ -57,8 +57,14 @@ export interface QualitySettings {
   readonly shadowMapSize: number;
   readonly postFx: boolean;
   readonly bloom: boolean;
+  readonly bloomIntensity: number;
+  readonly vignette: boolean;
+  readonly lut: boolean;
+  readonly smaa: boolean;
   readonly ssao: boolean;
   readonly antialias: boolean;
+  /** Nombre de nappes de brume décoratives conservées dans la scène. */
+  readonly mistLayers: number;
   /** Multiplicateur du nombre de particules (brume, neige, lucioles). */
   readonly particleScale: number;
 }
@@ -70,8 +76,13 @@ export const QUALITY_PRESETS: Readonly<Record<QualityTier, QualitySettings>> = {
     shadowMapSize: 512,
     postFx: false,
     bloom: false,
+    bloomIntensity: 0,
+    vignette: false,
+    lut: false,
+    smaa: false,
     ssao: false,
     antialias: false,
+    mistLayers: 1,
     particleScale: 0.35,
   },
   medium: {
@@ -80,8 +91,13 @@ export const QUALITY_PRESETS: Readonly<Record<QualityTier, QualitySettings>> = {
     shadowMapSize: 1024,
     postFx: true,
     bloom: true,
+    bloomIntensity: 0.16,
+    vignette: true,
+    lut: true,
+    smaa: true,
     ssao: false,
     antialias: false,
+    mistLayers: 2,
     particleScale: 0.7,
   },
   high: {
@@ -90,13 +106,58 @@ export const QUALITY_PRESETS: Readonly<Record<QualityTier, QualitySettings>> = {
     shadowMapSize: 2048,
     postFx: true,
     bloom: true,
+    bloomIntensity: 0.22,
+    vignette: true,
+    lut: true,
+    smaa: true,
     ssao: true,
-    antialias: true,
+    antialias: false,
+    mistLayers: 3,
     particleScale: 1,
   },
 } as const;
 
 /** Budgets de performance — vérifiés en CI et par le panneau de debug. */
+export const RENDER = {
+  toon: {
+    /** Seuils de la rampe toon : ombre, demi-teinte, lumière. */
+    rampShadow: 0.32,
+    rampMid: 0.66,
+    rimStrength: 0.14,
+    rimPower: 2.4,
+    noiseStrength: 0.055,
+    vertexAoFloor: 0.52,
+    vertexAoStrength: 0.72,
+  },
+  sky: {
+    gradientSteps: 64,
+    animationSpeed: 0.045,
+    animationAmplitude: 0.045,
+    fogHeightBase: 0,
+    fogHeightFalloff: 0.18,
+    fogDistanceDensity: 0.014,
+    heightFogStrength: 0.34,
+    heightFogMaxOpacity: 0.42,
+  },
+  postFx: {
+    lutSize: 16,
+    lutOpacity: 0.32,
+    bloomThreshold: 0.82,
+    bloomSmoothing: 0.18,
+    bloomRadius: 0.62,
+    vignetteOffset: 0.36,
+    vignetteDarkness: 0.32,
+    ssaoResolutionScale: 0.55,
+    ssaoIntensity: 0.38,
+    ssaoRadius: 0.13,
+  },
+  blobShadow: {
+    textureSize: 32,
+    opacity: 0.22,
+    groundOffset: 0.012,
+  },
+} as const;
+
 export const PERF = {
   targetFps: 60,
   /** En dessous, on descend d'un cran de qualité. */
@@ -133,6 +194,38 @@ export const PACING = {
   hintGlowDelayMs: 90_000,
   /** Inactivité avant le second indice : Borz regarde dans la bonne direction (ms). */
   hintGazeDelayMs: 180_000,
+} as const;
+
+/** Réglages du héros procédural et de ses animations. */
+export const POINTER = {
+  /** Déplacement minimal avant qu'un tap devienne un drag. */
+  dragThresholdPx: 8,
+  /** Taille minimale attrapable d'un petit levier : 20 px de diamètre. */
+  pickTargetRadiusPx: 10,
+  /** Rayons de secours haut/bas/gauche/droite autour du tap. */
+  fallbackRayOffsetPx: 12,
+  /** Tolérance supplémentaire du raycast de sol sur mobile. */
+  mobileRaycastTolerancePx: 18,
+  /** Distance maximale pour aimanter un raycast de surface vers un nœud. */
+  walkableSnapMaxDistance: 0.75,
+} as const;
+
+export const TURPAL = {
+  height: 0.85,
+  targetTriangles: 3_000,
+  modelTriangleTolerance: 700,
+  animationBlendMs: 180,
+  upBlendMs: 450,
+  saluteDistance: 2,
+  saluteMs: 1_400,
+  skyLookMs: 1_800,
+  papakhaAdjustMinMs: 8_000,
+  papakhaAdjustMaxMs: 15_000,
+  papakhaAdjustMs: 1_100,
+  destinationMarkerRadius: 0.4,
+  destinationMarkerMs: 420,
+  stairHeight: GRID.step,
+  pathLookAhead: 0.035,
 } as const;
 
 /** Clés de persistance (localStorage aujourd'hui, Capacitor Preferences demain). */

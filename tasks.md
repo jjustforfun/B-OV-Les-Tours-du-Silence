@@ -30,10 +30,10 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 | Phase | Sujet                 | Avancement        |
 | ----- | --------------------- | ----------------- |
 | 0     | Fondations            | **15 / 15** ✅    |
-| 1     | Rendu et caméra       | 7 / 14            |
-| 2     | Navigation            | 8 / 13            |
-| 3     | Turpal                | 4 / 10            |
-| 4     | Mécanismes            | 0 / 16            |
+| 1     | Rendu et caméra       | **14 / 14** ✅    |
+| 2     | Navigation            | 13 / 13           |
+| 3     | Turpal                | **10 / 10** ✅    |
+| 4     | Mécanismes            | **16 / 16** ✅    |
 | 5     | Input complet         | 2 / 11            |
 | 6     | Audio                 | 0 / 13            |
 | 7     | FX et « juice »       | 0 / 11            |
@@ -73,19 +73,19 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 - [x] **`render/Palettes.ts` : 8 palettes de chapitre** — _Critère : 5 couleurs par chapitre, conformes à `docs/ART_DIRECTION.md` § 3._
 - [x] **`materials/ToonStoneMaterial.ts` : rampe partagée** — _Critère : une seule `DataTexture` de rampe pour toute la scène._
 - [x] **`render/Lighting.ts` : 3 sources** (directionnelle, hémisphérique, ambre de Borz) — _Critère : jamais plus de 3 lumières dynamiques._
-- [ ] **Plancher d'ombre à 0,32 dans le shader toon** — _Critère : aucune ombre pure noire ; capture comparée à la palette du chapitre._
-- [ ] **Rim light dans `ToonStoneMaterial`** — _Critère : Turpal reste détaché du fond sur les 8 palettes (8 captures)._
-- [ ] **Attribut d'AO de sommets + cuisson à la construction** — _Critère : les angles rentrants s'assombrissent, coût d'exécution nul mesuré._
-- [ ] **Ombres blob instanciées sous les personnages** — _Critère : 1 draw call pour toutes les ombres, orientées selon le `up` du nœud._
-- [ ] **`render/PostFX.ts` : chaîne pmndrs** (bloom, vignette, LUT, SMAA, SSAO) — _Critère : ≤ 2 ms sur mobile, le jeu reste identique chaîne coupée._
-- [ ] **Branchement `Quality` → `PostFX`/FX/Renderer** — _Critère : changer de tier à chaud ne provoque ni saut visuel ni fuite._
-- [ ] **LUT de chapitre** — _Critère : 8 LUT 16×16×16, chargement paresseux, < 4 ko chacune._
+- [x] **Plancher d'ombre à 0,32 dans le shader toon** — _Critère : aucune ombre pure noire ; capture comparée à la palette du chapitre._
+- [x] **Rim light dans `ToonStoneMaterial`** — _Critère : Turpal reste détaché du fond sur les 8 palettes (8 captures)._
+- [x] **Attribut d'AO de sommets + cuisson à la construction** — _Critère : les angles rentrants s'assombrissent, coût d'exécution nul mesuré._
+- [x] **Ombres blob instanciées sous les personnages** — _Critère : 1 draw call pour toutes les ombres, orientées selon le `up` du nœud._
+- [x] **`render/PostFX.ts` : chaîne pmndrs** (bloom, vignette, LUT, SMAA, SSAO) — _Critère : ≤ 2 ms sur mobile, le jeu reste identique chaîne coupée._
+- [x] **Branchement `Quality` → `PostFX`/FX/Renderer** — _Critère : changer de tier à chaud ne provoque ni saut visuel ni fuite._
+- [x] **LUT de chapitre** — _Critère : 8 LUT 16×16×16, chargement paresseux, < 4 ko chacune._
 
 ---
 
 ## Phase 2 — Navigation
 
-- [x] **`world/NavGraph.ts`** (nœuds, arêtes, tags, désactivation) — _Critère : unicité des nœuds, bidirectionnalité, sens unique._
+- [x] **`world/NavGraph.ts`** (nœuds position/`up`/surface, arêtes, tags, désactivation) — _Critère : unicité des nœuds, bidirectionnalité, sens unique._
 - [x] **Vecteur `up` par nœud** (ADR-004) — _Critère : `addNode` accepte un `up`, défaut gravité normale, 2 tests._
 - [x] **Arêtes conditionnelles à un mécanisme** (ADR-003) — _Critère : `setMechanismState()` ouvre/ferme les arêtes concernées, 5 tests._
 - [x] **`world/Pathfinder.ts` : A\* déterministe** — _Critère : optimalité sur grille, graphe déconnecté sans plantage, résultat stable._
@@ -93,11 +93,11 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 - [x] **`world/Illusion.ts` : détection d'alignement écran** — _Critère : tolérance 6 px, fonction pure testable sans WebGL._
 - [x] **`auditIllusions()` : outil de level design** — _Critère : retourne la distance en pixels et la cause (`aligned` / `too-far` / `missing-projection`)._
 - [x] **`world/Level.ts` : `LevelDefinition` complète** — _Critère : géométrie, nœuds, arêtes, mécanismes, déclencheurs, palette, musique, caméra — le tout typé._
-- [ ] **Projection des nœuds à l'écran chaque image** — _Critère : 300 nœuds projetés en < 0,2 ms, zéro allocation._
-- [ ] **Création/coupure automatique des arêtes illusoires** — _Critère : la liaison apparaît au bon angle et disparaît dès que la caméra bouge._
-- [ ] **Picking tolérant** (`PointerInput.pickWithTolerance`) — _Critère : un levier de 20 px reste attrapable au pouce ; 4 rayons de secours à 12 px._
-- [ ] **`debug/NavGraphViz.ts` : visualiseur** — _Critère : nœuds, arêtes, arêtes conditionnelles (couleur par état) et illusions affichés ; bascule par `?debug=nav`._
-- [ ] **Validateur « aucune impasse »** — _Critère : explore tous les états de mécanismes atteignables et échoue si le but devient inatteignable ; branché dans les tests des niveaux._
+- [x] **Projection des nœuds à l'écran chaque image** — _Critère : 300 nœuds projetés en < 0,2 ms, zéro allocation._
+- [x] **Création/coupure automatique des arêtes illusoires** — _Critère : la liaison apparaît au bon angle et disparaît dès que la caméra bouge._
+- [x] **Picking tolérant** (`PointerInput`) — _Critère : levier de 20 px attrapable au pouce ; 4 rayons à 12 px ; raycast surfaces marchables + snap au nœud._
+- [x] **`debug/NavGraphViz.ts` : visualiseur** — _Critère : nœuds, arêtes actives vertes, inactives rouges, conditions et illusions affichées ; bascule `?debug=nav` ou touche G en dev._
+- [x] **Validateur « aucune impasse »** — _Critère : explore tous les états de mécanismes atteignables et échoue si le but devient inatteignable ; branché dans les tests des niveaux._
 
 ---
 
@@ -107,33 +107,33 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 - [x] **`TurpalModel` procédural** — _Critère : 6 tests — hauteur 0,85, 12 gazyri, budget de triangles, `dispose()` complet._
 - [x] **`Turpal.placeAt()` + `applyUp()`** — _Critère : l'arrivée sur un nœud applique son `up`._
 - [x] **Respiration et balancement procéduraux** — _Critère : animation stable et déterministe (test)._
-- [ ] **Suivi de chemin le long d'une polyligne** — _Critère : vitesse 2,1 cellules/s constante, aucune saccade aux nœuds._
-- [ ] **`TurpalAnimator` : marche ↔ idle** — _Critère : fondu croisé de 180 ms, aucun pop de pose._
-- [ ] **Montée et descente d'escalier** — _Critère : le pied suit la marche (0,5 unité), pas de glissement visible._
-- [ ] **Bascule d'orientation sur changement de `up`** — _Critère : 450 ms, personnage et caméra synchronisés, le monde ne bouge pas._
-- [ ] **Salut « main sur le cœur »** — _Critère : déclenché à ≤ 2 unités d'un ancien, 1,4 s, ne bloque pas le déplacement suivant._
-- [ ] **Marqueur de destination** — _Critère : anneau de 0,4 unité, 420 ms `expo.out` ; se dissout sans message si la cible est inatteignable._
+- [x] **Suivi de chemin le long d'une polyligne** — _Critère : vitesse 2,1 cellules/s constante, aucune saccade aux nœuds._
+- [x] **`TurpalAnimator` : marche ↔ idle** — _Critère : fondu croisé de 180 ms, aucun pop de pose._
+- [x] **Montée et descente d'escalier** — _Critère : le pied suit la marche (0,5 unité), pas de glissement visible._
+- [x] **Bascule d'orientation sur changement de `up`** — _Critère : 450 ms, personnage et caméra synchronisés, le monde ne bouge pas._
+- [x] **Salut « main sur le cœur »** — _Critère : déclenché à ≤ 2 unités d'un ancien, 1,4 s, ne bloque pas le déplacement suivant._
+- [x] **Marqueur de destination** — _Critère : anneau de 0,4 unité, 420 ms `expo.out` ; se dissout sans message si la cible est inatteignable._
 
 ---
 
 ## Phase 4 — Mécanismes
 
-- [ ] **`Mechanism` : cycle de vie commun** — _Critère : `actuate`, `update`, `applyToGraph`, `dispose` ; entrées bloquées pendant `isAnimating`._
-- [ ] **Affordance visuelle commune** (gravure qui s'allume) — _Critère : un mécanisme manipulable est reconnaissable sans texte, sur les 8 palettes._
-- [ ] **`Rotator` : rotation suivant le doigt** — _Critère : suivi 1:1, sans dérive après 10 tours._
-- [ ] **`Rotator` : aimantation à 90° + résistance** — _Critère : 900 ms `expo.out` ; facteur 0,85 sur les 15 premiers degrés d'un cran._
-- [ ] **`Rotator` : recâblage du graphe** — _Critère : `setMechanismState` appelé à chaque cran ; les arêtes conditionnelles suivent._
-- [ ] **`Slider` : course bornée + suivi du doigt** — _Critère : projection sur l'axe du rail, butées franches, aimantation à l'unité._
-- [ ] **`Slider` : transport de Turpal** — _Critère : Turpal posé dessus se déplace avec lui, son nœud reste cohérent._
-- [ ] **`PressurePlate` : enfoncement et bascule** — _Critère : 0,08 unité en 180 ms ; variantes maintenue et verrouillante._
-- [ ] **`PressurePlate` : lien de cause à effet visible** — _Critère : une ligne de lumière relie la dalle au mécanisme commandé._
-- [ ] **`TowerRotation` : rotation d'un sous-arbre** — _Critère : géométrie **et** nœuds transformés ; illusions revalidées à l'arrivée._
-- [ ] **`TowerRotation` : mise en scène** — _Critère : soulèvement 0,05, onde de poussière, silence de 400 ms après le grondement._
-- [ ] **`GravityPath` : franchissement d'un changement de `up`** — _Critère : bascule fluide, indices d'orientation (ombre, poussière) réalignés._
-- [ ] **Recalcul du chemin à chaque changement d'état** — _Critère : actionner un mécanisme pendant la marche n'entraîne jamais de chute (ADR-005)._
-- [ ] **`Borz` : graphe propre + déplacement** — _Critère : il n'emprunte que les nœuds tagués `borz`._
-- [ ] **`Borz` : plateforme et pont** — _Critère : Turpal monté dessus suit le loup ; posé en travers, il ouvre une arête conditionnelle._
-- [ ] **`Borz` : regard et attente** — _Critère : tourne la tête au-delà de 4 unités ; yeux d'ambre = seule lumière chaude mobile._
+- [x] **`Mechanism` : cycle de vie commun** — _Critère : `actuate`, `update`, `applyToGraph`, `dispose` ; entrées bloquées pendant `isAnimating`._
+- [x] **Affordance visuelle commune** (gravure qui s'allume) — _Critère : un mécanisme manipulable est reconnaissable sans texte, sur les 8 palettes._
+- [x] **`Rotator` : rotation suivant le doigt** — _Critère : suivi 1:1, sans dérive après 10 tours._
+- [x] **`Rotator` : aimantation à 90° + résistance** — _Critère : 900 ms `expo.out` ; facteur 0,85 sur les 15 premiers degrés d'un cran._
+- [x] **`Rotator` : recâblage du graphe** — _Critère : `setMechanismState` appelé à chaque cran ; les arêtes conditionnelles suivent._
+- [x] **`Slider` : course bornée + suivi du doigt** — _Critère : projection sur l'axe du rail, butées franches, aimantation à l'unité._
+- [x] **`Slider` : transport de Turpal** — _Critère : Turpal posé dessus se déplace avec lui, son nœud reste cohérent._
+- [x] **`PressurePlate` : enfoncement et bascule** — _Critère : 0,08 unité en 180 ms ; variantes maintenue et verrouillante._
+- [x] **`PressurePlate` : lien de cause à effet visible** — _Critère : une ligne de lumière relie la dalle au mécanisme commandé._
+- [x] **`TowerRotation` : rotation d'un sous-arbre** — _Critère : géométrie **et** nœuds transformés ; illusions revalidées à l'arrivée._
+- [x] **`TowerRotation` : mise en scène** — _Critère : soulèvement 0,05, onde de poussière, silence de 400 ms après le grondement._
+- [x] **`GravityPath` : franchissement d'un changement de `up`** — _Critère : bascule fluide, indices d'orientation (ombre, poussière) réalignés._
+- [x] **Recalcul du chemin à chaque changement d'état** — _Critère : actionner un mécanisme pendant la marche n'entraîne jamais de chute (ADR-005)._
+- [x] **`Borz` : graphe propre + déplacement** — _Critère : il n'emprunte que les nœuds tagués `borz`._
+- [x] **`Borz` : plateforme et pont** — _Critère : Turpal monté dessus suit le loup ; posé en travers, il ouvre une arête conditionnelle._
+- [x] **`Borz` : regard et attente** — _Critère : tourne la tête au-delà de 4 unités ; yeux d'ambre = seule lumière chaude mobile._
 
 ---
 

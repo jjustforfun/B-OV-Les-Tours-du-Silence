@@ -7,8 +7,21 @@
  * mécanismes, puis de tout libérer proprement à la sortie.
  */
 import { Group } from 'three';
-import { NavGraph, type EdgeCondition, type NavPosition, type NodeId } from './NavGraph';
+import { IllusionResolver, type IllusionCandidate } from './Illusion';
+import {
+  NavGraph,
+  type EdgeCondition,
+  type NavPosition,
+  type NavSurface,
+  type NodeId,
+} from './NavGraph';
+import { NodeProjection, type MatrixElements } from './NodeProjection';
+import { GravityPath } from './mechanisms/GravityPath';
 import type { Mechanism } from './mechanisms/Mechanism';
+import { PressurePlate } from './mechanisms/PressurePlate';
+import { Rotator } from './mechanisms/Rotator';
+import { Slider } from './mechanisms/Slider';
+import { TowerRotation } from './mechanisms/TowerRotation';
 import type { SkyPaletteName } from '@render/Sky';
 import type { ChapterPaletteName } from '@render/Palettes';
 import { disposeObject } from '@utils/dispose';
@@ -25,7 +38,7 @@ export type Virtue =
   | 'epilogue';
 
 /** Matière sous les pieds — pilote le timbre des pas (docs/AUDIO.md § 5). */
-export type SurfaceKind = 'stone' | 'grass' | 'snow' | 'wood';
+export type SurfaceKind = NavSurface;
 
 export interface LevelNodeDef {
   readonly id: NodeId;
@@ -134,11 +147,17 @@ export interface LevelDefinition {
 export class Level {
   readonly root = new Group();
   readonly graph = new NavGraph();
+  readonly nodeProjection = new NodeProjection();
+  readonly illusions = new IllusionResolver();
   readonly mechanisms = new Map<string, Mechanism>();
+
+  private readonly illusionCandidates: IllusionCandidate[] = [];
 
   constructor(readonly definition: LevelDefinition) {
     this.root.name = `Level:${definition.id}`;
     this.buildGraph();
+    this.nodeProjection.rebuild(this.graph);
+    this.illusions.rebuild(this.illusionCandidates);
   }
 
   get id(): string {
@@ -169,9 +188,23 @@ export class Level {
     return nodeId === this.definition.goal;
   }
 
+  /** Projection écran des nœuds : appelée chaque image par le runtime de niveau. */
+  projectNodes(
+    projectionMatrix: MatrixElements,
+    viewMatrix: MatrixElements,
+    viewportWidth: number,
+    viewportHeight: number,
+  ): NodeProjection {
+    this.nodeProjection.syncPositions(this.graph);
+    this.nodeProjection.project(projectionMatrix, viewMatrix, viewportWidth, viewportHeight);
+    this.illusions.update(this.graph, this.nodeProjection);
+    return this.nodeProjection;
+  }
+
   dispose(): void {
     for (const mechanism of this.mechanisms.values()) mechanism.dispose();
     this.mechanisms.clear();
+    this.nodeProjection.clear();
     this.graph.clear();
     disposeObject(this.root);
   }
@@ -188,16 +221,158 @@ export class Level {
         { x: node.at[0], y: node.at[1], z: node.at[2] },
         tags,
         up === undefined ? undefined : { x: up[0], y: up[1], z: up[2] },
+        node.surface ?? 'stone',
       );
     }
-    for (const edge of this.definition.edges) {
+    this.illusionCandidates.length = 0;
+    for (const edge of this.edgeDefinitions()) {
       this.graph.connect(edge.from, edge.to, {
         ...(edge.oneWay === undefined ? {} : { oneWay: edge.oneWay }),
         ...(edge.cost === undefined ? {} : { cost: edge.cost }),
         ...(edge.illusory === undefined ? {} : { illusory: edge.illusory }),
         ...(edge.condition === undefined ? {} : { condition: edge.condition }),
       });
+      if (edge.illusory === true) {
+        this.illusionCandidates.push({
+          a: edge.from,
+          b: edge.to,
+          ...(edge.oneWay === undefined ? {} : { oneWay: edge.oneWay }),
+          ...(edge.cost === undefined ? {} : { cost: edge.cost }),
+          ...(edge.condition === undefined ? {} : { condition: edge.condition }),
+        });
+        this.graph.setIllusoryConnectionEnabled(edge.from, edge.to, false, edge.oneWay !== true);
+      }
     }
-    // TODO(phase Niveaux) : instancier la géométrie de pierre et les mécanismes.
+    this.buildMechanisms();
   }
+
+  private buildMechanisms(): void {
+    for (const definition of this.definition.mechanisms ?? []) {
+      const mechanism = this.createMechanism(definition);
+      mechanism.root.position.set(definition.at[0], definition.at[1], definition.at[2]);
+      mechanism.applyToGraph(this.graph);
+      this.mechanisms.set(definition.id, mechanism);
+      this.root.add(mechanism.root);
+    }
+  }
+
+  private createMechanism(definition: LevelMechanismDef): Mechanism {
+    const params = definition.params ?? {};
+    switch (definition.kind) {
+      case 'rotator': {
+        const axis = axisParam(params.axis);
+        const stepDeg = numberParam(params.stepDeg);
+        const steps = numberParam(params.steps);
+        const initialStep = numberParam(params.initialStep ?? params.initial);
+        return new Rotator(definition.id, {
+          ...(axis === undefined ? {} : { axis }),
+          ...(stepDeg === undefined ? {} : { stepDeg }),
+          ...(steps === undefined ? {} : { steps }),
+          ...(initialStep === undefined ? {} : { initialStep }),
+        });
+      }
+      case 'slider': {
+        const axis = axisParam(params.axis);
+        const travel = numberParam(params.travel);
+        const stops = numberParam(params.stops);
+        const initial = numberParam(params.initial);
+        return new Slider(definition.id, {
+          ...(axis === undefined ? {} : { axis }),
+          ...(travel === undefined ? {} : { travel }),
+          ...(stops === undefined ? {} : { stops }),
+          ...(initial === undefined ? {} : { initial }),
+        });
+      }
+      case 'pressurePlate': {
+        const latching = booleanParam(params.latching);
+        return new PressurePlate(definition.id, {
+          triggerNode:
+            stringParam(params.triggerNode) ?? nearestNodeId(this.definition, definition.at),
+          ...(latching === undefined ? {} : { latching }),
+        });
+      }
+      case 'towerRotation': {
+        const faces = numberParam(params.faces);
+        const bidirectional = booleanParam(params.bidirectional);
+        const initialFace = numberParam(params.initialFace ?? params.initial);
+        return new TowerRotation(definition.id, {
+          ...(faces === undefined ? {} : { faces }),
+          ...(bidirectional === undefined ? {} : { bidirectional }),
+          ...(initialFace === undefined ? {} : { initialFace }),
+        });
+      }
+      case 'gravityPath':
+        return new GravityPath(definition.id, {
+          from: gravityParam(params.from) ?? 'down',
+          to: gravityParam(params.to) ?? 'up',
+          pivotNodes: nodesParam(params.pivotNodes) ?? [],
+        });
+    }
+  }
+
+  private edgeDefinitions(): readonly LevelEdgeDef[] {
+    const affectedEdges = this.definition.mechanisms?.flatMap(
+      (mechanism) => mechanism.affects ?? [],
+    );
+    return affectedEdges === undefined || affectedEdges.length === 0
+      ? this.definition.edges
+      : [...this.definition.edges, ...affectedEdges];
+  }
+}
+
+type LevelParam = number | string | boolean | undefined;
+
+function numberParam(value: LevelParam): number | undefined {
+  return typeof value === 'number' ? value : undefined;
+}
+
+function stringParam(value: LevelParam): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+function booleanParam(value: LevelParam): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function axisParam(value: LevelParam): 'x' | 'y' | 'z' | undefined {
+  return value === 'x' || value === 'y' || value === 'z' ? value : undefined;
+}
+
+function gravityParam(
+  value: LevelParam,
+): 'down' | 'up' | 'north' | 'south' | 'east' | 'west' | undefined {
+  return value === 'down' ||
+    value === 'up' ||
+    value === 'north' ||
+    value === 'south' ||
+    value === 'east' ||
+    value === 'west'
+    ? value
+    : undefined;
+}
+
+function nodesParam(value: LevelParam): readonly NodeId[] | undefined {
+  if (typeof value !== 'string') return undefined;
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function nearestNodeId(
+  definition: LevelDefinition,
+  position: readonly [number, number, number],
+): NodeId {
+  let best = definition.spawn;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const node of definition.nodes) {
+    const dx = node.at[0] - position[0];
+    const dy = node.at[1] - position[1];
+    const dz = node.at[2] - position[2];
+    const distance = dx * dx + dy * dy + dz * dz;
+    if (distance >= bestDistance) continue;
+    bestDistance = distance;
+    best = node.id;
+  }
+  return best;
 }

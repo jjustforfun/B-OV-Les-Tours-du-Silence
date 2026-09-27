@@ -23,8 +23,13 @@ export interface NavUp {
   readonly z: number;
 }
 
+export type NavSurface = 'stone' | 'grass' | 'snow' | 'wood';
+
 /** Gravité par défaut : le sol est sous les pieds. */
 export const DEFAULT_UP: NavUp = { x: 0, y: 1, z: 0 };
+
+/** Surface par défaut : pierre, cohérente avec les tours et escaliers. */
+export const DEFAULT_SURFACE: NavSurface = 'stone';
 
 export interface NavNode {
   readonly id: NodeId;
@@ -35,6 +40,8 @@ export interface NavNode {
    * n'est pas une propriété du monde, c'est une propriété du sol.
    */
   readonly up: NavUp;
+  /** Matière du sol sous les pieds : pas, particules et snapping de picking. */
+  readonly surface: NavSurface;
   /** Nœud désactivé : présent mais temporairement infranchissable. */
   enabled: boolean;
   /** Étiquettes libres : 'goal', 'door', 'borz', 'elder'… */
@@ -72,6 +79,8 @@ export interface NavEdge {
   readonly cost: number;
   readonly illusory: boolean;
   readonly condition: EdgeCondition | null;
+  /** Alignement écran courant pour les arêtes illusoires. */
+  illusionActive: boolean;
   enabled: boolean;
 }
 
@@ -96,11 +105,12 @@ export class NavGraph {
     position: NavPosition,
     tags: readonly string[] = [],
     up: NavUp = DEFAULT_UP,
+    surface: NavSurface = DEFAULT_SURFACE,
   ): NavNode {
     const existing = this.nodes.get(id);
     if (existing) return existing;
 
-    const node: NavNode = { id, position, up, enabled: true, tags: new Set(tags) };
+    const node: NavNode = { id, position, up, surface, enabled: true, tags: new Set(tags) };
     this.nodes.set(id, node);
     this.adjacency.set(id, new Map());
     return node;
@@ -165,6 +175,19 @@ export class NavGraph {
   }
 
   /**
+   * Toutes les arêtes stockées, y compris fermées ou illusoires inactives.
+   * Les outils de debug et d'audit doivent voir ce qui est coupé, pas seulement
+   * ce que Turpal peut emprunter maintenant.
+   */
+  allEdges(): readonly NavEdge[] {
+    const result: NavEdge[] = [];
+    for (const edges of this.adjacency.values()) {
+      for (const edge of edges.values()) result.push(edge);
+    }
+    return result;
+  }
+
+  /**
    * Déclare l'état courant d'un mécanisme et réévalue les arêtes qui en
    * dépendent (ADR-003). Appelé à la fin d'une animation de mécanisme,
    * jamais par image.
@@ -174,7 +197,7 @@ export class NavGraph {
     for (const edges of this.adjacency.values()) {
       for (const edge of edges.values()) {
         if (edge.condition?.mechanism !== mechanism) continue;
-        edge.enabled = edge.condition.equals === value;
+        edge.enabled = this.evaluateEdgeEnabled(edge);
       }
     }
   }
@@ -187,9 +210,17 @@ export class NavGraph {
   setIllusoryEdgesEnabled(enabled: boolean): void {
     for (const edges of this.adjacency.values()) {
       for (const edge of edges.values()) {
-        if (edge.illusory) edge.enabled = enabled;
+        if (!edge.illusory) continue;
+        edge.illusionActive = enabled;
+        edge.enabled = this.evaluateEdgeEnabled(edge);
       }
     }
+  }
+
+  /** Active ou coupe une liaison illusoire précise, sans toucher aux autres. */
+  setIllusoryConnectionEnabled(from: NodeId, to: NodeId, enabled: boolean, bothWays = true): void {
+    this.setOneIllusoryEdgeEnabled(from, to, enabled);
+    if (bothWays) this.setOneIllusoryEdgeEnabled(to, from, enabled);
   }
 
   findNodesByTag(tag: string): readonly NavNode[] {
@@ -231,10 +262,28 @@ export class NavGraph {
       this.adjacency.set(from, edges);
     }
     // Une arête conditionnelle naît dans l'état que dicte le mécanisme :
-    // fermée tant qu'il n'est pas dans la bonne position.
-    const enabled =
-      condition === null || this.mechanismStates.get(condition.mechanism) === condition.equals;
-    edges.set(to, { from, to, cost, illusory, condition, enabled });
+    // fermée tant qu'il n'est pas dans la bonne position. Une arête illusoire
+    // naît active hors LevelDefinition pour préserver l'API de test ; les
+    // niveaux la ferment ensuite jusqu'au premier alignement écran.
+    const illusionActive = true;
+    const edge: NavEdge = { from, to, cost, illusory, condition, illusionActive, enabled: false };
+    edge.enabled = this.evaluateEdgeEnabled(edge);
+    edges.set(to, edge);
+  }
+
+  private setOneIllusoryEdgeEnabled(from: NodeId, to: NodeId, enabled: boolean): void {
+    const edge = this.getEdge(from, to);
+    if (!edge?.illusory) return;
+    edge.illusionActive = enabled;
+    edge.enabled = this.evaluateEdgeEnabled(edge);
+  }
+
+  private evaluateEdgeEnabled(edge: NavEdge): boolean {
+    const conditionMet =
+      edge.condition === null ||
+      this.mechanismStates.get(edge.condition.mechanism) === edge.condition.equals;
+    const illusionMet = !edge.illusory || edge.illusionActive;
+    return conditionMet && illusionMet;
   }
 }
 
