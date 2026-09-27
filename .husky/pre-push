@@ -1,0 +1,2 @@
+# Le garde-fou complet avant de pousser : lint, types, tests, build, poids.
+pnpm check

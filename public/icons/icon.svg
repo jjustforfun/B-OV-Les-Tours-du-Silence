@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BӀOV">
+  <!-- Icône : une tour vainakh isométrique dans un ciel d'aube. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10161f"/>
+      <stop offset="100%" stop-color="#2c3444"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#98a0b2"/>
+      <stop offset="100%" stop-color="#4a5266"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <circle cx="256" cy="196" r="92" fill="#d9a441" opacity="0.16"/>
+  <g>
+    <polygon points="256,84 316,150 196,150" fill="#aab2c4"/>
+    <polygon points="196,150 316,150 296,404 216,404" fill="url(#stone)"/>
+    <polygon points="256,84 316,150 296,404 256,404" fill="#000" opacity="0.14"/>
+    <rect x="240" y="212" width="32" height="44" rx="4" fill="#d9a441" opacity="0.9"/>
+  </g>
+  <polygon points="96,404 416,404 416,436 96,436" fill="#1a212c"/>
+</svg>

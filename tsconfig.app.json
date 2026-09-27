@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["vite/client", "vite-plugin-pwa/client"],
+
+    /* Strictness — non négociable : le jeu doit rester sûr à refactorer pendant des mois. */
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "useUnknownInCatchVariables": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "allowJs": false,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "noEmit": true,
+    "sourceMap": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@core/*": ["src/core/*"],
+      "@render/*": ["src/render/*"],
+      "@world/*": ["src/world/*"],
+      "@entities/*": ["src/entities/*"],
+      "@input/*": ["src/input/*"],
+      "@audio/*": ["src/audio/*"],
+      "@fx/*": ["src/fx/*"],
+      "@ui/*": ["src/ui/*"],
+      "@story/*": ["src/story/*"],
+      "@levels/*": ["src/levels/*"],
+      "@i18n/*": ["src/i18n/*"],
+      "@save/*": ["src/save/*"],
+      "@platform/*": ["src/platform/*"],
+      "@utils/*": ["src/utils/*"],
+      "@debug/*": ["src/debug/*"]
+    }
+  },
+  "include": ["src", "tests/unit"],
+  "exclude": ["node_modules", "dist", "playwright-report", "test-results"]
+}

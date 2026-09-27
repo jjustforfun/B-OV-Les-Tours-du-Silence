@@ -1,0 +1,151 @@
+/**
+ * config.ts — constantes globales et drapeaux de qualité.
+ *
+ * Source unique de vérité pour tout ce qui est « réglable » : échelle de la grille
+ * isométrique, budgets de performance, niveaux de qualité, clés de stockage.
+ * Aucune logique ici, uniquement des valeurs — pour qu'un game designer puisse
+ * les relire sans lire de code.
+ */
+
+/** Identité du jeu (titre, stockage, PWA). */
+export const GAME = {
+  id: 'bov',
+  title: 'BӀOV',
+  subtitle: 'Les Tours du Silence',
+  version: '0.1.0',
+} as const;
+
+/**
+ * Échelle du monde. Tout le level design est exprimé en unités de grille
+ * entières : 1 unité = 1 bloc de pierre. La caméra isométrique est calée dessus.
+ */
+export const GRID = {
+  /** Taille d'un bloc en unités three.js. */
+  cell: 1,
+  /** Hauteur d'une marche franchissable sans animation d'escalade. */
+  step: 0.5,
+  /** Tolérance de collage d'un point du monde sur un nœud du graphe. */
+  snapEpsilon: 0.001,
+} as const;
+
+/**
+ * Caméra : véritable isométrie (angles fixes, projection orthographique).
+ * Monument Valley utilise une isométrie stricte ; c'est elle qui rend
+ * possibles les illusions d'optique — deux points éloignés en 3D peuvent
+ * coïncider à l'écran.
+ */
+export const CAMERA = {
+  /** Azimut en degrés : 45° = arêtes du cube à 30° à l'écran. */
+  azimuthDeg: 45,
+  /** Élévation en degrés : atan(1/√2) ≈ 35.264° = isométrie véritable. */
+  elevationDeg: 35.264389682754654,
+  /** Demi-hauteur du frustum orthographique, en unités de grille. */
+  viewSize: 9,
+  distance: 40,
+  near: 0.1,
+  far: 200,
+} as const;
+
+/** Niveaux de qualité. Le moteur descend d'un cran s'il n'atteint pas la cible. */
+export const QUALITY_TIERS = ['low', 'medium', 'high'] as const;
+export type QualityTier = (typeof QUALITY_TIERS)[number];
+
+export interface QualitySettings {
+  /** Plafond du device pixel ratio (le coût du fillrate est quadratique). */
+  readonly maxPixelRatio: number;
+  readonly shadows: boolean;
+  readonly shadowMapSize: number;
+  readonly postFx: boolean;
+  readonly bloom: boolean;
+  readonly ssao: boolean;
+  readonly antialias: boolean;
+  /** Multiplicateur du nombre de particules (brume, neige, lucioles). */
+  readonly particleScale: number;
+}
+
+export const QUALITY_PRESETS: Readonly<Record<QualityTier, QualitySettings>> = {
+  low: {
+    maxPixelRatio: 1,
+    shadows: false,
+    shadowMapSize: 512,
+    postFx: false,
+    bloom: false,
+    ssao: false,
+    antialias: false,
+    particleScale: 0.35,
+  },
+  medium: {
+    maxPixelRatio: 1.5,
+    shadows: true,
+    shadowMapSize: 1024,
+    postFx: true,
+    bloom: true,
+    ssao: false,
+    antialias: false,
+    particleScale: 0.7,
+  },
+  high: {
+    maxPixelRatio: 2,
+    shadows: true,
+    shadowMapSize: 2048,
+    postFx: true,
+    bloom: true,
+    ssao: true,
+    antialias: true,
+    particleScale: 1,
+  },
+} as const;
+
+/** Budgets de performance — vérifiés en CI et par le panneau de debug. */
+export const PERF = {
+  targetFps: 60,
+  /** En dessous, on descend d'un cran de qualité. */
+  downgradeFps: 48,
+  /** Au-dessus et stable, on peut remonter d'un cran. */
+  upgradeFps: 58,
+  /** Fenêtre d'observation avant tout changement de qualité (ms). */
+  adaptWindowMs: 3000,
+  /** Poids maximal du bundle initial, gzip (octets) — voir scripts/check-bundle.mjs. */
+  maxInitialBundleGzip: 1_500_000,
+  /** Plafond d'appels de dessin par image. */
+  maxDrawCalls: 120,
+  /** Plafond de triangles à l'écran. */
+  maxTriangles: 150_000,
+  /** Plafond de mémoire GPU (octets) — textures + géométries + cibles de rendu. */
+  maxGpuMemory: 256 * 1024 * 1024,
+  /** Poids maximal d'un chunk de niveau, gzip (octets). */
+  maxLevelChunkGzip: 400_000,
+  /** Time-to-interactive visé sur une 4G moyenne (ms). */
+  maxTimeToInteractiveMs: 3000,
+} as const;
+
+/** Rythme du jeu : tout est lent, rien ne punit. */
+export const PACING = {
+  /** Vitesse de marche de Turpal, en cellules par seconde. */
+  walkSpeed: 2.1,
+  /** Durée d'une rotation d'architecture (ms). */
+  mechanismDurationMs: 900,
+  /** Durée d'une micro-célébration (ms). */
+  celebrationMs: 1600,
+  /** Fondu entre deux chapitres (ms). */
+  chapterFadeMs: 1200,
+  /** Inactivité avant le premier indice : lueur sur l'élément utile (ms). */
+  hintGlowDelayMs: 90_000,
+  /** Inactivité avant le second indice : Borz regarde dans la bonne direction (ms). */
+  hintGazeDelayMs: 180_000,
+} as const;
+
+/** Clés de persistance (localStorage aujourd'hui, Capacitor Preferences demain). */
+export const STORAGE_KEYS = {
+  save: 'bov.save.v1',
+  settings: 'bov.settings.v1',
+  locale: 'bov.locale.v1',
+} as const;
+
+/** Drapeaux de développement — tous à false en production. */
+export const DEV_FLAGS = {
+  showStats: import.meta.env.DEV,
+  showDebugPanel: import.meta.env.DEV,
+  showNavGraph: false,
+  freeCamera: false,
+} as const;

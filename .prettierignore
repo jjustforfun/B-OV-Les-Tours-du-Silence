@@ -1,0 +1,16 @@
+dist/
+dev-dist/
+coverage/
+node_modules/
+playwright-report/
+test-results/
+pnpm-lock.yaml
+public/icons/
+CHANGELOG.md
+
+# brief.yaml : contenu fourni tel quel par la direction de projet,
+# maintenu à l'octet près (voir ADR-020).
+brief.yaml
+
+# Prettier n'a pas de parser GLSL : les shaders sont revus à la main.
+*.glsl

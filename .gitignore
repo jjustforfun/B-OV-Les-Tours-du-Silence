@@ -1,0 +1,61 @@
+# Dépendances
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+dev-dist/
+coverage/
+.vite/
+stats.html
+
+# Tests
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# Journaux
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environnement
+.env
+.env.*
+!.env.example
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Éditeurs — la config partagée du projet reste versionnée
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Android / Capacitor (futur)
+# Le projet `android/` est versionné (c'est la convention Capacitor : il
+# contient la config, les icônes et le manifeste). Seuls les artefacts de
+# build et les secrets sont exclus.
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/app/release/
+*.keystore
+*.jks
+keystore.properties
+
+# iOS (encore plus tard)
+ios/App/Pods/
+ios/App/build/
+
+# Blender et sources d'assets
+*.blend1
+*.blend2
+assets-src/**/*.tmp
+
+# Divers
+*.tmp

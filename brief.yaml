@@ -1,0 +1,72 @@
+project:
+  title: "BӀOV : Les Tours du Silence"
+  working_title_alt: ["Lam", "Le Chemin des Tours"]
+  genre: "Puzzle contemplatif, géométrie impossible, isométrique 3D"
+  references: ["Monument Valley 1 & 2", "Journey", "Gris", "Alba", "Old Man's Journey"]
+  platforms:
+    now: ["web desktop", "web mobile (PWA)"]
+    later: ["Android via Capacitor"]
+  languages: ["fr", "en", "ru", "ce"]
+  session_length: "5-12 min par chapitre"
+  total_length: "60-90 min"
+
+pitch: >
+  Turpal revient dans la vallée de ses ancêtres. Les tours vainakhs se sont
+  fracturées et la vallée s'est tue. En manipulant une architecture impossible
+  et en retrouvant les vertus du Nokhchalla, il reconstruit les chemins entre
+  les tours et entre les gens.
+
+pillars:
+  - "Élégance : chaque image doit pouvoir servir de fond d'écran."
+  - "Eurêka : le joueur se sent brillant, jamais bête."
+  - "Silence habité : le son raconte autant que l'image."
+  - "Dignité : une culture montrée avec respect et tendresse."
+  - "Fluidité : 60 fps, zéro friction, sur tous les écrans."
+
+hero:
+  name: "Turpal"
+  description: "Homme tchétchène d'environ 35 ans, barbe courte, regard calme"
+  outfit: ["tcherkesska anthracite", "gazyri argent", "papakha gris clair", "ceinture ornée", "bottes souples en cuir"]
+  personality: "Silencieux, patient, respectueux, déterminé"
+  weapons: "aucune"
+
+companion:
+  name: "Borz"
+  type: "Loup de pierre ancestral, yeux d'ambre lumineux"
+
+morale:
+  code: "Nokhchalla"
+  chapters: [hospitalité, parole donnée, respect des anciens, patience, pardon, humilité]
+  final_message: "Ce que l'on bâtit pour les autres finit par nous porter."
+
+player_experience:
+  no_death: true
+  no_timer: true
+  no_score: true
+  hints: "progressifs, discrets, jamais imposés"
+  rewards: ["proverbes à collectionner", "carnet illustré", "mini-célébrations visuelles et sonores", "bénédictions des anciens"]
+
+technical:
+  stack: [vite, typescript, three, postprocessing, tone, gsap]
+  target_fps: 60
+  min_device: "Android milieu de gamme 2021 / iPhone 11"
+  initial_bundle_gzip_max_mb: 1.5
+  max_draw_calls: 120
+  pixel_ratio_max: 2
+  offline: true
+
+controls:
+  pointer: "tap/clic pour se déplacer, glisser pour tourner les mécanismes"
+  keyboard: "voir docs/CONTROLS.md"
+  gamepad: "support de base"
+
+accessibility: [reduced_motion, sous-titres, taille du texte, mode daltonien, remappage clavier, volume par canal]
+
+out_of_scope_v1: [multijoueur, achats intégrés, publicités, éditeur de niveaux public]
+
+definition_of_done:
+  - "8 chapitres jouables du début à la fin"
+  - "60 fps stables sur la cible mobile"
+  - "Lighthouse PWA ≥ 90, Performance ≥ 85"
+  - "Zéro erreur console, zéro fuite mémoire entre niveaux"
+  - "qa-report.md complet et vert"
