@@ -106,7 +106,12 @@ describe('Turpal — path following', () => {
     const unsubscribe = turpal.bindMechanismRevalidation(graph);
 
     graph.disconnect('b', 'c');
-    bus.emit('mechanism:stateChanged', { id: 'door', kind: 'rotator', value: false });
+    bus.emit('mechanism:stateChanged', {
+      id: 'door',
+      kind: 'rotator',
+      value: false,
+      at: { x: 0, y: 0, z: 0 },
+    });
 
     expect(turpal.movementProgress).toBe(0);
     turpal.update(graph, 0.6);

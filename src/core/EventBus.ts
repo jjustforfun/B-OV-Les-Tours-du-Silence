@@ -64,22 +64,51 @@ export interface GameEvents extends EventMap {
   'engine:resize': { readonly width: number; readonly height: number };
   'engine:quality': { readonly tier: string; readonly reason: string };
   'game:pause': { readonly paused: boolean };
-  'level:loaded': { readonly id: string };
-  'level:solved': { readonly id: string; readonly moves: number };
-  'player:moved': { readonly nodeId: string };
+  'level:loaded': {
+    readonly id: string;
+    readonly chapter?: number;
+    readonly ambience?: readonly string[];
+  };
+  'level:solved': {
+    readonly id: string;
+    readonly moves: number;
+    readonly at?: { readonly x: number; readonly y: number; readonly z: number };
+  };
+  'player:moved': {
+    readonly nodeId: string;
+    readonly surface?: 'stone' | 'grass' | 'snow' | 'wood';
+  };
   'mechanism:snap': {
     readonly id: string;
     readonly kind: string;
     readonly value: number | string | boolean;
     readonly notch: number;
     readonly sound: string;
+    /** Position monde du mécanisme, pour FX et audio. */
+    readonly at: { readonly x: number; readonly y: number; readonly z: number };
+    /** Nombre de crans du cycle, pour calculer le sens de rotation. */
+    readonly steps?: number;
   };
   'mechanism:stateChanged': {
     readonly id: string;
     readonly kind: string;
     readonly value: number | string | boolean;
+    readonly at: { readonly x: number; readonly y: number; readonly z: number };
   };
-  'mechanism:drag': { readonly id: string; readonly kind: string; readonly active: boolean };
+  'mechanism:drag': {
+    readonly id: string;
+    readonly kind: string;
+    readonly active: boolean;
+    readonly at: { readonly x: number; readonly y: number; readonly z: number };
+  };
+  /** Vitesse de manipulation pendant un drag, normalisée 0..1. */
+  'mechanism:dragMove': { readonly id: string; readonly speed: number };
+  /** Un chemin vient de se refermer : polyline monde, départ → arrivée. */
+  'path:connected': {
+    readonly points: readonly { readonly x: number; readonly y: number; readonly z: number }[];
+  };
+  /** Nombre de couches musicales méritées par la progression (1..4). */
+  'music:progress': { readonly layers: number };
   'borz:called': { readonly from: string | null; readonly to: string };
   'borz:hint': { readonly active: boolean };
   'ui:toast': { readonly message: string; readonly duration?: number };

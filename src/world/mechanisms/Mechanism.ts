@@ -22,8 +22,8 @@ import type { NavGraph } from '../NavGraph';
 
 export interface MechanismContext {
   readonly graph: NavGraph;
-  /** Temps écoulé, en secondes. */
-  readonly elapsed: number;
+  /** Temps écoulé, en secondes — rafraîchi chaque image par le runtime. */
+  elapsed: number;
 }
 
 export interface MechanismDragPoint {
@@ -49,6 +49,8 @@ export interface Mechanism {
   update(context: MechanismContext, delta: number): void;
   /** Reconnecte le graphe selon la position courante. */
   applyToGraph(graph: NavGraph): void;
+  /** Lueur d'indice 0..1 (docs/tasks Phase 7, Hints). */
+  setHintGlow(value: number): void;
   dispose(): void;
 }
 
@@ -64,6 +66,8 @@ export abstract class BaseMechanism implements Mechanism {
   private readonly ownedMaterials: Material[] = [];
   private passenger: Object3D | null = null;
   private affordanceTime = 0;
+  private affordanceMaterial: MeshBasicMaterial | null = null;
+  private hintGlowValue = 0;
 
   constructor(readonly id: string) {}
 
@@ -82,6 +86,19 @@ export abstract class BaseMechanism implements Mechanism {
   setEnabled(enabled: boolean): void {
     this.enabled = enabled;
     this.affordance.visible = enabled;
+  }
+
+  /**
+   * Lueur d'indice (docs/tasks Phase 7) : après 90 s d'inactivité, le monde
+   * désigne discrètement l'élément utile. `value` va de 0 (rien) à 1 (lueur
+   * pleine) ; l'appelant assure le fondu de 900 ms.
+   */
+  setHintGlow(value: number): void {
+    this.hintGlowValue = Math.min(1, Math.max(0, value));
+  }
+
+  get hintGlow(): number {
+    return this.hintGlowValue;
   }
 
   /** Parentage temporaire : un joueur posé dessus se déplace avec le mécanisme. */
@@ -126,6 +143,7 @@ export abstract class BaseMechanism implements Mechanism {
         depthWrite: false,
       }),
     );
+    this.affordanceMaterial = material;
     const ring = new Mesh(geometry, material);
     ring.name = `MechanismHandle:${this.id}`;
     ring.rotation.x = Math.PI / 2;
@@ -139,6 +157,15 @@ export abstract class BaseMechanism implements Mechanism {
     return geometry;
   }
 
+  /** Position monde du mécanisme pour les événements (FX, audio). */
+  protected eventPosition(): { x: number; y: number; z: number } {
+    return {
+      x: this.root.position.x,
+      y: this.root.position.y,
+      z: this.root.position.z,
+    };
+  }
+
   protected trackMaterial<T extends Material>(material: T): T {
     this.ownedMaterials.push(material);
     return material;
@@ -146,8 +173,13 @@ export abstract class BaseMechanism implements Mechanism {
 
   protected updateAffordance(delta: number): void {
     this.affordanceTime += delta;
-    const pulse = 1 + Math.sin(this.affordanceTime * 3.4) * 0.045;
+    // Pulsation à 0,5 Hz, plus ample quand le mécanisme porte un indice.
+    const glow = this.hintGlowValue;
+    const pulse = 1 + Math.sin(this.affordanceTime * Math.PI) * (0.045 + glow * 0.16);
     this.affordance.scale.setScalar(pulse);
+    if (this.affordanceMaterial !== null) {
+      this.affordanceMaterial.opacity = 0.82 + glow * 0.18;
+    }
   }
 }
 

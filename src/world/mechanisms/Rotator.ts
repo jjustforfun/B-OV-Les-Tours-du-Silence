@@ -72,7 +72,12 @@ export class Rotator extends BaseMechanism {
     if (!this.interactive) return;
     this.dragStartPointerAngle = screenAngle(point);
     this.dragStartAngle = this.angleRad;
-    bus.emit('mechanism:drag', { id: this.id, kind: 'rotator', active: true });
+    bus.emit('mechanism:drag', {
+      id: this.id,
+      kind: 'rotator',
+      active: true,
+      at: this.eventPosition(),
+    });
   }
 
   drag(point: MechanismDragPoint): void {
@@ -84,7 +89,12 @@ export class Rotator extends BaseMechanism {
 
   endDrag(): void {
     if (!this.interactive) return;
-    bus.emit('mechanism:drag', { id: this.id, kind: 'rotator', active: false });
+    bus.emit('mechanism:drag', {
+      id: this.id,
+      kind: 'rotator',
+      active: false,
+      at: this.eventPosition(),
+    });
     this.startSnap(Math.round(this.angleRad / this.stepAngleRad()));
   }
 
@@ -112,6 +122,7 @@ export class Rotator extends BaseMechanism {
       id: this.id,
       kind: 'rotator',
       value: this.stateValue(),
+      at: this.eventPosition(),
     });
   }
 
@@ -130,6 +141,8 @@ export class Rotator extends BaseMechanism {
       value: this.stateValue(),
       notch: this.step,
       sound: 'stone-notch',
+      at: this.eventPosition(),
+      steps: this.stepCount(),
     });
   }
 

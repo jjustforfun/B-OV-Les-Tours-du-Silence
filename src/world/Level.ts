@@ -40,6 +40,9 @@ export type Virtue =
 /** Matière sous les pieds — pilote le timbre des pas (docs/AUDIO.md § 5). */
 export type SurfaceKind = NavSurface;
 
+/** Couches d'ambiance sonore, déclarées par lieu (docs/AUDIO.md § 2). */
+export type AmbienceLayerName = 'wind' | 'river' | 'bells' | 'eagle' | 'fire' | 'stone';
+
 export interface LevelNodeDef {
   readonly id: NodeId;
   readonly at: readonly [number, number, number];
@@ -130,6 +133,13 @@ export interface LevelDefinition {
     readonly root: string;
     readonly strings: readonly [string, string, string];
   };
+  /**
+   * Couches d'ambiance sonore du lieu (docs/AUDIO.md § 2). Omis = plan par
+   * défaut du chapitre (vent partout, torrent aux ch. 2 et 4, cloches aux
+   * ch. 1 et 3, aigle aux ch. 0, 5 et 6, feu aux ch. 1 et 7, pierre aux
+   * ch. 0 et 5).
+   */
+  readonly ambience?: readonly AmbienceLayerName[];
   readonly spawn: NodeId;
   readonly goal: NodeId;
   readonly geometry?: readonly LevelBlockDef[];

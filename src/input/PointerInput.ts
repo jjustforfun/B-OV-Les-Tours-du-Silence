@@ -69,6 +69,9 @@ export class PointerInput {
   private lastX = 0;
   private lastY = 0;
   private dragging = false;
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  private suppressTap = false;
+  private readonly lastIntent = { x: 0, y: 0, ndcX: 0, ndcY: 0 };
 
   constructor(
     private readonly element: HTMLElement,
@@ -78,7 +81,8 @@ export class PointerInput {
     this.element.addEventListener('pointermove', this.onPointerMove);
     this.element.addEventListener('pointerup', this.onPointerUp);
     this.element.addEventListener('pointercancel', this.onPointerUp);
-    this.element.addEventListener('contextmenu', this.onContextMenu);
+    this.element.addEventListener('lostpointercapture', this.onLostCapture);
+    if (typeof window !== 'undefined') window.addEventListener('blur', this.onWindowBlur);
   }
 
   /**
@@ -132,11 +136,14 @@ export class PointerInput {
   }
 
   dispose(): void {
+    this.clearLongPress();
     this.element.removeEventListener('pointerdown', this.onPointerDown);
     this.element.removeEventListener('pointermove', this.onPointerMove);
     this.element.removeEventListener('pointerup', this.onPointerUp);
     this.element.removeEventListener('pointercancel', this.onPointerUp);
+    this.element.removeEventListener('lostpointercapture', this.onLostCapture);
     this.element.removeEventListener('contextmenu', this.onContextMenu);
+    if (typeof window !== 'undefined') window.removeEventListener('blur', this.onWindowBlur);
   }
 
   private readonly onContextMenu = (event: Event): void => event.preventDefault();
@@ -161,24 +168,42 @@ export class PointerInput {
   private readonly onPointerDown = (event: PointerEvent): void => {
     if (this.activePointerId !== null) return;
     this.activePointerId = event.pointerId;
-    this.element.setPointerCapture(event.pointerId);
+    try {
+      // Capture : le doigt peut sortir de la fenêtre, le drag continue et le
+      // relâchement est toujours délivré (docs/CONTROLS.md § 1).
+      this.element.setPointerCapture(event.pointerId);
+    } catch {
+      /* Capture refusée (pointeur déjà parti) : les événements suffisent. */
+    }
 
     const intent = this.toIntent(event);
     this.startX = intent.x;
     this.startY = intent.y;
     this.lastX = intent.x;
     this.lastY = intent.y;
+    this.lastIntent.x = intent.x;
+    this.lastIntent.y = intent.y;
+    this.lastIntent.ndcX = intent.ndcX;
+    this.lastIntent.ndcY = intent.ndcY;
     this.dragging = false;
-    this.bus.emit('dragStart', intent);
+    this.suppressTap = false;
+    this.armLongPress();
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
     if (event.pointerId !== this.activePointerId) return;
     const intent = this.toIntent(event);
     const travelled = Math.hypot(intent.x - this.startX, intent.y - this.startY);
-    if (!this.dragging && travelled < POINTER.dragThresholdPx) return;
 
-    this.dragging = true;
+    // Seuil de glissement (8 px) : en dessous c'est encore un tap — un appui
+    // mal placé ne fait jamais tourner un mécanisme par accident.
+    if (!this.dragging) {
+      if (travelled < POINTER.dragThresholdPx) return;
+      this.dragging = true;
+      this.clearLongPress();
+      this.bus.emit('dragStart', intent);
+    }
+
     this.bus.emit('drag', {
       ...intent,
       deltaX: intent.x - this.lastX,
@@ -186,11 +211,16 @@ export class PointerInput {
     });
     this.lastX = intent.x;
     this.lastY = intent.y;
+    this.lastIntent.x = intent.x;
+    this.lastIntent.y = intent.y;
+    this.lastIntent.ndcX = intent.ndcX;
+    this.lastIntent.ndcY = intent.ndcY;
   };
 
   private readonly onPointerUp = (event: PointerEvent): void => {
     if (event.pointerId !== this.activePointerId) return;
     const intent = this.toIntent(event);
+    this.clearLongPress();
 
     if (this.dragging) {
       this.bus.emit('dragEnd', {
@@ -198,16 +228,73 @@ export class PointerInput {
         deltaX: intent.x - this.lastX,
         deltaY: intent.y - this.lastY,
       });
-    } else {
+    } else if (!this.suppressTap) {
       this.bus.emit('tap', intent);
     }
 
-    if (this.element.hasPointerCapture(event.pointerId)) {
-      this.element.releasePointerCapture(event.pointerId);
-    }
+    this.releaseCapture(event.pointerId);
     this.activePointerId = null;
     this.dragging = false;
+    this.suppressTap = false;
   };
+
+  /** Perte de capture (élément détruit, onglet changé) : on solde le drag. */
+  private readonly onLostCapture = (event: PointerEvent): void => {
+    if (event.pointerId !== this.activePointerId) return;
+    this.cancelDrag();
+  };
+
+  /** Alt-tab pendant un drag : jamais de mécanisme laissé en rotation. */
+  private readonly onWindowBlur = (): void => {
+    this.cancelDrag();
+  };
+
+  private cancelDrag(): void {
+    if (this.activePointerId === null) return;
+    this.clearLongPress();
+    if (this.dragging) {
+      this.bus.emit('dragEnd', {
+        ...this.lastIntent,
+        deltaX: 0,
+        deltaY: 0,
+      });
+    }
+    this.releaseCapture(this.activePointerId);
+    this.activePointerId = null;
+    this.dragging = false;
+    this.suppressTap = false;
+  }
+
+  /**
+   * Appui long (1,2 s sans glisser) : demande d'indice, équivalent tactile
+   * de la touche H (docs/CONTROLS.md § 1). Le tap qui suit est avalé.
+   */
+  private armLongPress(): void {
+    this.clearLongPress();
+    if (typeof setTimeout !== 'function') return;
+    this.longPressTimer = setTimeout(() => {
+      this.longPressTimer = null;
+      if (this.activePointerId === null || this.dragging) return;
+      this.suppressTap = true;
+      this.bus.emit('longPress', { ...this.lastIntent });
+    }, POINTER.longPressMs);
+  }
+
+  private clearLongPress(): void {
+    if (this.longPressTimer === null) return;
+    clearTimeout(this.longPressTimer);
+    this.longPressTimer = null;
+  }
+
+  private releaseCapture(pointerId: number): void {
+    if (this.element.hasPointerCapture(pointerId)) {
+      try {
+        this.element.releasePointerCapture(pointerId);
+      } catch {
+        /* Déjà relâchée par le navigateur. */
+      }
+    }
+  }
 }
 
 function pickAtSample<T>(

@@ -69,7 +69,12 @@ export class Slider extends BaseMechanism {
     if (!this.interactive) return;
     this.dragStartPointerAngle = screenAngle(point);
     this.dragStartPosition = this.position;
-    bus.emit('mechanism:drag', { id: this.id, kind: 'slider', active: true });
+    bus.emit('mechanism:drag', {
+      id: this.id,
+      kind: 'slider',
+      active: true,
+      at: this.eventPosition(),
+    });
   }
 
   drag(point: MechanismDragPoint): void {
@@ -81,7 +86,12 @@ export class Slider extends BaseMechanism {
 
   endDrag(): void {
     if (!this.interactive) return;
-    bus.emit('mechanism:drag', { id: this.id, kind: 'slider', active: false });
+    bus.emit('mechanism:drag', {
+      id: this.id,
+      kind: 'slider',
+      active: false,
+      at: this.eventPosition(),
+    });
     const stop = Math.round(this.position * (this.stops() - 1));
     this.startSnap(stop / (this.stops() - 1));
   }
@@ -109,6 +119,7 @@ export class Slider extends BaseMechanism {
       id: this.id,
       kind: 'slider',
       value: this.currentStop,
+      at: this.eventPosition(),
     });
   }
 
@@ -126,6 +137,8 @@ export class Slider extends BaseMechanism {
       value: this.currentStop,
       notch: this.currentStop,
       sound: 'stone-slide-notch',
+      at: this.eventPosition(),
+      steps: this.stops(),
     });
   }
 

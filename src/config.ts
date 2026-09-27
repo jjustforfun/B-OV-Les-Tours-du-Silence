@@ -194,6 +194,75 @@ export const PACING = {
   hintGlowDelayMs: 90_000,
   /** Inactivité avant le second indice : Borz regarde dans la bonne direction (ms). */
   hintGazeDelayMs: 180_000,
+  /** Fondu d'extinction d'un indice dès que le joueur interagit (ms). */
+  hintFadeMs: 900,
+} as const;
+
+/**
+ * Clavier (docs/CONTROLS.md § 2). Les bindings vivent dans
+ * `input/KeyboardInput.ts` : ce ne sont pas des constantes de rythme.
+ */
+export const KEYBOARD = {
+  /**
+   * Écart angulaire maximal (degrés) entre la touche pressée et un voisin
+   * projeté à l'écran. Au-delà, rien ne se passe — aucun bip, aucune punition.
+   */
+  moveMaxAngleDeg: 60,
+} as const;
+
+/**
+ * Manette (docs/CONTROLS.md § 3). L'API Gamepad se sonde, elle n'émet pas :
+ * `GamepadInput.poll()` est appelé une fois par image.
+ */
+export const GAMEPAD = {
+  /** Zone morte du stick : le jeu se joue au pas, pas au pixel. */
+  deadZone: 0.35,
+  /** Répétition du déplacement directionnel, stick ou croix maintenus. */
+  moveRepeatMs: 220,
+  /** Seuil de déclenchement des gâchettes analogiques L2 / R2. */
+  triggerThreshold: 0.5,
+} as const;
+
+/**
+ * Audio (docs/AUDIO.md). Tout est synthétisé à l'exécution (ADR-007) : ces
+ * constantes pilotent le mixage et le cycle de vie, pas la synthèse elle-même.
+ */
+export const AUDIO = {
+  volumes: { master: 0.9, music: 0.7, ambience: 0.6, sfx: 0.85 },
+  /** Gain nominal de chaque bus dans le mix (dB) — le curseur atténue autour. */
+  busNominalDb: { master: 0, music: -9, ambience: -14, sfx: -6 },
+  unlockFadeInSeconds: 1.2,
+  hiddenFadeOutMs: 250,
+  hiddenFadeInMs: 400,
+  muteFadeMs: 120,
+  blurAttenuationDb: -12,
+  reverb: { decaySeconds: 9, preDelaySeconds: 0.08, wet: 0.42, sfxSend: 0.25 },
+  duck: { musicDb: -4, ambienceDb: -3, attackMs: 400, releaseMs: 1200 },
+  /** Fondu d'installation d'une couche musicale (docs/AUDIO.md § 4). */
+  layerFadeSeconds: 6,
+  /** Silence de filtrage pendant une bascule de gravité (ms). */
+  gravityMuffleMs: 500,
+  /** Pondar : inharmonicité aléatoire à chaque pincement (cents). */
+  pondarDetuneCents: 4,
+  /** Variation des effets sonores, pour éviter la fatigue d'écoute. */
+  sfxVariation: { semitones: 2, gainDb: 1.5 },
+} as const;
+
+/**
+ * FX et « juice » (docs/ART_DIRECTION.md). Un seul pool de particules pour
+ * tout ce qui scintille, un seul InstancedMesh pour les éclats de pierre.
+ */
+export const FX = {
+  /** Capacité du pool de particules avant `particleScale` (un draw call). */
+  particleBudget: 420,
+  rotationDust: { count: 12, lifetimeMs: 700 },
+  fragments: { count: 40, assembleMs: 700, holdMs: 420, fadeMs: 260 },
+  trail: { speed: 8, fadeMs: 900, particlesPerUnit: 3 },
+  illumination: { staggerMs: 250, glowFadeMs: 900 },
+  mist: { maxOpacity: 0.12, drift: 0.05, size: 30 },
+  snow: { minFlakes: 140, maxFlakes: 400, fallSpeed: 0.6, swaySpeed: 0.35, swayAmplitude: 0.18 },
+  fireflies: { count: 26, wanderSpeed: 0.22, pulseSpeed: 1.4, chapters: [4, 7] },
+  shafts: { maxCount: 4, dustPerSecond: 6, dustLifetimeMs: 2600 },
 } as const;
 
 /** Réglages du héros procédural et de ses animations. */
@@ -208,6 +277,8 @@ export const POINTER = {
   mobileRaycastTolerancePx: 18,
   /** Distance maximale pour aimanter un raycast de surface vers un nœud. */
   walkableSnapMaxDistance: 0.75,
+  /** Durée d'un appui long avant qu'il devienne une demande d'indice (ms). */
+  longPressMs: 1200,
 } as const;
 
 export const TURPAL = {

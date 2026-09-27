@@ -169,6 +169,45 @@
   transition: opacity var(--duration-base) var(--ease-soft);
 }
 
+/* Focus clavier : toujours visible, partout (docs/CONTROLS.md § 5). */
+:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 2px;
+}
+
+/* Anneau de sélection des mécanismes (Tab / Shift+Tab, § 2.3) */
+.ui-focus-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  border: 2px solid var(--color-ember);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgba(13, 17, 23, 0.55),
+    0 0 12px rgba(217, 164, 65, 0.35);
+  pointer-events: none;
+  z-index: 40;
+  transition:
+    opacity var(--duration-fast) var(--ease-soft),
+    width var(--duration-fast) var(--ease-soft),
+    height var(--duration-fast) var(--ease-soft);
+}
+
+.ui-focus-ring--pulse {
+  animation: ui-focus-pulse 2s var(--ease-soft) infinite;
+}
+
+@keyframes ui-focus-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
 /* Paysage sur petit écran : on remonte tout pour éviter la barre de geste. */
 @media (orientation: landscape) and (max-height: 480px) {
   .ui-panel {
@@ -182,5 +221,13 @@
   .ui-panel,
   .ui-toast {
     transition-duration: 1ms;
+  }
+
+  .ui-focus-ring {
+    transition: none;
+  }
+
+  .ui-focus-ring--pulse {
+    animation: none;
   }
 }
