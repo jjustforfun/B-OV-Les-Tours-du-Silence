@@ -189,22 +189,22 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 
 ## Phase 8 — UI et narration
 
-- [x] **`ui/styles/tokens.css` : jetons de design** — _Critère : couleurs, durées (180/420/900/1800 ms), échelle de texte, `--tap-min: 44px`._
-- [ ] **`UIRoot` : pile d'écrans** — _Critère : un seul écran actif, `Échap` remonte d'un cran, focus piégé dans la modale._
-- [ ] **Écran titre** — _Critère : Commencer / Continuer / Réglages / Recueil, jouable au clavier seul._
-- [ ] **Carte de chapitre** — _Critère : titre + sous-titre + vertu, fondu 1200 ms, passable à tout moment._
-- [ ] **Texte d'introduction de chapitre** — _Critère : 2 phrases max sur voile translucide, ducking audio, sortie automatique._
-- [ ] **Menu pause** — _Critère : gèle la simulation, jamais le rendu ; reprendre / recommencer / quitter._
-- [ ] **Réglages : volumes par canal** — _Critère : 4 curseurs, application immédiate, persistance._
-- [ ] **Réglages : qualité manuelle** — _Critère : choisir un tier fige l'adaptation (ADR-013)._
-- [ ] **Réglages : accessibilité** — _Critère : animations réduites, taille du texte, mode daltonien, contraste renforcé._
-- [ ] **Réglages : remappage clavier** — _Critère : capture d'une touche physique, détection de conflit, retour aux défauts._
-- [ ] **Carnet de proverbes** — _Critère : 8 entrées, verrouillées tant que non obtenues, mention « inspiré de »._
-- [ ] **Carnet illustré : croquis par lieu** — _Critère : une illustration révélée par aigle trouvé, sans pourcentage affiché._
-- [ ] **Bénédiction de l'ancien** — _Critère : geste, aucune conséquence mécanique._
-- [ ] **`i18n` : 4 langues branchées sur l'UI** — _Critère : changer de langue ne recharge pas la page ; `ce` retombe sur `fr` sans trou._
-- [ ] **Sous-titres des événements sonores** — _Critère : activables, aucun puzzle ne dépend du son._
-- [ ] **`SaveManager` : sauvegarde automatique versionnée** — _Critère : jamais de bouton « sauvegarder » ; une sauvegarde corrompue est ignorée en silence._
+- [x] **`ui/styles/tokens.css` : jetons de design** — _Critère : couleurs, durées (180/420/900/1800 ms), échelle de texte, `--tap-min: 44px`._ — + verres (`--veil-bg/blur`), `--font-scale`, piles Cormorant Garamond/Inter avec replis, surcharges `html.ui-hc`.
+- [x] **`UIRoot` : pile d'écrans** — _Critère : un seul écran actif, `Échap` remonte d'un cran, focus piégé dans la modale._ — panneau de base (titre) + pile modale, `onKeydown` au sommet (le remappage avale `Échap`), piège de focus WCAG 2.4.3, `onSuspendChange` → `InputManager.setSuspended` (ADR-027).
+- [x] **Écran titre** — _Critère : Commencer / Continuer / Réglages / Recueil, jouable au clavier seul._ — la vallée vit derrière, titre en fondu (`--title-delay`), « Toucher pour commencer » plein écran, 3 entrées discrètes + « Chapitres » si progression.
+- [x] **Carte de chapitre** — _Critère : titre + sous-titre + vertu, fondu 1200 ms, passable à tout moment._ — voile 1200 ms puis noir interne du carton 1800 ms ; tap/Entrée/Espace écourtent, intro protégée 1600 ms anti-tap accidentel.
+- [x] **Texte d'introduction de chapitre** — _Critère : 2 phrases max sur voile translucide, ducking audio, sortie automatique._ — 2 phrases par chapitre (`levels.*.intro` ×3 langues), verre translucide, ducking via `ui:speaking`, sortie auto à 9 s.
+- [x] **Menu pause** — _Critère : gèle la simulation, jamais le rendu ; reprendre / recommencer / quitter._ — 5 entrées (reprendre, recommencer, réglages, carnet, retour au titre) ; `LevelRuntime.update` early-return, FX et rendu continuent ; Échap reprend.
+- [x] **Réglages : volumes par canal** — _Critère : 4 curseurs, application immédiate, persistance._ — application immédiate, persistance d'une table complète (bug pré-unlock corrigé par test : chaque écriture fusionne la précédente).
+- [x] **Réglages : qualité manuelle** — _Critère : choisir un tier fige l'adaptation (ADR-013)._ — `auto` rend la main à l'adaptation ; un tier appelle `setTier(tier, 'user')`.
+- [x] **Réglages : accessibilité** — _Critère : animations réduites, taille du texte, mode daltonien, contraste renforcé._ — mouvement (auto/réduit/plein), texte 0,875/1/1,25 (`--font-scale`), contraste (`html.ui-hc`, verre opaque, encre ravivée) ; daltonien : l'accent braise est toujours doublé d'un liseré, jamais seul (règle § 3).
+- [x] **Réglages : remappage clavier** — _Critère : capture d'une touche physique, détection de conflit, retour aux défauts._ — capture `event.code` (AZERTY-proof), modificateurs purs refusés, conflit signalé `role=alert` + la touche quitte son ancienne action, libellés de disposition via `getLayoutMap`, bouton défauts.
+- [x] **Carnet de proverbes** — _Critère : 8 entrées, verrouillées tant que non obtenues, mention « inspiré de »._ — croquis de tour SVG inline zéro asset, braise si offerte / silhouette 0,18 si scellée, note « inspiré de l'esprit du Nokhchalla ».
+- [x] **Carnet illustré : croquis par lieu** — _Critère : une illustration révélée par aigle trouvé, sans pourcentage affiché._ — une révélation par chapitre, aucun compteur ni pourcentage ; les aigles arrivent avec les niveaux (phase 9) et s'y brancheront sur la même clé de proverbe.
+- [ ] **Bénédiction de l'ancien** — _Critère : geste, aucune conséquence mécanique._ — `Elder` existe mais aucun niveau ne place encore d'ancien : livré avec les niveaux (phase 9).
+- [x] **`i18n` : 4 langues branchées sur l'UI** — _Critère : changer de langue ne recharge pas la page ; `ce` retombe sur `fr` sans trou._ — `i18n.onChange` réétiquette tous les panneaux ouverts ; repli `ce`→`fr` verrouillé par test.
+- [x] **Sous-titres des événements sonores** — _Critère : activables, aucun puzzle ne dépend du son._ — interrupteur dans Réglages → Accessibilité, légendes discrètes (signature, pierre, accord, célébration) via le toast `aria-live`.
+- [x] **`SaveManager` : sauvegarde automatique versionnée** — _Critère : jamais de bouton « sauvegarder » ; une sauvegarde corrompue est ignorée en silence._ — écrit à chaque chapitre et à la pause, `hasProgress`/`isCompleted`/`reachedLevelIds` pour le titre et le sélecteur.
 
 ---
 

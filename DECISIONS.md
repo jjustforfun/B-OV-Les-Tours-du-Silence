@@ -1091,3 +1091,66 @@ reste réservé aux futurs écrans d'UI (phase 8), hors boucle de simulation.
   au lieu d'être re-décidé par chaque tween.
 - Les durées restent des données de `config.ts` : accorder le jeu se fait
   sans toucher au code des timelines.
+
+---
+
+## ADR-027 : L'interface est une pile d'écrans DOM orchestrée par `GameFlow`
+
+- **Date** : 2026-09-27 · **Statut** : Accepté
+
+### Contexte
+
+La phase 8 doit assembler écran titre, cartons de chapitre, pause, réglages,
+carnet et sélecteur — avec `Échap` qui remonte d'un cran, un focus clavier
+piégé dans la fenêtre ouverte, une suspension des intentions de jeu pendant
+que l'interface parle, et des transitions de chapitre sans couture. ADR-012
+a posé l'UI en HTML/CSS au-dessus du canvas ; il manque la **structure** :
+qui décide qu'un écran est ouvert, qui gèle la simulation, qui enchaîne
+titre → chapitre → célébration → chapitre suivant.
+
+### Décision
+
+1. **`UIRoot` est une pile** : un panneau de base optionnel (le titre) plus
+   une pile modale. Un seul panneau actif ; `Échap` dépile (ou reprend si le
+   sommet est la pause) ; le focus est piégé dans le panneau ouvert
+   (WCAG 2.4.3) et rendu à sa position d'origine à la fermeture. Chaque
+   panneau voit passer les touches au sommet (`onKeydown`) et peut les
+   consommer — c'est ainsi que la capture de remappage avale même `Échap`.
+2. **`GameFlow` est le seul orchestrateur** (un état :
+   boot/titre/transition/intro/jeu/pause/victoire). Toutes les transitions
+   passent par le même moule : voile noir 1200 ms → couture invisible
+   (déchargement, chargement, cadrage, palette ciel/LUT) → carton de chapitre
+   dont le noir intérieur prend le relais → jeu. Le voile ne capture jamais
+   le pointeur.
+3. **La suspension est un drapeau** (`InputManager.setSuspended`) : quand
+   l'interface parle, le clavier et le pointeur du jeu se taisent, seules les
+   touches de confort (muet, plein écran) traversent. La pause gèle la
+   simulation (`LevelRuntime.update` early-return) mais jamais le rendu ni
+   les FX.
+4. **Aucun gsap** : les fondus de panneaux sont des transitions CSS pilotées
+   par les jetons de durée (180/420/900/1800 ms) ; `UiVeil` résout sa
+   promesse sur `transitionend` avec un filet `setTimeout`. Le mouvement
+   réduit (réglage ou système) réduit tout à 1 ms via `html.ui-motion-reduced`.
+5. **Les réglages s'appliquent et se persistent immédiatement** — jamais de
+   bouton « Appliquer ». La section `ui` du magasin (ADR-011) stocke qualité
+   figée, mouvement, taille de texte, contraste, sous-titres ; un choix revenu
+   à sa valeur neutre **efface** la clé.
+
+### Alternatives considérées
+
+| Option                          | Pourquoi écartée                                                                                          |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Une machine à états générique** | Huit écrans ne justifient pas un DSL ; un champ `state` + des méthodes nommées se lisent en une page     |
+| **gsap pour les fondus d'UI**   | ADR-026 le réservait à cet usage ; les transitions CSS suffisent et suivent `prefers-reduced-motion` seules |
+| **Un overlay WebGL pour l'UI**  | Contredit ADR-012 : lisibilité, lecteur d'écran et safe-areas se gèrent en DOM pour rien                  |
+| **Suspendre par `stopPropagation`** | Fragile (ordre des écouteurs) ; un drapeau explicite se teste et se documente                          |
+
+### Conséquences
+
+- Ajouter un écran = une classe `UIPanel` + un `push` ; l'accessibilité et la
+  suspension viennent avec la pile.
+- La scène du titre vit sous les chapitres (détachée, pas disposée) : le
+  retour au titre est instantané et le coût mémoire est celui d'une petite
+  scène procédurale, libérée seulement au démontage du flux.
+- Le ducking des cartons passe par un événement typé `ui:speaking` : l'audio
+  reste découplé de l'UI (même bus que le reste, ADR-025).

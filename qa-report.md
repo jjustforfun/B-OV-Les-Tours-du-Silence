@@ -887,3 +887,101 @@ Actions correctives :
    les trois profils de viewport passent hors CI.
 4. **Mesurer la couverture** (`--coverage`) et fixer un seuil plancher à la fin
    de la phase 2.
+
+---
+
+# Rapport QA — Phase 8 : UI et narration
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert, avec réserve de mesures navigateur**
+
+La phase UI est implémentée et branchée. `UIRoot` porte l'interface en pile
+d'écrans DOM (ADR-027) : écran titre, cartons de chapitre, pause, réglages,
+carnet, sélecteur — `Échap` remonte d'un cran, le focus reste piégé dans le
+panneau ouvert, et les intentions de jeu se suspendent tant que l'interface
+parle. `GameFlow` orchestre le tout : chaque transition passe par le même
+voile noir 1200 ms puis le noir interne du carton, la sauvegarde est
+automatique et silencieuse, les réglages s'appliquent et persistent à l'instant.
+La pause gèle la simulation, jamais le rendu.
+
+## Checks automatiques
+
+| Étape            | Commande               | Résultat | Valeur                                                      |
+| ---------------- | ---------------------- | -------- | ----------------------------------------------------------- |
+| Lint             | `pnpm lint`            | 🟢       | 0 erreur, 0 avertissement                                   |
+| Typecheck        | `pnpm typecheck`       | 🟢       | 0 erreur (strict + exactOptionalPropertyTypes)              |
+| Tests unitaires  | `pnpm test`            | 🟢       | 202 tests / 29 fichiers (183 + 19 nouveaux), 5,5 s          |
+| Couverture       | `pnpm test --coverage` | ⬜       | non mesurée                                                 |
+| Tests e2e        | `pnpm test:e2e`        | 🟠       | non exécutés : Chromium non installable dans le bac à sable |
+| Budget de bundle | `pnpm check-bundle`    | 🟢       | 344,4 ko gzip / 1 464,8 ko (23,5 %)                         |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → tests → build →
+budget, terminé sans erreur.
+
+Nouveaux tests de la phase : `levels-registry` (dérivation titre/vertu/
+proverbe, présence des clés dans les 3 dictionnaires), `save-manager`
+(progression, proverbes, temps de jeu, reset, corruption ignorée), `i18n`
+(repli ce→fr sans trou, interpolation, abonnés, garde sans DOM),
+`audio-director` (tables de volumes complètes avant déverrouillage),
+`settings-store` (section ui persistée/sanitizée, retour à « auto » efface la
+clé).
+
+Détail du bundle initial : `vendor-3d` 209,2 ko · entrée 53,5 ko ·
+`vendor-audio` 63,7 ko (chunk séparé, premier geste) · CSS 3,1 ko (UI
+complète) · `AudioManager` 5,7 ko · dictionnaires paresseux `ru` 2,8 /
+`fr` 2,3 / `en` 2,1 / `ce` 0,5 ko · `index.html` 2,0 ko. Chunks de niveaux :
+0,30–0,50 ko gzip par chapitre.
+
+## Fonctionnel — écrans de la phase
+
+| Écran / réglage          | Attendu (tasks.md)                                  | Statut | Note                                                             |
+| ------------------------ | --------------------------------------------------- | ------ | ---------------------------------------------------------------- |
+| Pile d'écrans            | un seul actif, `Échap` remonte, focus piégé          | 🟢     | `UIRoot` push/pop/popAll + base ; piège Tab first/last            |
+| Écran titre              | Commencer/Continuer/Réglages/Recueil au clavier seul | 🟢     | toute la surface démarre ; menu discret ; « Chapitres » si save   |
+| Carton de chapitre       | fondu 1200 ms, passable à tout moment                | 🟢     | voile 1200 ms + noir interne 1800 ms ; écourt tap/Entrée/Espace   |
+| Intro de chapitre        | 2 phrases, voile translucide, ducking, sortie auto   | 🟢     | `levels.*.intro` ×3 langues ; `ui:speaking` → duck ; 9 s          |
+| Pause                    | gèle la simulation, jamais le rendu                  | 🟢     | 5 entrées ; `update()` early-return ; FX/rendu continuent         |
+| Volumes 4 canaux         | application immédiate, persistance                   | 🟢     | fusion table persistée + défauts avant unlock (2 tests)           |
+| Qualité manuelle         | tier fige l'adaptation (ADR-013)                     | 🟢     | `auto`/low/medium/high ; `setTier(tier, 'user')`                  |
+| Accessibilité            | mouvement, texte, contraste, daltonien               | 🟢     | `--font-scale` 0,875/1/1,25 ; `html.ui-hc` opaque ; braise toujours doublée d'un liseré |
+| Remappage                | capture physique, conflit, défauts                   | 🟢     | `event.code`, modificateurs refusés, conflit `role=alert`, `getLayoutMap` |
+| Carnet                   | 8 entrées verrouillées, « inspiré de »               | 🟢     | croquis SVG inline ; offerte = braise, scellée = silhouette 0,18  |
+| i18n 4 langues           | sans rechargement ; `ce`→`fr` sans trou              | 🟢     | 122 clés ×3 ; `ce` partiel ; réétiquettage par `i18n.onChange`    |
+| Sous-titres sonores      | activables, aucun puzzle ne dépend du son            | 🟢     | interrupteur Réglages ; 4 légendes via toast `aria-live`          |
+| Sauvegarde auto          | jamais de bouton ; corruption ignorée en silence     | 🟢     | à chaque chapitre + à la pause ; format versionné v1              |
+
+Mesures encore impossibles dans le bac à sable : FPS navigateur ⬜,
+captures d'écran ⬜ (Chromium non installable, P0-006). Les modules
+transforment sans erreur via le serveur de dev (vérifié : `/`, `main.ts`,
+`GameFlow.ts`, panneaux, dictionnaires → 200).
+
+## Bugs trouvés en phase 8
+
+| ID     | Gravité | Description                                                                  | Étapes de reproduction                                | Statut                                    |
+| ------ | ------- | ---------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------ |
+| P0-008 | majeur  | `SettingsStore` corrompu : méthodes de classe insérées dans `sanitize`, déclaration `result` écrasée | relire le fichier après le patch de section ui         | corrigé (reconstruction, tsc/ESLint verts) |
+| P0-009 | mineur  | `nextLevelId` dupliqué dans `levels/index.ts`                                 | importer le registre                                   | corrigé                                     |
+| P0-010 | majeur  | `LevelRuntime` : `InputEvents` utilisé mais non importé (8 erreurs de type)   | `pnpm typecheck`                                       | corrigé                                     |
+| P0-011 | majeur  | `AudioDirector.setVolume` : chaque réglage avant déverrouillage écrasait les autres canaux et `muted` | régler deux curseurs depuis l'écran titre               | corrigé + 2 tests de régression            |
+| P0-012 | mineur  | `Toast.show` inférait la durée du littéral `2600` du jeton `as const`         | passer une durée différente                            | corrigé (`durationMs?: number`)             |
+
+## Décision
+
+**Phase validée : oui** — `pnpm check` vert, chaque critère de tasks.md est
+implémenté ou explicitement différé avec sa raison (bénédiction de l'ancien →
+phase 9, quand les niveaux placent des anciens ; révélation « par aigle » se
+branchera sur la même clé de proverbe).
+
+Actions correctives :
+
+1. **Parcours complet au clavier et aux deux viewports** (1920×1080,
+   390×844) sur un poste navigateur : titre → prologue → victoire → chapitre
+   suivant → pause → réglages → carnet → retour titre.
+2. **Vérifier le focus visible** sur chaque contrôle (bordeaux braise) et la
+   lecture au lecteur d'écran des `role=dialog`/`aria-live`.
+3. **Déposer les fontes** dans `public/assets/fonts/` (voir son README) puis
+   re-mesurer le poids initial.
