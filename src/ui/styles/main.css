@@ -5,9 +5,15 @@
  * respectueux des safe-areas, et chaque cible tactile fait au moins 44 px.
  * L'interface flotte au-dessus du canvas sans jamais le capturer : seuls
  * les panneaux visibles reçoivent les événements pointeur.
+ *
+ * Le verre (docs/ART_DIRECTION.md § 7) : tout texte de jeu est posé sur un
+ * voile translucide — jamais directement sur la scène. La braise marque ce
+ * qui vit ; le reste reste pierre.
  */
 
 @import './tokens.css';
+
+/* ————————————————————————————————— Racine */
 
 .ui-root {
   position: fixed;
@@ -18,12 +24,34 @@
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   color: var(--color-ink);
   font-family: var(--font-body);
-  transition: opacity var(--duration-slow) var(--ease-soft);
+  /* Toute l'interface hérite de la taille de texte choisie (jeton --font-scale). */
+  font-size: calc(1rem * var(--font-scale));
+  line-height: 1.5;
+  transition: opacity var(--duration-base) var(--ease-soft);
 }
 
 .ui-root--hidden {
   opacity: 0;
+  visibility: hidden;
 }
+
+/* ————————————————————————————————— Voile de transition */
+
+.ui-veil {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-slow) var(--ease-soft);
+}
+
+.ui-veil--black {
+  opacity: 1;
+}
+
+/* ————————————————————————————————— Panneaux */
 
 .ui-panel {
   position: absolute;
@@ -47,11 +75,101 @@
   pointer-events: none;
 }
 
-/* Écran titre */
+/* Le verre posé sous les menus et réglages (§ 7). */
+.ui-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: min(36rem, 100%);
+  max-height: 100%;
+  padding: var(--space-6);
+  border: var(--border-hairline);
+  border-radius: var(--radius-card);
+  background: var(--veil-bg);
+  backdrop-filter: blur(var(--veil-blur));
+  text-align: left;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  /* Repli opaque : la lisibilité ne dépend pas du décor. */
+  .ui-card {
+    background: var(--veil-bg-strong);
+  }
+}
+
+/* ————————————————————————————————— Boutons */
+
+.ui-menu__item,
+.ui-title__menu-item,
+.ui-settings__close,
+.ui-settings__reset {
+  min-height: var(--touch-min);
+  padding: var(--space-3) var(--space-6);
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-soft),
+    color var(--duration-fast) var(--ease-soft),
+    background-color var(--duration-fast) var(--ease-soft);
+}
+
+.ui-menu__item:hover,
+.ui-title__menu-item:hover,
+.ui-settings__close:hover,
+.ui-settings__reset:hover,
+.ui-menu__item:focus-visible,
+.ui-title__menu-item:focus-visible,
+.ui-settings__close:focus-visible,
+.ui-settings__reset:focus-visible {
+  border-color: var(--color-ember);
+  color: var(--color-ember-soft);
+}
+
+.ui-menu__item {
+  width: 100%;
+  text-align: center;
+}
+
+/* ————————————————————————————————— Écran titre */
+
+.ui-title {
+  justify-content: space-between;
+  padding: calc(var(--space-12) + var(--safe-top)) var(--space-6) var(--space-8);
+}
+
+/* Voile doux : le texte ne flotte jamais sur la scène (§ 7), mais la
+   vallée reste la vedette — on l'assombrit à peine. */
+.ui-title__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(13, 17, 23, 0.1), rgba(13, 17, 23, 0.62)),
+    linear-gradient(to top, rgba(13, 17, 23, 0.78), rgba(13, 17, 23, 0) 42%);
+  pointer-events: none;
+}
+
+.ui-title__core {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: center;
+  margin-top: var(--space-12);
+  animation: ui-title-in var(--duration-contemplative) var(--ease-soft) both;
+  animation-delay: var(--title-delay, 0ms);
+}
+
 .ui-title__name {
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-xl);
+  font-weight: 400;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
 }
@@ -62,40 +180,118 @@
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   opacity: 0.6;
+  animation: ui-title-in var(--duration-contemplative) var(--ease-soft) both;
+  animation-delay: calc(var(--title-delay, 0ms) + var(--duration-base));
 }
 
-.ui-title__start,
-.ui-pause__item {
-  min-height: var(--touch-min);
-  min-width: calc(var(--touch-min) * 4);
-  padding: var(--space-3) var(--space-6);
-  border: 1px solid rgba(232, 224, 210, 0.25);
-  border-radius: 2px;
+/* Toute la surface est la porte d'entrée : bouton invisible plein écran,
+   texte posé en bas, au-dessus du menu discret. */
+.ui-title__touch {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: calc(var(--space-12) + var(--safe-bottom));
+  border: none;
   background: transparent;
-  color: inherit;
+  color: var(--color-ink);
   font: inherit;
   font-size: var(--text-sm);
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
+  opacity: 0.9;
   cursor: pointer;
+  animation: ui-title-breathe 2.8s var(--ease-soft) infinite;
+  animation-delay: calc(var(--title-delay, 0ms) + var(--duration-contemplative));
+}
+
+.ui-title__menu {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  justify-content: center;
+}
+
+.ui-title__menu-item {
+  min-height: var(--touch-min);
+  border-color: transparent;
+  opacity: 0.75;
+}
+
+@keyframes ui-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-2));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ui-title-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+/* ————————————————————————————————— Carton de chapitre */
+
+/* Le noir d'entrée : pur, c'est un carton — pas un voile. Il se pose
+   d'un coup (le voile de transition était déjà noir) et ne s'ouvre qu'au
+   rythme contemplatif : la transition vit dans l'état ouvert, jamais dans
+   l'état d'entrée. */
+.ui-chapter__black {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+
+.ui-chapter.is-entering .ui-chapter__black {
+  opacity: 1;
+  transition: none;
+}
+
+.ui-chapter.is-entering.is-open .ui-chapter__black {
+  opacity: 0;
+  transition: opacity var(--duration-contemplative) var(--ease-stone);
+}
+
+.ui-chapter__texts {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+  opacity: 0;
+  transform: translateY(var(--space-2));
   transition:
-    border-color var(--duration-fast) var(--ease-soft),
-    color var(--duration-fast) var(--ease-soft);
+    opacity var(--duration-slow) var(--ease-stone),
+    transform var(--duration-slow) var(--ease-stone);
 }
 
-.ui-title__start:hover,
-.ui-pause__item:hover,
-.ui-title__start:focus-visible,
-.ui-pause__item:focus-visible {
-  border-color: var(--color-ember);
-  color: var(--color-ember-soft);
-  outline: none;
+.ui-chapter.is-open .ui-chapter__texts {
+  opacity: 1;
+  transform: none;
+  transition-delay: var(--duration-slow);
 }
 
-/* Carte de chapitre */
-.ui-chapter {
-  background: rgba(16, 22, 31, 0.72);
-  backdrop-filter: blur(2px);
+.ui-chapter__texts.is-faded {
+  opacity: 0;
+  transition-duration: var(--duration-base);
+  transition-delay: 0ms;
 }
 
 .ui-chapter__number {
@@ -110,6 +306,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-lg);
+  font-weight: 400;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
 }
@@ -117,70 +314,562 @@
 .ui-chapter__title {
   margin: 0;
   max-width: 32ch;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
   font-style: italic;
   line-height: 1.8;
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
-/* Pause */
+.ui-chapter__subtitle {
+  margin: 0;
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+  opacity: 0.6;
+}
+
+/* L'intro : deux phrases au plus, sur verre translucide. */
+.ui-chapter__intro {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  max-width: 40ch;
+  padding: var(--space-4) var(--space-6);
+  border: var(--border-hairline);
+  border-radius: var(--radius-card);
+  background: var(--veil-bg);
+  backdrop-filter: blur(var(--veil-blur));
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  line-height: 1.9;
+  opacity: 0;
+  transform: translateY(var(--space-2));
+  transition:
+    opacity var(--duration-slow) var(--ease-stone),
+    transform var(--duration-slow) var(--ease-stone);
+}
+
+.ui-chapter__intro.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .ui-chapter__intro {
+    background: var(--veil-bg-strong);
+  }
+}
+
+/* ————————————————————————————————— Pause */
+
 .ui-pause {
-  background: rgba(16, 22, 31, 0.6);
+  background: rgba(13, 17, 23, 0.45);
   backdrop-filter: blur(3px);
 }
 
-/* Proverbes */
-.ui-proverbs__list {
+@supports not (backdrop-filter: blur(1px)) {
+  .ui-pause {
+    background: rgba(13, 17, 23, 0.78);
+  }
+}
+
+.ui-pause__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.ui-pause__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ————————————————————————————————— Réglages */
+
+.ui-settings__card {
+  width: min(34rem, 100%);
+}
+
+.ui-settings__scroller {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+
+.ui-settings__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ui-settings__heading {
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-hairline);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-stone-300);
+}
+
+.ui-settings__section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.ui-settings__row {
+  display: grid;
+  grid-template-columns: minmax(9em, 1fr) minmax(0, 2fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ui-settings__row > .ui-settings__toggle {
+  justify-self: start;
+}
+
+.ui-settings__label {
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.ui-settings__slider,
+.ui-settings__select,
+.ui-settings__toggle {
+  accent-color: var(--color-ember);
+}
+
+.ui-settings__slider {
+  width: 100%;
+  min-height: var(--touch-min);
+}
+
+.ui-settings__readout {
+  min-width: 3.5em;
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-stone-300);
+  text-align: right;
+}
+
+.ui-settings__select {
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--color-stone-800);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.ui-settings__toggle {
+  width: var(--touch-min);
+  height: var(--touch-min);
+  justify-self: end;
+}
+
+.ui-settings__hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: var(--color-stone-300);
+}
+
+.ui-settings__conflict {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ember-soft);
+}
+
+.ui-settings__keys {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-settings__keybutton {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-soft),
+    color var(--duration-fast) var(--ease-soft);
+}
+
+.ui-settings__keybutton .ui-settings__label {
+  font-size: var(--text-sm);
+}
+
+.ui-settings__keys-value {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-stone-300);
+  text-transform: uppercase;
+}
+
+.ui-settings__keybutton:hover,
+.ui-settings__keybutton:focus-visible {
+  border-color: var(--color-ember);
+}
+
+.ui-settings__keybutton.is-capturing {
+  border-color: var(--color-ember);
+  color: var(--color-ember-soft);
+  animation: ui-capture-pulse 1.2s var(--ease-soft) infinite;
+}
+
+@keyframes ui-capture-pulse {
+  0%,
+  100% {
+    border-color: var(--color-ember);
+  }
+  50% {
+    border-color: var(--color-stone-500);
+  }
+}
+
+/* ————————————————————————————————— Carnet de proverbes */
+
+.ui-proverb__card {
+  width: min(38rem, 100%);
+}
+
+.ui-proverb__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-proverb__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.ui-proverb__note {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: var(--color-stone-300);
+}
+
+.ui-proverb__scroller {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+
+.ui-proverb__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   margin: 0;
   padding: 0;
-  max-width: 40ch;
   list-style: none;
 }
 
-.ui-proverbs__text {
-  margin: 0;
+.ui-proverb__entry {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  padding-bottom: var(--space-4);
+  border-bottom: var(--border-hairline);
+}
+
+.ui-proverb__entry:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.ui-proverb__figure {
+  flex: none;
+  width: var(--touch-min);
+  color: var(--color-stone-100);
+  transition: opacity var(--duration-slow) var(--ease-soft);
+}
+
+.ui-proverb__tower {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ui-proverb__ember {
+  fill: var(--color-ember);
+}
+
+/* Page offerte : la braise veille, le texte se lit. */
+.ui-proverb__entry.is-offered .ui-proverb__text {
   font-family: var(--font-display);
   font-size: var(--text-md);
   line-height: 1.9;
 }
 
-.ui-proverbs__virtue {
-  margin: var(--space-1) 0 0;
+.ui-proverb__entry.is-offered .ui-proverb__virtue {
+  color: var(--color-ember);
+}
+
+/* Page scellée : silhouette pâle, le texte reste à venir. */
+.ui-proverb__entry.is-sealed .ui-proverb__figure {
+  opacity: 0.18;
+}
+
+.ui-proverb__entry.is-sealed .ui-proverb__text {
+  font-size: var(--text-sm);
+  font-style: italic;
+  color: var(--color-stone-500);
+}
+
+.ui-proverb__entry.is-sealed .ui-proverb__virtue {
+  color: var(--color-stone-500);
+}
+
+.ui-proverb__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.ui-proverb__virtue {
+  margin: 0;
   font-size: var(--text-xs);
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  color: var(--color-ember);
-  opacity: 0.8;
+  transition: color var(--duration-slow) var(--ease-soft);
 }
 
-/* Toast */
+.ui-proverb__text {
+  margin: 0;
+}
+
+/* ————————————————————————————————— Sélecteur de chapitres */
+
+.ui-chapters__card {
+  width: min(34rem, 100%);
+}
+
+.ui-chapters__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ui-chapters__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.ui-chapters__scroller {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: var(--space-2);
+}
+
+.ui-chapters__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-chapters__choice {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-hairline);
+  border-left-width: 2px;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-soft),
+    color var(--duration-fast) var(--ease-soft);
+}
+
+.ui-chapters__choice:hover:not(:disabled),
+.ui-chapters__choice:focus-visible:not(:disabled) {
+  border-color: var(--color-ember);
+}
+
+.ui-chapters__number {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-stone-300);
+  text-transform: uppercase;
+}
+
+.ui-chapters__name {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+}
+
+.ui-chapters__status {
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-stone-300);
+  text-transform: uppercase;
+}
+
+/* Le chapitre courant porte la braise — liseré, jamais la couleur seule
+   (règle daltonien, docs/ART_DIRECTION.md § 3). */
+.ui-chapters__entry.is-current .ui-chapters__choice {
+  border-left-color: var(--color-ember);
+}
+
+.ui-chapters__entry.is-current .ui-chapters__status {
+  color: var(--color-ember);
+}
+
+.ui-chapters__entry.is-locked .ui-chapters__choice {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ui-chapters__entry.is-locked .ui-chapters__name {
+  font-style: italic;
+  color: var(--color-stone-500);
+}
+
+/* ————————————————————————————————— Toast */
+
 .ui-toast {
   position: absolute;
   left: 50%;
   bottom: calc(var(--safe-bottom) + var(--space-8));
   transform: translateX(-50%);
+  max-width: min(34rem, calc(100% - var(--space-8)));
   padding: var(--space-2) var(--space-4);
-  border-radius: 2px;
-  background: rgba(16, 22, 31, 0.85);
+  border: var(--border-hairline);
+  border-radius: var(--radius-control);
+  background: var(--veil-bg-strong);
   font-size: var(--text-sm);
   pointer-events: none;
-  transition: opacity var(--duration-base) var(--ease-soft);
+  transition:
+    opacity var(--duration-base) var(--ease-soft),
+    visibility var(--duration-base) var(--ease-soft);
 }
 
-/* Paysage sur petit écran : on remonte tout pour éviter la barre de geste. */
+.ui-toast__text {
+  margin: 0;
+}
+
+/* ————————————————————————————————— Focus clavier */
+
+/* Toujours visible, partout (docs/CONTROLS.md § 5). */
+:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 2px;
+}
+
+/* Anneau de sélection des mécanismes (Tab / Shift+Tab, § 2.3) */
+.ui-focus-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  border: 2px solid var(--color-ember);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgba(13, 17, 23, 0.55),
+    0 0 12px rgba(217, 164, 65, 0.35);
+  pointer-events: none;
+  z-index: 40;
+  transition:
+    opacity var(--duration-fast) var(--ease-soft),
+    width var(--duration-fast) var(--ease-soft),
+    height var(--duration-fast) var(--ease-soft);
+}
+
+.ui-focus-ring--pulse {
+  animation: ui-focus-pulse 2s var(--ease-soft) infinite;
+}
+
+@keyframes ui-focus-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* ————————————————————————————————— Petit paysage */
+
+/* Paysage sur petit écran : on resserre tout pour éviter la barre de geste. */
 @media (orientation: landscape) and (max-height: 480px) {
   .ui-panel {
     padding: var(--space-4);
     gap: var(--space-2);
   }
+
+  .ui-title {
+    padding-top: var(--space-6);
+  }
+
+  .ui-title__touch {
+    padding-bottom: calc(var(--space-8) + var(--safe-bottom));
+  }
+}
+
+/* ————————————————————————————————— Mouvement réduit */
+
+/* Le réglage utilisateur pose html.ui-motion-reduced ; la préférence
+   système fait de même par sécurité. Aucun fondu, aucune respiration :
+   les textes se posent et se retirent. */
+html.ui-motion-reduced .ui-root,
+html.ui-motion-reduced .ui-root *,
+html.ui-motion-reduced .ui-veil {
+  transition-duration: 1ms !important;
+  animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ui-root,
-  .ui-panel,
-  .ui-toast {
-    transition-duration: 1ms;
+  .ui-root *,
+  .ui-veil {
+    transition-duration: 1ms !important;
+    animation: none !important;
   }
 }

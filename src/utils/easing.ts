@@ -40,6 +40,13 @@ export const easeCelebrate: EasingFn = (t) => {
   return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2;
 };
 
+/** Sortie exponentielle : vif au départ, posé à l'arrivée — la pierre qui
+ *  trouve sa place (docs/tasks Phase 7 : reconstruction en `expo.out`). */
+export const expoOut: EasingFn = (t) => {
+  const x = clamp01(t);
+  return x >= 1 ? 1 : 1 - 2 ** (-10 * x);
+};
+
 export const EASINGS = {
   linear,
   easeInQuad,
@@ -48,6 +55,7 @@ export const EASINGS = {
   easeInOutCubic,
   easeStone,
   easeCelebrate,
+  expoOut,
 } as const satisfies Record<string, EasingFn>;
 
 export type EasingName = keyof typeof EASINGS;

@@ -8,6 +8,7 @@
  *    proprement plutôt que de bloquer le démarrage.
  */
 import { STORAGE_KEYS } from '@/config';
+import { LEVEL_IDS, type LevelId } from '@levels/index';
 import { platform } from '@platform/Platform';
 
 export const SAVE_VERSION = 1;
@@ -53,6 +54,28 @@ export class SaveManager {
 
   get snapshot(): Readonly<SaveData> {
     return this.data;
+  }
+
+  /** Le joueur a-t-il déjà avancé (écran titre : « Continuer » vs « Commencer ») ? */
+  hasProgress(): boolean {
+    return this.data.completed.length > 0 || this.data.currentLevel !== LEVEL_IDS[0];
+  }
+
+  /** Ce chapitre est-il terminé ? */
+  isCompleted(levelId: string): boolean {
+    return this.data.completed.includes(levelId);
+  }
+
+  /**
+   * Chapitres ouverts dans le sélecteur : les terminés, plus le courant.
+   * Les suivants restent fermés — la carte ne spoil rien (docs/GDD.md).
+   */
+  reachedLevelIds(): readonly LevelId[] {
+    const reached = new Set<LevelId>(this.data.completed as LevelId[]);
+    if ((LEVEL_IDS as readonly string[]).includes(this.data.currentLevel)) {
+      reached.add(this.data.currentLevel as LevelId);
+    }
+    return LEVEL_IDS.filter((id) => reached.has(id));
   }
 
   async load(): Promise<SaveData> {

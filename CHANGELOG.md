@@ -6,6 +6,53 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+### Ajouté
+
+- **Phase 8 — UI et narration** : `UIRoot` pile d'écrans DOM (panneau de base
+  + pile modale, `Échap` remonte d'un cran, focus piégé WCAG 2.4.3,
+  suspension des intentions de jeu, ADR-027) orchestrée par `GameFlow`
+  (titre → carton → jeu → célébration → suite, voile noir 1200 ms sans
+  couture) ; écran titre sur la vallée (« Toucher pour commencer » plein
+  écran, entrées clavier seules) ; cartons de chapitre deux temps (noir
+  interne 1800 ms, intro 2 phrases sur verre, ducking `ui:speaking`,
+  écourtable) ; pause 5 entrées qui gèle la simulation, jamais le rendu ;
+  réglages tout-application-immédiate (4 curseurs de volumes fusionnant la
+  table persistée avant même le déverrouillage audio — bug corrigé, qualité
+  figeable, langue fr/en/ru/ce sans rechargement, mouvement, taille de texte,
+  contraste, sous-titres, remappage `event.code` avec conflits signalés et
+  libellés de disposition) ; carnet de proverbes à croquis de tour SVG inline
+  (braise si offerte, silhouette scellée, « inspiré de l'esprit du
+  Nokhchalla ») ; sélecteur de chapitres sans spoiler (verrouillé = fermé) ;
+  toasts `aria-live` et sous-titres d'événements sonores ; sauvegarde
+  automatique silencieuse à chaque chapitre et à la pause
+  (`hasProgress`/`isCompleted`/`reachedLevelIds`). Nouvelles clés i18n
+  ×3 langues (122 entrées chacune), `ce` toujours en repli `fr`.
+- **Phase 6 — Audio complet** : `AudioManager` (bus master/music/ambience/sfx,
+  gains nominaux 0/−9/−14/−6 dB, ADR-025), réverbération « vallée » partagée
+  (decay 9 s, wet 0,42), `PondarSynth` Karplus-Strong à trois cordes accordées
+  par chapitre (±4 cents), musique adaptative à quatre couches avec fondus de
+  6 s, ambiances par lieu à périodes premières (7/11/13/17/23 s), pas selon la
+  surface (±2 demi-tons), rotation musicale (chaque cran joue la note suivante
+  de la gamme, `ScaleCursor`), accord de connexion, signature de chapitre et
+  ducking. Tone.js est chargé **après le premier geste** (`AudioDirector`,
+  ADR-025) : le bundle initial ne contient aucune dépendance audio. Onglet
+  caché : master à 0 en 250 ms + Transport suspendu ; perte de focus : −12 dB.
+- **Phase 7 — FX et « juice »** : pool de particules générique à draw call
+  unique (`fx/Particles.ts`, 420 particules × qualité), poussière de rotation,
+  reconstruction de pierre (`expo.out` 700 ms, les éclats s'assemblent),
+  traînée dorée (8 u/s, fondu 900 ms), micro-célébrations 1,6 s (timeline
+  manuelle, ADR-026), illumination de fin de chapitre en cascade (250 ms de la
+  plus lointaine à la plus proche) + rais de grâce, brume 1–3 nappes
+  (opacité ≤ 0,12), neige 140–400 flocons recyclés, lucioles aux chapitres 4
+  et 7 (pulsations désynchronisées par sommet), rais de lumière avec poussière
+  flottante, indices visuels d'inactivité (lueur 90 s, regard de Borz 180 s).
+  Tout est instancié ou mis en pool ; `prefers-reduced-motion` divise les
+  durées par deux et coupe les dérives.
+- **Mode jouable `?play` / `?level=<id>`** : un chapitre se charge (chunk à la
+  demande), `LevelRuntime` + `FxRuntime` + `AudioDirector` s'y abonnent par
+  l'EventBus, cadrage auto-fit sur le graphe, touche M pour la coupure rapide
+  du son, premier geste = déverrouillage audio.
+
 ### Modifié
 
 - **Documentation de conception réécrite** : `GDD.md`, `STORY.md`,
@@ -29,8 +76,6 @@ versionnage [SemVer](https://semver.org/lang/fr/).
   Conséquences). Toutes les références croisées du dépôt ont été mises à jour.
 - `TurpalModel` n'est plus une capsule de substitution mais un modèle
   procédural complet.
-
-### Ajouté
 
 - Phase 1 rendue jouable visuellement : scène de démonstration avec tour
   vainakh stylisée sur piton rocheux, Turpal pour l'échelle, brume d'aube et

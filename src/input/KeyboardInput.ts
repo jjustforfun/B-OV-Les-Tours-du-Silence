@@ -9,13 +9,14 @@
  * en QWERTY et ZQSD en AZERTY sont exactement les mêmes touches physiques,
  * de même que Q/E et A/E pour la rotation. Le jeu marche donc sur les deux
  * dispositions sans rien détecter ni configurer ; la disposition n'est lue
- * (via `navigator.keyboard.getLayoutMap()`) que pour **afficher** le bon
- * libellé dans les réglages.
+ * (via `navigator.keyboard.getLayoutMap()` ou l'observation des frappes) que
+ * pour **afficher** le bon libellé dans les réglages.
  *
- * Le remappage complet passera par `bindings`, qui est une donnée — pas un
- * `switch` figé (docs/CONTROLS.md).
+ * Le remappage passe par `bindings`, une donnée (`Record<code, InputAction>`)
+ * persistée sous `bov.settings.v1` — jamais un `switch` figé.
  */
 import type { EventBus } from '@core/EventBus';
+import { fallbackKeyLabel, keyLayout } from './KeyLayout';
 import type { InputAction, InputEvents } from './InputManager';
 
 /** Table par défaut : code physique → intention de jeu. */
@@ -60,14 +61,50 @@ const PREVENT_DEFAULT = new Set<InputAction>([
   'cycleNext',
   'cyclePrev',
   'confirm',
+  'cancel',
   'fullscreenToggle',
 ]);
 
+/** Cible d'écoute minimale, injectable pour les tests. */
+export interface KeyboardTarget {
+  addEventListener(type: string, listener: (event: KeyboardEvent) => void): void;
+  removeEventListener(type: string, listener: (event: KeyboardEvent) => void): void;
+}
+
+function defaultTarget(): KeyboardTarget {
+  // Le code doit pouvoir s'exécuter hors navigateur (tests Node, worker).
+  if (typeof window === 'undefined') return noopTarget;
+  return window;
+}
+
+const noopTarget: KeyboardTarget = {
+  addEventListener: () => undefined,
+  removeEventListener: () => undefined,
+};
+
+/** Une frappe dans un champ de saisie appartient à l'UI, jamais au jeu. */
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (typeof HTMLInputElement === 'undefined') return false;
+  if (target instanceof HTMLInputElement) return true;
+  if (typeof HTMLTextAreaElement === 'undefined') return false;
+  if (target instanceof HTMLTextAreaElement) return true;
+  if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) return false;
+  return target.isContentEditable;
+}
+
+/** Actions de confort qui traversent la suspension (menus ouverts). */
+const COMFORT_ACTIONS: ReadonlySet<InputAction> = new Set(['muteToggle', 'fullscreenToggle']);
+
 export class KeyboardInput {
   private bindings: Readonly<Record<string, InputAction>> = DEFAULT_BINDINGS;
+  /** Suspendu : plus aucune intention de jeu tant qu'un panneau UI est ouvert. */
+  private suspended = false;
 
-  constructor(private readonly bus: EventBus<InputEvents>) {
-    window.addEventListener('keydown', this.onKeyDown);
+  constructor(
+    private readonly bus: EventBus<InputEvents>,
+    private readonly target: KeyboardTarget = defaultTarget(),
+  ) {
+    this.target.addEventListener('keydown', this.onKeyDown);
   }
 
   /** Remappage : une table complète remplace la précédente (réglages). */
@@ -75,22 +112,38 @@ export class KeyboardInput {
     this.bindings = bindings;
   }
 
+  setSuspended(suspended: boolean): void {
+    this.suspended = suspended;
+  }
+
+  /** Bouton « rétablir les touches par défaut » des réglages. */
+  resetBindings(): void {
+    this.bindings = DEFAULT_BINDINGS;
+  }
+
   get currentBindings(): Readonly<Record<string, InputAction>> {
     return this.bindings;
   }
 
   dispose(): void {
-    window.removeEventListener('keydown', this.onKeyDown);
+    this.target.removeEventListener('keydown', this.onKeyDown);
   }
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (event.repeat) return;
+    if (isEditableTarget(event.target)) return;
+
+    // La disposition n'est observée que pour l'affichage des libellés (§ 2.2).
+    keyLayout.observe({ code: event.code, key: event.key });
 
     const action = this.bindings[event.code];
     if (action === undefined) return;
 
     // Shift+Tab remonte la sélection : même touche physique, sens inverse.
     const resolved: InputAction = action === 'cycleNext' && event.shiftKey ? 'cyclePrev' : action;
+
+    // Suspension UI : seules les touches de confort passent (ADR-027).
+    if (this.suspended && !COMFORT_ACTIONS.has(resolved)) return;
 
     if (PREVENT_DEFAULT.has(resolved)) event.preventDefault();
 
@@ -117,13 +170,39 @@ export class KeyboardInput {
   };
 }
 
+const CODE_PATTERN = /^[A-Za-z][A-Za-z0-9]*$/;
+
+/**
+ * Valide une table de bindings chargée du stockage : ne conserve que les
+ * codes plausibles et les intentions connues, ignore le reste sans erreur.
+ * Retourne `null` si rien n'est exploitable — on garde alors les défauts.
+ */
+export function sanitizeBindings(
+  raw: unknown,
+  knownActions: readonly InputAction[],
+): Readonly<Record<string, InputAction>> | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null;
+  const actions = new Set<string>(knownActions);
+  const kept: Record<string, InputAction> = {};
+
+  for (const [code, action] of Object.entries(raw)) {
+    if (!CODE_PATTERN.test(code)) continue;
+    if (typeof action !== 'string' || !actions.has(action)) continue;
+    kept[code] = action as InputAction;
+  }
+
+  return Object.keys(kept).length > 0 ? kept : null;
+}
+
 /**
  * Libellé à afficher pour une touche physique : « A » sur un clavier AZERTY
  * là où un QWERTY affiche « Q ». Purement cosmétique — le binding, lui, ne
- * change jamais. Retombe sur le code si l'API n'existe pas (Firefox, Safari).
+ * change jamais. Ordre de repli : `navigator.keyboard.getLayoutMap()`
+ * (Chrome), frappes observées (Firefox, Safari), puis le code QWERTY.
  */
 export async function keyLabel(code: string): Promise<string> {
-  const keyboard: unknown = (navigator as { keyboard?: unknown }).keyboard;
+  const keyboard: unknown =
+    typeof navigator === 'undefined' ? undefined : (navigator as { keyboard?: unknown }).keyboard;
   const getLayoutMap = (keyboard as { getLayoutMap?: () => Promise<Map<string, string>> })
     ?.getLayoutMap;
 
@@ -133,9 +212,10 @@ export async function keyLabel(code: string): Promise<string> {
       const label = layout.get(code);
       if (label) return label.toUpperCase();
     } catch {
-      // Permissions refusées ou API indisponible : on garde le repli.
+      // Permissions refusées ou API indisponible : on passe au repli.
     }
   }
 
-  return code.startsWith('Key') ? code.slice(3) : code;
+  const observed = keyLayout.labelFor(code);
+  return observed.length > 0 ? observed : fallbackKeyLabel(code);
 }

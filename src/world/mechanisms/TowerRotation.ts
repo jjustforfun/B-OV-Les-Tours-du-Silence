@@ -76,7 +76,12 @@ export class TowerRotation extends BaseMechanism {
     if (!this.interactive) return;
     this.dragStartPointerAngle = screenAngle(point);
     this.dragStartAngle = this.angleRad;
-    bus.emit('mechanism:drag', { id: this.id, kind: 'towerRotation', active: true });
+    bus.emit('mechanism:drag', {
+      id: this.id,
+      kind: 'towerRotation',
+      active: true,
+      at: this.eventPosition(),
+    });
   }
 
   drag(point: MechanismDragPoint): void {
@@ -88,7 +93,12 @@ export class TowerRotation extends BaseMechanism {
 
   endDrag(): void {
     if (!this.interactive) return;
-    bus.emit('mechanism:drag', { id: this.id, kind: 'towerRotation', active: false });
+    bus.emit('mechanism:drag', {
+      id: this.id,
+      kind: 'towerRotation',
+      active: false,
+      at: this.eventPosition(),
+    });
     this.startSnap(Math.round(this.angleRad / this.faceAngleRad()));
   }
 
@@ -119,6 +129,8 @@ export class TowerRotation extends BaseMechanism {
       value: this.face,
       notch: this.face,
       sound: 'tower-stone-notch',
+      at: this.eventPosition(),
+      steps: this.faces(),
     });
   }
 
@@ -128,6 +140,7 @@ export class TowerRotation extends BaseMechanism {
       id: this.id,
       kind: 'towerRotation',
       value: this.face,
+      at: this.eventPosition(),
     });
   }
 

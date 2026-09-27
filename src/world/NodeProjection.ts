@@ -151,6 +151,11 @@ export class NodeProjection {
     return this.indexById.get(id) ?? -1;
   }
 
+  /** Identifiant du nœud à l'index — sans allouer le tableau complet. */
+  idAt(index: number): NodeId | undefined {
+    return this.ids[index];
+  }
+
   isVisible(id: NodeId): boolean {
     const index = this.indexOf(id);
     return index >= 0 && this.visible[index] === 1;

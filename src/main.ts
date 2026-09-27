@@ -1,16 +1,24 @@
 /**
  * main.ts — point d'entrée.
  *
- * Phase 3 : afficher en développement la revue de Turpal sous quatre angles
- * (`?showcase=demo` revient à la tour), et garder en production la scène de
- * direction artistique. Le moteur conserve le même cadrage auto-fit.
+ * Deux mondes cohabitent :
+ *  - `?play` ou `?level=<id>` : le mode jouable complet — écran titre,
+ *    chapitres, pause, réglages, carnet (GameFlow, phase 8). Sans paramètre,
+ *    le jeu s'ouvre aussi sur le titre : c'est le mode par défaut.
+ *  - `?showcase=...` : la revue de direction artistique (`turpal` pour le
+ *    personnage, `demo` pour la tour) — sans interface de jeu.
+ *
+ * Le moteur garde le même cadrage auto-fit dans les deux cas. En dev,
+ * `?debug=nav` ou la touche G affichent l'overlay de graphe.
  */
 import { Engine } from '@core/Engine';
+import { GameFlow } from '@core/GameFlow';
 import { bus } from '@core/EventBus';
 import { Level, type Level as RuntimeLevel } from '@world/Level';
 import { LevelLoader } from '@world/LevelLoader';
 import { DemoScene } from '@render/DemoScene';
 import { TurpalShowcaseScene } from '@render/TurpalShowcaseScene';
+import { LEVEL_IDS, type LevelId } from '@levels/index';
 import { DEV_FLAGS } from '@/config';
 import type { NavGraphViz as NavGraphVizOverlay } from '@debug/NavGraphViz';
 import '@ui/styles/main.css';
@@ -23,9 +31,21 @@ function requireCanvas(): HTMLCanvasElement {
   return canvas;
 }
 
+/**
+ * Chapitre demandé en dev : `?play` seul ouvre le prologue, `?level=<id>`
+ * ouvre ce chapitre directement (sans passer par le titre). `null` = titre.
+ */
+function wantedLevelId(): LevelId | null {
+  const params = new URLSearchParams(window.location.search);
+  const level = params.get('level');
+  const isChapterLevel = (LEVEL_IDS as readonly string[]).includes(level ?? '');
+  if (params.has('play')) return isChapterLevel ? (level as LevelId) : '00-prologue';
+  return isChapterLevel ? (level as LevelId) : null;
+}
+
 function wantsTurpalShowcase(): boolean {
   const showcase = new URLSearchParams(window.location.search).get('showcase');
-  if (import.meta.env.DEV) return showcase !== 'demo';
+  if (import.meta.env.DEV) return showcase === 'turpal';
   return showcase === 'turpal';
 }
 
@@ -37,12 +57,38 @@ function wantsNavGraphDebug(): boolean {
   return false;
 }
 
-function wantsPenroseDemo(): boolean {
-  const params = new URLSearchParams(window.location.search);
-  return params.get('demo') === 'penrose' || params.get('level') === 'penrose-demo';
+async function bootPlayMode(): Promise<void> {
+  const flow = new GameFlow(requireCanvas());
+  await flow.start(wantedLevelId() ?? undefined);
+
+  if (DEV_FLAGS.showStats) {
+    const { Stats } = await import('@debug/Stats');
+    const stats = new Stats(flow.engine.renderer.gl);
+    flow.engine.onUpdate((time) => stats.update(time.fps, time.unscaledDelta));
+  }
+
+  if (DEV_FLAGS.showDebugPanel) {
+    const { DebugPanel } = await import('@debug/DebugPanel');
+    const panel = new DebugPanel(flow.engine);
+    window.addEventListener('beforeunload', () => panel.dispose());
+  }
+
+  markBooted();
+
+  window.addEventListener('beforeunload', () => flow.dispose());
 }
 
-async function boot(): Promise<void> {
+/** L'écran de chargement CSS s'efface une fois la première image affichée. */
+function markBooted(): void {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.documentElement.classList.add('is-ready');
+      document.body.dataset.ready = 'true';
+    });
+  });
+}
+
+async function bootShowcaseMode(): Promise<void> {
   const engine = new Engine({
     canvas: requireCanvas(),
     skyPalette: 'dawn',
@@ -69,17 +115,10 @@ async function boot(): Promise<void> {
   const levels = new LevelLoader();
   let navGraphViz: NavGraphVizOverlay | null = null;
   let navDebugLevel: RuntimeLevel | null = null;
-  let navDebugLevelFromLoader = false;
   const loadNavDebugLevel = async (): Promise<RuntimeLevel> => {
     if (navDebugLevel) return navDebugLevel;
-    if (wantsPenroseDemo()) {
-      const { level } = await import('@levels/penrose-demo');
-      navDebugLevel = new Level(level);
-      navDebugLevelFromLoader = false;
-      return navDebugLevel;
-    }
-    navDebugLevel = await levels.load('00-prologue');
-    navDebugLevelFromLoader = true;
+    const { level } = await import('@levels/penrose-demo');
+    navDebugLevel = new Level(level);
     return navDebugLevel;
   };
   const ensureNavGraphViz = async (): Promise<NavGraphVizOverlay> => {
@@ -118,13 +157,7 @@ async function boot(): Promise<void> {
     window.addEventListener('beforeunload', () => panel.dispose());
   }
 
-  // L'écran de chargement CSS s'efface une fois la première image affichée.
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      document.documentElement.classList.add('is-ready');
-      document.body.dataset.ready = 'true';
-    });
-  });
+  markBooted();
 
   bus.on('engine:quality', ({ tier, reason }) => {
     if (import.meta.env.DEV) console.info(`[qualité] ${tier} (${reason})`);
@@ -134,10 +167,20 @@ async function boot(): Promise<void> {
     unsubscribeQuality();
     window.removeEventListener('keydown', toggleNavGraphViz);
     navGraphViz?.dispose();
-    if (navDebugLevelFromLoader) levels.unload();
-    else navDebugLevel?.dispose();
+    navDebugLevel?.dispose();
+    levels.unload();
     engine.dispose();
   });
+}
+
+async function boot(): Promise<void> {
+  const showcase = new URLSearchParams(window.location.search).get('showcase');
+  if (showcase !== null) {
+    await bootShowcaseMode();
+    return;
+  }
+  // Par défaut : le jeu. (?play / ?level=<id> court-circuite le titre.)
+  await bootPlayMode();
 }
 
 void boot().catch((error: unknown) => {

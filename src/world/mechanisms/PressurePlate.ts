@@ -87,6 +87,8 @@ export class PressurePlate extends BaseMechanism {
       value: this.pressed,
       notch: this.pressed ? 1 : 0,
       sound: 'stone-plate',
+      at: this.eventPosition(),
+      steps: 2,
     });
   }
 
@@ -96,6 +98,7 @@ export class PressurePlate extends BaseMechanism {
       id: this.id,
       kind: 'pressurePlate',
       value: this.pressed,
+      at: this.eventPosition(),
     });
   }
 

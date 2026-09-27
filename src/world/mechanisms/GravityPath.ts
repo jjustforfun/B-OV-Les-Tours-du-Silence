@@ -81,6 +81,8 @@ export class GravityPath extends BaseMechanism {
       value: this.direction,
       notch: this.direction === this.options.from ? 0 : 1,
       sound: 'gravity-snap',
+      at: this.eventPosition(),
+      steps: 2,
     });
   }
 
@@ -99,6 +101,7 @@ export class GravityPath extends BaseMechanism {
       id: this.id,
       kind: 'gravityPath',
       value: this.direction,
+      at: this.eventPosition(),
     });
   }
 }

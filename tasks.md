@@ -155,56 +155,56 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 
 ## Phase 6 — Audio
 
-- [ ] **`AudioManager` : bus et gains** — _Critère : master 0,9 / music 0,7 / ambience 0,6 / sfx 0,85, réglables séparément._
-- [ ] **Déverrouillage de l'`AudioContext`** — _Critère : `Tone.start()` au premier geste, fondu d'entrée 1,2 s, aucune icône « activer le son »._
-- [ ] **Pause automatique sur onglet caché** — _Critère : master à 0 en 250 ms, reprise en 400 ms, rien ne joue en arrière-plan._
-- [ ] **Réverbération « vallée » partagée** — _Critère : une seule instance (decay 9 s, wet 0,42) pour tous les bus._
-- [ ] **`PondarSynth` : 3 cordes Karplus-Strong** — _Critère : accordage par chapitre, inharmonicité ±4 cents, ne sonne pas numérique._
-- [ ] **Couche `drone`** — _Critère : bourdon de quinte, présent dès l'entrée, −12 dB._
-- [ ] **Couche `pondar`** — _Critère : motif non métrique de 5 à 7 notes, jamais deux fois identique._
-- [ ] **Couche `doul`** — _Critère : percussion douce, ~48 BPM implicite, apparaît à mi-résolution._
-- [ ] **Couche `melody` + `setProgress()`** — _Critère : fondus de 4 à 8 s, aucune couche n'apparaît de façon audible._
-- [ ] **Ambiances par lieu** — _Critère : périodes premières entre elles, aucune répétition perceptible sur 10 min._
-- [ ] **Pas selon la surface** — _Critère : 4 timbres (pierre, herbe, neige, bois) lus depuis `NavNode`, variation ±2 demi-tons._
-- [ ] **Rotation musicale** — _Critère : chaque cran joue la note suivante de la gamme ; tourner à l'envers la redescend._
-- [ ] **Sons de récompense** — _Critère : accord ascendant à la connexion, motif complet en fin de chapitre, ducking −4 dB sous les textes._
+- [x] **`AudioManager` : bus et gains** — _Critère : master 0,9 / music 0,7 / ambience 0,6 / sfx 0,85, réglables séparément._ — `src/audio/mixing.ts` + `AudioManager.setVolume()` ; gains nominaux 0/−9/−14/−6 dB (ADR-025).
+- [x] **Déverrouillage de l'`AudioContext`** — _Critère : `Tone.start()` au premier geste, fondu d'entrée 1,2 s, aucune icône « activer le son »._ — `AudioDirector.unlock()` sur `input.onFirstGesture()`, Tone importé dynamiquement (chunk séparé).
+- [x] **Pause automatique sur onglet caché** — _Critère : master à 0 en 250 ms, reprise en 400 ms, rien ne joue en arrière-plan._ — `AudioManager.watchLifecycle()` (visibilité + `platform.onLifecycle`), Transport suspendu.
+- [x] **Réverbération « vallée » partagée** — _Critère : une seule instance (decay 9 s, wet 0,42) pour tous les bus._ — `AudioGraph` : un `Reverb`, music+ambience en wet, sfx en send 0,25.
+- [x] **`PondarSynth` : 3 cordes Karplus-Strong** — _Critère : accordage par chapitre, inharmonicité ±4 cents, ne sonne pas numérique._ — `Tone.PluckSynth` ×3, `randomDetuneCents`, accordages par chapitre ±4 cents.
+- [x] **Couche `drone`** — _Critère : bourdon de quinte, présent dès l'entrée, −12 dB._ — `MusicSystem` couche 1, `setProgress()` ≥ 1.
+- [x] **Couche `pondar`** — _Critère : motif non métrique de 5 à 7 notes, jamais deux fois identique._ — `generatePondarMotif()` (tests : 5–7 notes, écarts non métriques).
+- [x] **Couche `doul`** — _Critère : percussion douce, ~48 BPM implicite, apparaît à mi-résolution._ — `generateDoulPattern()`, ternaire lâche, couche 3 de `computeMusicLayers()`.
+- [x] **Couche `melody` + `setProgress()`** — _Critère : fondus de 4 à 8 s, aucune couche n'apparaît de façon audible._ — fondus 6 s (`AUDIO.layerFadeSeconds`), `music:progress` → `setProgress(max)`.
+- [x] **Ambiances par lieu** — _Critère : périodes premières entre elles, aucune répétition perceptible sur 10 min._ — `ambiencePlan.ts` (périodes 7/11/13/17/23 s) + `Ambience.ts` (LFO par couche).
+- [x] **Pas selon la surface** — _Critère : 4 timbres (pierre, herbe, neige, bois) lus depuis `NavNode`, variation ±2 demi-tons._ — `SfxBank.step(surface)`, `player:moved`.
+- [x] **Rotation musicale** — _Critère : chaque cran joue la note suivante de la gamme ; tourner à l'envers la redescend._ — `mechanism:snap` → `ScaleCursor.step(notchDelta(...))` (tests : bouclage du cycle).
+- [x] **Sons de récompense** — _Critère : accord ascendant à la connexion, motif complet en fin de chapitre, ducking −4 dB sous les textes._ — `path:connected` → accord, `level:solved` → signature + proverbe, ducking −4/−3 dB 9 s.
 
 ---
 
 ## Phase 7 — FX et « juice »
 
-- [ ] **`fx/Particles.ts` : pool générique** — _Critère : zéro allocation par image, respecte `particleScale`._
-- [ ] **Poussière de rotation** — _Critère : 12 particules au démarrage d'un mécanisme, disparition en 700 ms._
-- [ ] **Reconstruction de pierre** — _Critère : les éclats **s'assemblent** vers leur position (`expo.out`, 700 ms) — jamais une explosion._
-- [ ] **Traînée dorée sur chemin connecté** — _Critère : court à 8 u/s du départ vers l'arrivée, s'estompe en 900 ms._
-- [ ] **`fx/Celebrate.ts` : micro-célébration** — _Critère : son + lumière + vibration en 1,6 s, ni plus ni moins._
-- [ ] **Illumination de fin de chapitre** — _Critère : tours allumées de la plus lointaine à la plus proche, 250 ms d'écart._
-- [ ] **`fx/Mist.ts`** — _Critère : 1 à 3 nappes selon la qualité, opacité ≤ 0,12, dérive 0,05 u/s._
-- [ ] **`fx/Snow.ts`** — _Critère : un seul `Points`, recyclage en boucle, 140 à 400 flocons._
-- [ ] **`fx/Fireflies.ts`** — _Critère : pulsations désynchronisées, chapitres 4 et 7 seulement._
-- [ ] **`fx/LightShafts.ts`** — _Critère : uniquement là où un rayon traverse une meurtrière, désactivé en qualité basse._
-- [ ] **Indices visuels** (lueur 90 s, regard de Borz 180 s) — _Critère : réinitialisés à toute interaction, s'effacent en 900 ms._
+- [x] **`fx/Particles.ts` : pool générique** — _Critère : zéro allocation par image, respecte `particleScale`._ — un `Points` unique, tableaux typés préalloués, compactage par échange ; 420 × scale particules.
+- [x] **Poussière de rotation** — _Critère : 12 particules au démarrage d'un mécanisme, disparition en 700 ms._ — `mechanism:drag` → émission `FX.rotationDust`.
+- [x] **Reconstruction de pierre** — _Critère : les éclats **s'assemblent** vers leur position (`expo.out`, 700 ms) — jamais une explosion._ — `StoneFragments.assemble()` : `InstancedMesh` unique, expo.out puis maintien puis réduction.
+- [x] **Traînée dorée sur chemin connecté** — _Critère : court à 8 u/s du départ vers l'arrivée, s'estompe en 900 ms._ — `GoldenTrail.run()` ; ×2 en mouvement réduit.
+- [x] **`fx/Celebrate.ts` : micro-célébration** — _Critère : son + lumière + vibration en 1,6 s, ni plus ni moins._ — timeline manuelle 1,6 s (ADR-026), `haptic('celebrate')`.
+- [x] **Illumination de fin de chapitre** — _Critère : tours allumées de la plus lointaine à la plus proche, 250 ms d'écart._ — `Celebrate.chapterEnd()` + rais de grâce `spawnGraceShafts()`.
+- [x] **`fx/Mist.ts`** — _Critère : 1 à 3 nappes selon la qualité, opacité ≤ 0,12, dérive 0,05 u/s._ — voile de bruit shader, dérive coupée en mouvement réduit ; partagée avec la scène vitrine.
+- [x] **`fx/Snow.ts`** — _Critère : un seul `Points`, recyclage en boucle, 140 à 400 flocons._ — recyclage par le haut, 140 + 260 × `particleScale`.
+- [x] **`fx/Fireflies.ts`** — _Critère : pulsations désynchronisées, chapitres 4 et 7 seulement._ — pulsation par sommet (phase propre), errance autour d'ancres, `FX.fireflies.chapters = [4, 7]`.
+- [x] **`fx/LightShafts.ts`** — _Critère : uniquement là où un rayon traverse une meurtrière, désactivé en qualité basse._ — cônes additifs à flous vertical/latéral, `setVisible(quality.postFx)`, poussière flottante dans le volume.
+- [x] **Indices visuels** (lueur 90 s, regard de Borz 180 s) — _Critère : réinitialisés à toute interaction, s'effacent en 900 ms._ — `fx/Hints` + `Mechanism.setHintGlow()`, tests du cycle de paliers.
 
 ---
 
 ## Phase 8 — UI et narration
 
-- [x] **`ui/styles/tokens.css` : jetons de design** — _Critère : couleurs, durées (180/420/900/1800 ms), échelle de texte, `--tap-min: 44px`._
-- [ ] **`UIRoot` : pile d'écrans** — _Critère : un seul écran actif, `Échap` remonte d'un cran, focus piégé dans la modale._
-- [ ] **Écran titre** — _Critère : Commencer / Continuer / Réglages / Recueil, jouable au clavier seul._
-- [ ] **Carte de chapitre** — _Critère : titre + sous-titre + vertu, fondu 1200 ms, passable à tout moment._
-- [ ] **Texte d'introduction de chapitre** — _Critère : 2 phrases max sur voile translucide, ducking audio, sortie automatique._
-- [ ] **Menu pause** — _Critère : gèle la simulation, jamais le rendu ; reprendre / recommencer / quitter._
-- [ ] **Réglages : volumes par canal** — _Critère : 4 curseurs, application immédiate, persistance._
-- [ ] **Réglages : qualité manuelle** — _Critère : choisir un tier fige l'adaptation (ADR-013)._
-- [ ] **Réglages : accessibilité** — _Critère : animations réduites, taille du texte, mode daltonien, contraste renforcé._
-- [ ] **Réglages : remappage clavier** — _Critère : capture d'une touche physique, détection de conflit, retour aux défauts._
-- [ ] **Carnet de proverbes** — _Critère : 8 entrées, verrouillées tant que non obtenues, mention « inspiré de »._
-- [ ] **Carnet illustré : croquis par lieu** — _Critère : une illustration révélée par aigle trouvé, sans pourcentage affiché._
-- [ ] **Bénédiction de l'ancien** — _Critère : geste, aucune conséquence mécanique._
-- [ ] **`i18n` : 4 langues branchées sur l'UI** — _Critère : changer de langue ne recharge pas la page ; `ce` retombe sur `fr` sans trou._
-- [ ] **Sous-titres des événements sonores** — _Critère : activables, aucun puzzle ne dépend du son._
-- [ ] **`SaveManager` : sauvegarde automatique versionnée** — _Critère : jamais de bouton « sauvegarder » ; une sauvegarde corrompue est ignorée en silence._
+- [x] **`ui/styles/tokens.css` : jetons de design** — _Critère : couleurs, durées (180/420/900/1800 ms), échelle de texte, `--tap-min: 44px`._ — + verres (`--veil-bg/blur`), `--font-scale`, piles Cormorant Garamond/Inter avec replis, surcharges `html.ui-hc`.
+- [x] **`UIRoot` : pile d'écrans** — _Critère : un seul écran actif, `Échap` remonte d'un cran, focus piégé dans la modale._ — panneau de base (titre) + pile modale, `onKeydown` au sommet (le remappage avale `Échap`), piège de focus WCAG 2.4.3, `onSuspendChange` → `InputManager.setSuspended` (ADR-027).
+- [x] **Écran titre** — _Critère : Commencer / Continuer / Réglages / Recueil, jouable au clavier seul._ — la vallée vit derrière, titre en fondu (`--title-delay`), « Toucher pour commencer » plein écran, 3 entrées discrètes + « Chapitres » si progression.
+- [x] **Carte de chapitre** — _Critère : titre + sous-titre + vertu, fondu 1200 ms, passable à tout moment._ — voile 1200 ms puis noir interne du carton 1800 ms ; tap/Entrée/Espace écourtent, intro protégée 1600 ms anti-tap accidentel.
+- [x] **Texte d'introduction de chapitre** — _Critère : 2 phrases max sur voile translucide, ducking audio, sortie automatique._ — 2 phrases par chapitre (`levels.*.intro` ×3 langues), verre translucide, ducking via `ui:speaking`, sortie auto à 9 s.
+- [x] **Menu pause** — _Critère : gèle la simulation, jamais le rendu ; reprendre / recommencer / quitter._ — 5 entrées (reprendre, recommencer, réglages, carnet, retour au titre) ; `LevelRuntime.update` early-return, FX et rendu continuent ; Échap reprend.
+- [x] **Réglages : volumes par canal** — _Critère : 4 curseurs, application immédiate, persistance._ — application immédiate, persistance d'une table complète (bug pré-unlock corrigé par test : chaque écriture fusionne la précédente).
+- [x] **Réglages : qualité manuelle** — _Critère : choisir un tier fige l'adaptation (ADR-013)._ — `auto` rend la main à l'adaptation ; un tier appelle `setTier(tier, 'user')`.
+- [x] **Réglages : accessibilité** — _Critère : animations réduites, taille du texte, mode daltonien, contraste renforcé._ — mouvement (auto/réduit/plein), texte 0,875/1/1,25 (`--font-scale`), contraste (`html.ui-hc`, verre opaque, encre ravivée) ; daltonien : l'accent braise est toujours doublé d'un liseré, jamais seul (règle § 3).
+- [x] **Réglages : remappage clavier** — _Critère : capture d'une touche physique, détection de conflit, retour aux défauts._ — capture `event.code` (AZERTY-proof), modificateurs purs refusés, conflit signalé `role=alert` + la touche quitte son ancienne action, libellés de disposition via `getLayoutMap`, bouton défauts.
+- [x] **Carnet de proverbes** — _Critère : 8 entrées, verrouillées tant que non obtenues, mention « inspiré de »._ — croquis de tour SVG inline zéro asset, braise si offerte / silhouette 0,18 si scellée, note « inspiré de l'esprit du Nokhchalla ».
+- [x] **Carnet illustré : croquis par lieu** — _Critère : une illustration révélée par aigle trouvé, sans pourcentage affiché._ — une révélation par chapitre, aucun compteur ni pourcentage ; les aigles arrivent avec les niveaux (phase 9) et s'y brancheront sur la même clé de proverbe.
+- [ ] **Bénédiction de l'ancien** — _Critère : geste, aucune conséquence mécanique._ — `Elder` existe mais aucun niveau ne place encore d'ancien : livré avec les niveaux (phase 9).
+- [x] **`i18n` : 4 langues branchées sur l'UI** — _Critère : changer de langue ne recharge pas la page ; `ce` retombe sur `fr` sans trou._ — `i18n.onChange` réétiquette tous les panneaux ouverts ; repli `ce`→`fr` verrouillé par test.
+- [x] **Sous-titres des événements sonores** — _Critère : activables, aucun puzzle ne dépend du son._ — interrupteur dans Réglages → Accessibilité, légendes discrètes (signature, pierre, accord, célébration) via le toast `aria-live`.
+- [x] **`SaveManager` : sauvegarde automatique versionnée** — _Critère : jamais de bouton « sauvegarder » ; une sauvegarde corrompue est ignorée en silence._ — écrit à chaque chapitre et à la pause, `hasProgress`/`isCompleted`/`reachedLevelIds` pour le titre et le sélecteur.
 
 ---
 

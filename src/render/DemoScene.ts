@@ -14,13 +14,12 @@ import {
   CylinderGeometry,
   Group,
   Mesh,
-  PlaneGeometry,
-  ShaderMaterial,
   Vector3,
   type BufferGeometry,
   type Material,
 } from 'three';
 import { RENDER, type QualitySettings } from '@/config';
+import { Mist } from '@fx/Mist';
 import { TurpalModel } from '@entities/player/TurpalModel';
 import { BlobShadows } from '@render/BlobShadows';
 import { CHAPTER_PALETTES, EMBER } from '@render/Palettes';
@@ -28,12 +27,6 @@ import {
   bakeToonStoneGeometry,
   createToonStoneMaterial,
 } from '@render/materials/ToonStoneMaterial';
-
-interface MistLayer {
-  readonly mesh: Mesh<PlaneGeometry, ShaderMaterial>;
-  readonly baseX: number;
-  readonly speed: number;
-}
 
 const UP = new Vector3(0, 1, 0);
 const TOWER_BASE_Y = 2.05;
@@ -43,7 +36,7 @@ export class DemoScene {
   readonly bounds = new Box3();
 
   private readonly frameRoot = new Group();
-  private readonly mistLayers: MistLayer[] = [];
+  private readonly mist = new Mist();
   private readonly blobShadows = new BlobShadows(4);
   private readonly turpal = new TurpalModel();
   private readonly turpalPosition = new Vector3(-1.15, TOWER_BASE_Y + 0.12, 2.65);
@@ -65,21 +58,11 @@ export class DemoScene {
 
   update(elapsed: number, delta: number): void {
     this.turpal.update(delta);
-    for (let i = 0; i < this.mistLayers.length; i += 1) {
-      const layer = this.mistLayers[i];
-      if (!layer) continue;
-      layer.mesh.position.x = layer.baseX + Math.sin(elapsed * layer.speed + i * 1.7) * 0.22;
-      const timeUniform = layer.mesh.material.uniforms.uTime;
-      if (timeUniform) timeUniform.value = elapsed;
-    }
+    this.mist.update(elapsed);
   }
 
   applyQuality(quality: QualitySettings): void {
-    for (let i = 0; i < this.mistLayers.length; i += 1) {
-      const layer = this.mistLayers[i];
-      if (!layer) continue;
-      layer.mesh.visible = i < quality.mistLayers;
-    }
+    this.mist.setVisible(quality.mistLayers);
     this.blobShadows.applyOpacity(RENDER.blobShadow.opacity * Math.max(0.7, quality.particleScale));
   }
 
@@ -162,59 +145,9 @@ export class DemoScene {
   }
 
   private createMist(): void {
-    const fogColor = CHAPTER_PALETTES.prologue.skyBottom;
-    const layers = [
-      { y: 0.95, z: -0.8, opacity: 0.13, width: 13, height: 4.2, speed: 0.07 },
-      { y: 2.4, z: -1.9, opacity: 0.1, width: 11, height: 3.4, speed: 0.05 },
-      { y: 4.1, z: -3.2, opacity: 0.075, width: 9.5, height: 2.8, speed: 0.035 },
-    ] as const;
-
-    for (const layer of layers) {
-      const material = new ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        depthTest: true,
-        uniforms: {
-          uColor: { value: colorToVector(fogColor) },
-          uOpacity: { value: layer.opacity },
-          uTime: { value: 0 },
-        },
-        vertexShader: `varying vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`,
-        fragmentShader: `varying vec2 vUv;
-uniform vec3 uColor;
-uniform float uOpacity;
-uniform float uTime;
-float hash(vec2 value) {
-  return fract(sin(dot(value, vec2(127.1, 311.7))) * 43758.5453);
-}
-float noise(vec2 value) {
-  vec2 cell = floor(value);
-  vec2 local = smoothstep(vec2(0.0), vec2(1.0), fract(value));
-  float a = hash(cell);
-  float b = hash(cell + vec2(1.0, 0.0));
-  float c = hash(cell + vec2(0.0, 1.0));
-  float d = hash(cell + vec2(1.0, 1.0));
-  return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
-}
-void main() {
-  float edge = smoothstep(0.0, 0.18, vUv.y) * (1.0 - smoothstep(0.82, 1.0, vUv.y));
-  float veil = noise(vec2(vUv.x * 3.2 + uTime * 0.025, vUv.y * 1.4));
-  float alpha = edge * mix(0.65, 1.0, veil) * uOpacity;
-  gl_FragColor = vec4(uColor, alpha);
-}`,
-      });
-      material.name = 'DemoMistLayer';
-      const mesh = new Mesh(new PlaneGeometry(layer.width, layer.height, 1, 1), material);
-      mesh.name = 'DemoMistLayer';
-      mesh.position.set(0, layer.y, layer.z);
-      mesh.rotation.x = -0.18;
-      this.root.add(mesh);
-      this.mistLayers.push({ mesh, baseX: mesh.position.x, speed: layer.speed });
-    }
+    // La brume vit dans fx/Mist (Phase 7) : la scène vitrine se contente
+    // de la poser dans le décor — même effet, une seule implémentation.
+    this.root.add(this.mist.root);
   }
 
   private createCorbels(width: number, depth: number, y: number, material: Material): void {
@@ -323,8 +256,4 @@ void main() {
   private baked(geometry: BufferGeometry, color: number, valueJitter: number): BufferGeometry {
     return bakeToonStoneGeometry(geometry, { color, valueJitter });
   }
-}
-
-function colorToVector(hex: number): Vector3 {
-  return new Vector3(((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255);
 }

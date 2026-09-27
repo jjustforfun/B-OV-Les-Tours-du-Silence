@@ -138,6 +138,20 @@ export class Borz {
     bus.emit('borz:hint', { active });
   }
 
+  /**
+   * Second indice (docs/tasks Phase 7) : après une longue inactivité, Borz
+   * regarde dans la direction de l'élément utile. Il ne dit rien — il montre.
+   */
+  gazeAt(position: Vector3): void {
+    this.setHintActive(true);
+    this.head.lookAt(position);
+  }
+
+  clearGaze(): void {
+    if (!this.hinting) return;
+    this.setHintActive(false);
+  }
+
   lookAtTurpal(position: Vector3): void {
     const distance = this.root.position.distanceTo(position);
     if (distance <= WATCH_DISTANCE) return;

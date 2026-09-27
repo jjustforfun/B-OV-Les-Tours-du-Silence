@@ -20,6 +20,9 @@ export const LEVEL_IDS = [
 
 export type LevelId = (typeof LEVEL_IDS)[number];
 
+/** Longueur du préfixe `NN-` dans les identifiants de chapitre. */
+const CHAPTER_PREFIX_LENGTH = 3;
+
 interface LevelModule {
   readonly level: LevelDefinition;
 }
@@ -35,16 +38,48 @@ const LOADERS: Readonly<Record<LevelId, () => Promise<LevelModule>>> = {
   '07-epilogue': () => import('./07-epilogue'),
 };
 
+/** Le chapitre qui suit, ou `null` après l'épilogue. Pur. */
+export function nextLevelId(id: LevelId): LevelId | null {
+  const index = LEVEL_IDS.indexOf(id);
+  if (index < 0) return null;
+  return LEVEL_IDS[index + 1] ?? null;
+}
+
 export async function loadLevelDefinition(id: LevelId): Promise<LevelDefinition> {
   const module = await LOADERS[id]();
   return module.level;
 }
 
-export function nextLevelId(id: LevelId): LevelId | null {
-  const index = LEVEL_IDS.indexOf(id);
-  return LEVEL_IDS[index + 1] ?? null;
-}
-
 export function isLevelId(value: string): value is LevelId {
   return (LEVEL_IDS as readonly string[]).includes(value);
+}
+
+/**
+ * Métadonnées d'affichage dérivées de l'identifiant — l'UI (titre, sélecteur,
+ * cartons) n'a jamais besoin de charger la géométrie d'un niveau pour
+ * s'étiqueter. La convention `NN-<vertu>` fait tout le travail.
+ */
+export function levelVirtue(id: LevelId): string {
+  return id.slice(CHAPTER_PREFIX_LENGTH);
+}
+
+export function levelChapterNumber(id: LevelId): number {
+  return LEVEL_IDS.indexOf(id);
+}
+
+export function levelTitleKey(id: LevelId): string {
+  return `levels.${levelVirtue(id)}.title`;
+}
+
+export function levelSubtitleKey(id: LevelId): string {
+  return `levels.${levelVirtue(id)}.subtitle`;
+}
+
+export function levelIntroKey(id: LevelId): string {
+  return `levels.${levelVirtue(id)}.intro`;
+}
+
+/** Le prologue ouvre le seuil ; les autres suivent leur vertu. */
+export function levelProverbKey(id: LevelId): string {
+  return id === '00-prologue' ? 'proverbs.threshold' : `proverbs.${levelVirtue(id)}`;
 }
