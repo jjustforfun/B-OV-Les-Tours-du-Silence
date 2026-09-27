@@ -87,6 +87,22 @@ export class Quality {
     for (const listener of this.listeners) listener(tier, reason);
   }
 
+  /**
+   * Rend la main à l'adaptation automatique (réglage « Qualité : Auto »,
+   * ADR-013). Le tier courant est conservé comme point de départ.
+   */
+  setAuto(): void {
+    if (!this.locked) return;
+    this.locked = false;
+    this.windowMs = 0;
+    this.fpsSum = 0;
+    this.fpsSamples = 0;
+  }
+
+  get isLocked(): boolean {
+    return this.locked;
+  }
+
   onChange(listener: (tier: QualityTier, reason: QualityChangeReason) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
