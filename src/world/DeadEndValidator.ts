@@ -45,6 +45,11 @@ interface MechanismDomain {
   readonly initial: MechanismValue;
   readonly values: readonly MechanismValue[];
   readonly actuatorNodes: readonly NodeId[];
+  /** Transition autonome et monotone, employée par la montée de la lune. */
+  readonly startsOn?: {
+    readonly mechanism: string;
+    readonly equals: MechanismValue;
+  };
 }
 
 interface ExpandedState {
@@ -100,7 +105,11 @@ export function validateNoDeadEnds(
 
     const maxExpandedStates = options.maxExpandedStates ?? DEFAULT_MAX_EXPANDED_STATES;
     const assumeIllusionsActive = options.assumeIllusionsActive ?? true;
-    const initialValues = domains.map((domain) => domain.initial);
+    const initialValues = applyActorCompletions(
+      definition,
+      domains,
+      domains.map((domain) => domain.initial),
+    );
     const initial: ExpandedState = { node: definition.spawn, values: initialValues };
 
     const seen = new Map<string, ExpandedState>();
@@ -113,7 +122,7 @@ export function validateNoDeadEnds(
       const current = queue.shift();
       if (current === undefined) break;
       const fromKey = expandedKey(current);
-      const nextStates = expandState(level, domains, current, assumeIllusionsActive);
+      const nextStates = expandState(level, definition, domains, current, assumeIllusionsActive);
 
       for (const next of nextStates) {
         const toKey = expandedKey(next);
@@ -182,6 +191,7 @@ export function formatDeadEndReport(report: DeadEndValidationReport): string {
 
 function expandState(
   level: Level,
+  definition: LevelDefinition,
   domains: readonly MechanismDomain[],
   state: ExpandedState,
   assumeIllusionsActive: boolean,
@@ -195,16 +205,104 @@ function expandState(
 
   for (let index = 0; index < domains.length; index += 1) {
     const domain = domains[index];
-    if (!domain?.actuatorNodes.includes(state.node)) continue;
+    if (!domain) continue;
     const current = state.values[index];
+
+    if (domain.startsOn !== undefined) {
+      const sourceIndex = domains.findIndex(
+        (candidate) => candidate.id === domain.startsOn?.mechanism,
+      );
+      if (sourceIndex < 0 || state.values[sourceIndex] !== domain.startsOn.equals) continue;
+      const phaseIndex = domain.values.findIndex((value) => sameValue(value, current));
+      const value = domain.values[phaseIndex + 1];
+      if (value === undefined) continue;
+      const values = state.values.slice();
+      values[index] = value;
+      next.push({ node: state.node, values });
+      continue;
+    }
+
+    if (!domain.actuatorNodes.includes(state.node)) continue;
     for (const value of domain.values) {
       if (sameValue(value, current)) continue;
       const values = state.values.slice();
       values[index] = value;
-      next.push({ node: state.node, values });
+      next.push({
+        node: state.node,
+        values: applyActorCompletions(definition, domains, values),
+      });
     }
   }
 
+  for (const response of expandRivalResponses(definition, domains, state)) next.push(response);
+  return next;
+}
+
+function expandRivalResponses(
+  definition: LevelDefinition,
+  domains: readonly MechanismDomain[],
+  state: ExpandedState,
+): readonly ExpandedState[] {
+  const next: ExpandedState[] = [];
+  for (const actor of definition.actors ?? []) {
+    if (actor.kind !== 'rival') continue;
+    const responseIndex = domains.findIndex(
+      (domain) => domain.id === actor.responseState.mechanism,
+    );
+    const advancedIndex = domains.findIndex(
+      (domain) => domain.id === actor.advancedState.mechanism,
+    );
+    const completionIndex = domains.findIndex(
+      (domain) => domain.id === actor.completesState.mechanism,
+    );
+    const playerIndex = domains.findIndex((domain) => domain.id === actor.playerMechanism);
+    const rivalIndex = domains.findIndex((domain) => domain.id === actor.rivalMechanism);
+    if (
+      responseIndex < 0 ||
+      advancedIndex < 0 ||
+      completionIndex < 0 ||
+      playerIndex < 0 ||
+      rivalIndex < 0
+    )
+      continue;
+
+    if (state.node !== actor.respondsOnNode) {
+      if (state.values[responseIndex] !== actor.responseState.value) continue;
+      const values = state.values.slice();
+      values[responseIndex] = actor.responseState.initial;
+      next.push({ node: state.node, values });
+      continue;
+    }
+    if (
+      state.values[responseIndex] !== actor.responseState.initial ||
+      state.values[completionIndex] === actor.completesState.value
+    )
+      continue;
+
+    const currentRivalFace = state.values[rivalIndex];
+    if (typeof currentRivalFace !== 'number') continue;
+    const rivalMechanism = definition.mechanisms?.find(
+      (mechanism) => mechanism.id === actor.rivalMechanism,
+    );
+    const faces = Math.max(
+      1,
+      rivalMechanism === undefined ? 4 : (numberMechanismParam(rivalMechanism, 'faces') ?? 4),
+    );
+    const followingFace = (currentRivalFace + 1) % faces;
+    const previousTargetFace = (actor.rivalFace - 1 + faces) % faces;
+    const values = state.values.slice();
+    values[responseIndex] = actor.responseState.value;
+    values[advancedIndex] = actor.advancedState.value;
+    values[rivalIndex] = followingFace;
+    if (
+      state.values[playerIndex] === actor.playerFace &&
+      currentRivalFace === previousTargetFace &&
+      followingFace === actor.rivalFace
+    ) {
+      values[completionIndex] = actor.completesState.value;
+    }
+    next.push({ node: state.node, values });
+  }
   return next;
 }
 
@@ -221,6 +319,32 @@ function applyMechanismState(
     if (!domain || value === undefined) continue;
     level.graph.setMechanismState(domain.id, value);
   }
+}
+
+function applyActorCompletions(
+  definition: LevelDefinition,
+  domains: readonly MechanismDomain[],
+  values: readonly MechanismValue[],
+): readonly MechanismValue[] {
+  const next = [...values];
+  let changed = false;
+  for (const actor of definition.actors ?? []) {
+    if (actor.kind === 'child' || actor.kind === 'rival') continue;
+    const conditions =
+      actor.kind === 'elder' ? actor.stages.map((stage) => stage.startsOn) : [actor.startsOn];
+    const ready = conditions.every((condition) => {
+      const index = domains.findIndex((domain) => domain.id === condition.mechanism);
+      return index >= 0 && next[index] === condition.equals;
+    });
+    if (!ready) continue;
+    const completionIndex = domains.findIndex(
+      (domain) => domain.id === actor.completesState.mechanism,
+    );
+    if (completionIndex < 0 || next[completionIndex] === actor.completesState.value) continue;
+    next[completionIndex] = actor.completesState.value;
+    changed = true;
+  }
+  return changed ? next : values;
 }
 
 function goalReachableStates(
@@ -272,24 +396,68 @@ function buildMechanismDomains(definition: LevelDefinition): readonly MechanismD
   }
 
   for (const edge of allEdgeDefinitions(definition)) {
-    const condition = edge.condition;
-    if (!condition) continue;
-    addValue(ensure(condition.mechanism), condition.equals);
+    for (const condition of edgeConditions(edge)) {
+      addValue(ensure(condition.mechanism), condition.equals);
+    }
+  }
+
+  for (const actor of definition.actors ?? []) {
+    if (actor.kind === 'child') continue;
+    if (actor.kind === 'traveler' || actor.kind === 'procession') {
+      addValue(ensure(actor.startsOn.mechanism), actor.startsOn.equals);
+    } else if (actor.kind === 'elder') {
+      for (const stage of actor.stages) {
+        addValue(ensure(stage.startsOn.mechanism), stage.startsOn.equals);
+      }
+    } else {
+      addValue(ensure(actor.advancedState.mechanism), actor.advancedState.initial);
+      addValue(ensure(actor.advancedState.mechanism), actor.advancedState.value);
+      addValue(ensure(actor.responseState.mechanism), actor.responseState.initial);
+      addValue(ensure(actor.responseState.mechanism), actor.responseState.value);
+    }
+    addValue(ensure(actor.completesState.mechanism), actor.completesState.initial);
+    addValue(ensure(actor.completesState.mechanism), actor.completesState.value);
   }
 
   return orderedIds.map((id) => {
     const mechanism = mechanisms.get(id);
     const list = values.get(id) ?? [];
-    const initial = initialValueForMechanism(mechanism, list);
+    const actorInitial = initialActorState(definition, id);
+    const initial = actorInitial ?? initialValueForMechanism(mechanism, list);
     addValue(list, initial);
+    const startsOnId =
+      mechanism?.kind === 'moonCycle' ? stringParam(mechanism, 'startsOn') : undefined;
+    const startsAt = mechanism?.kind === 'moonCycle' ? param(mechanism, 'startsAt') : undefined;
     return {
       id,
       initial,
       values: list,
       actuatorNodes:
         mechanism === undefined ? [] : actuatorNodesForMechanism(definition, mechanism),
+      ...(startsOnId === undefined
+        ? {}
+        : {
+            startsOn: {
+              mechanism: startsOnId,
+              equals: startsAt ?? true,
+            },
+          }),
     };
   });
+}
+
+function initialActorState(
+  definition: LevelDefinition,
+  mechanismId: string,
+): MechanismValue | undefined {
+  for (const actor of definition.actors ?? []) {
+    if (actor.kind === 'child') continue;
+    if (actor.completesState.mechanism === mechanismId) return actor.completesState.initial;
+    if (actor.kind !== 'rival') continue;
+    if (actor.advancedState.mechanism === mechanismId) return actor.advancedState.initial;
+    if (actor.responseState.mechanism === mechanismId) return actor.responseState.initial;
+  }
+  return undefined;
 }
 
 function allEdgeDefinitions(definition: LevelDefinition): readonly LevelEdgeDef[] {
@@ -300,20 +468,39 @@ function allEdgeDefinitions(definition: LevelDefinition): readonly LevelEdgeDef[
   return edges;
 }
 
+function edgeConditions(
+  edge: LevelEdgeDef,
+): readonly { mechanism: string; equals: MechanismValue }[] {
+  return [...(edge.condition === undefined ? [] : [edge.condition]), ...(edge.conditions ?? [])];
+}
+
 function defaultValuesForMechanism(mechanism: LevelMechanismDef): readonly MechanismValue[] {
   switch (mechanism.kind) {
     case 'pressurePlate':
       return [false, true];
-    case 'slider':
-      return [0, 1];
+    case 'slider': {
+      const stops = Math.max(2, numberMechanismParam(mechanism, 'stops') ?? 2);
+      return Array.from({ length: stops }, (_, index) => index);
+    }
     case 'gravityPath': {
       const from = stringParam(mechanism, 'from');
       const to = stringParam(mechanism, 'to');
       return [from ?? 'down', to ?? 'up'];
     }
-    case 'rotator':
-    case 'towerRotation':
-      return [0];
+    case 'rotator': {
+      const stepDeg = numberMechanismParam(mechanism, 'stepDeg') ?? 90;
+      const steps =
+        numberMechanismParam(mechanism, 'steps') ?? Math.max(1, Math.round(360 / stepDeg));
+      const values: number[] = [];
+      for (let step = 0; step < steps; step += 1) values.push(step * stepDeg);
+      return values;
+    }
+    case 'towerRotation': {
+      const faces = Math.max(1, numberMechanismParam(mechanism, 'faces') ?? 4);
+      return Array.from({ length: faces }, (_, index) => index);
+    }
+    case 'moonCycle':
+      return ['waiting', 'zenith', 'open'];
   }
 }
 
@@ -325,11 +512,13 @@ function initialValueForMechanism(
     mechanism === undefined
       ? undefined
       : (param(mechanism, 'initial') ??
+        param(mechanism, 'initialFace') ??
         param(mechanism, 'initialState') ??
         param(mechanism, 'value'));
   if (explicit !== undefined) return explicit;
   if (mechanism?.kind === 'pressurePlate') return false;
   if (mechanism?.kind === 'gravityPath') return stringParam(mechanism, 'from') ?? 'down';
+  if (mechanism?.kind === 'moonCycle') return 'waiting';
   if (values.some((value) => typeof value === 'boolean')) return false;
   if (values.some((value) => typeof value === 'number')) return 0;
   if (values.some((value) => typeof value === 'string')) return '';
@@ -340,12 +529,14 @@ function actuatorNodesForMechanism(
   definition: LevelDefinition,
   mechanism: LevelMechanismDef,
 ): readonly NodeId[] {
+  if (mechanism.kind === 'moonCycle') return [];
   const explicit = new Set<NodeId>();
   for (const node of definition.nodes) {
     const tags = node.tags ?? [];
     if (
       tags.includes(`mechanism:${mechanism.id}`) ||
       tags.includes(`actuator:${mechanism.id}`) ||
+      tags.includes(`cooperator:${mechanism.id}`) ||
       tags.includes(`lever:${mechanism.id}`)
     ) {
       explicit.add(node.id);
@@ -432,6 +623,11 @@ function param(mechanism: LevelMechanismDef, key: string): MechanismValue | unde
 function stringParam(mechanism: LevelMechanismDef, key: string): string | undefined {
   const value = param(mechanism, key);
   return typeof value === 'string' ? value : undefined;
+}
+
+function numberMechanismParam(mechanism: LevelMechanismDef, key: string): number | undefined {
+  const value = param(mechanism, key);
+  return typeof value === 'number' ? value : undefined;
 }
 
 function squaredDistanceTuple(

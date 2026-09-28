@@ -32,6 +32,8 @@ export class TowerRotation extends BaseMechanism {
   readonly root: Object3D = new Group();
 
   private face: number;
+  private committedFace: number;
+  private transformDeltaRad = 0;
   private angleRad = 0;
   private dragStartPointerAngle = 0;
   private dragStartAngle = 0;
@@ -47,7 +49,8 @@ export class TowerRotation extends BaseMechanism {
   ) {
     super(id);
     this.root.name = `TowerRotation:${id}`;
-    this.face = options.initialFace ?? 0;
+    this.face = normalizeFace(options.initialFace ?? 0, this.faces());
+    this.committedFace = this.face;
     this.snapDuration = options.snapSeconds ?? 1.2;
     this.angleRad = this.faceToAngle(this.face);
     this.applyRotation();
@@ -56,6 +59,10 @@ export class TowerRotation extends BaseMechanism {
 
   get currentFace(): number {
     return this.face;
+  }
+
+  get faceCount(): number {
+    return this.faces();
   }
 
   get isInSilence(): boolean {
@@ -69,6 +76,13 @@ export class TowerRotation extends BaseMechanism {
   actuate(amount = 1): void {
     if (!this.interactive) return;
     const direction = this.options.bidirectional === false ? 1 : Math.sign(amount) || 1;
+    this.startSnap(this.face + direction);
+  }
+
+  /** Rotation narrative : reste disponible quand l'affordance joueur est masquée. */
+  actuateByActor(amount = 1): void {
+    if (this.isAnimating) return;
+    const direction = Math.sign(amount) || 1;
     this.startSnap(this.face + direction);
   }
 
@@ -121,6 +135,7 @@ export class TowerRotation extends BaseMechanism {
     this.face = normalizeFace(Math.round(this.angleRad / this.faceAngleRad()), this.faces());
     this.applyRotation();
     this.transformAffectedNodes(context.graph);
+    this.committedFace = this.face;
     this.applyToGraph(context.graph);
     this.silenceElapsed = 0.4;
     bus.emit('mechanism:snap', {
@@ -145,19 +160,22 @@ export class TowerRotation extends BaseMechanism {
   }
 
   private startSnap(rawFace: number): void {
-    this.face = normalizeFace(rawFace, this.faces());
+    const targetFace = normalizeFace(rawFace, this.faces());
+    this.transformDeltaRad =
+      signedFaceDelta(this.committedFace, targetFace, this.faces()) * this.faceAngleRad();
+    this.face = targetFace;
     this.snapFrom = this.angleRad;
-    this.snapTo = this.faceToAngle(this.face);
+    this.snapTo = this.angleRad + shortestAngleDelta(this.angleRad, this.faceToAngle(this.face));
     this.snapElapsed = 0;
     this.animating = true;
   }
 
   private transformAffectedNodes(graph: NavGraph): void {
     const nodes = this.options.affectedNodes;
-    if (!nodes || nodes.length === 0) return;
+    if (!nodes || nodes.length === 0 || this.transformDeltaRad === 0) return;
     const center = this.options.center ?? [0, 0, 0];
-    const cos = Math.cos(this.faceAngleRad());
-    const sin = Math.sin(this.faceAngleRad());
+    const cos = Math.cos(this.transformDeltaRad);
+    const sin = Math.sin(this.transformDeltaRad);
 
     for (const id of nodes) {
       const node = graph.getNode(id);
@@ -189,4 +207,11 @@ export class TowerRotation extends BaseMechanism {
 
 function normalizeFace(face: number, faces: number): number {
   return ((face % faces) + faces) % faces;
+}
+
+/** Nombre signé minimal de crans entre deux faces d'un cycle. */
+function signedFaceDelta(from: number, to: number, faces: number): number {
+  let delta = normalizeFace(to - from, faces);
+  if (delta > faces / 2) delta -= faces;
+  return delta;
 }

@@ -71,6 +71,8 @@ export interface NavEdgeOptions {
   readonly illusory?: boolean;
   /** N'existe que si un mécanisme est dans un état donné (ADR-003). */
   readonly condition?: EdgeCondition;
+  /** Toutes les conditions doivent être vraies. `condition` reste le raccourci à une entrée. */
+  readonly conditions?: readonly EdgeCondition[];
 }
 
 export interface NavEdge {
@@ -78,7 +80,10 @@ export interface NavEdge {
   readonly to: NodeId;
   readonly cost: number;
   readonly illusory: boolean;
+  /** Première condition, conservée pour les outils historiques. */
   readonly condition: EdgeCondition | null;
+  /** Conjonction complète des conditions de passage. */
+  readonly conditions: readonly EdgeCondition[];
   /** Alignement écran courant pour les arêtes illusoires. */
   illusionActive: boolean;
   enabled: boolean;
@@ -142,10 +147,13 @@ export class NavGraph {
     if (!this.nodes.has(from) || !this.nodes.has(to) || from === to) return;
     const cost = options.cost ?? 1;
     const illusory = options.illusory ?? false;
-    const condition = options.condition ?? null;
+    const conditions = [
+      ...(options.condition === undefined ? [] : [options.condition]),
+      ...(options.conditions ?? []),
+    ];
 
-    this.putEdge(from, to, cost, illusory, condition);
-    if (!options.oneWay) this.putEdge(to, from, cost, illusory, condition);
+    this.putEdge(from, to, cost, illusory, conditions);
+    if (!options.oneWay) this.putEdge(to, from, cost, illusory, conditions);
   }
 
   disconnect(from: NodeId, to: NodeId, bothWays = true): void {
@@ -196,7 +204,7 @@ export class NavGraph {
     this.mechanismStates.set(mechanism, value);
     for (const edges of this.adjacency.values()) {
       for (const edge of edges.values()) {
-        if (edge.condition?.mechanism !== mechanism) continue;
+        if (!edge.conditions.some((condition) => condition.mechanism === mechanism)) continue;
         edge.enabled = this.evaluateEdgeEnabled(edge);
       }
     }
@@ -254,7 +262,7 @@ export class NavGraph {
     to: NodeId,
     cost: number,
     illusory: boolean,
-    condition: EdgeCondition | null,
+    conditions: readonly EdgeCondition[],
   ): void {
     let edges = this.adjacency.get(from);
     if (!edges) {
@@ -266,7 +274,16 @@ export class NavGraph {
     // naît active hors LevelDefinition pour préserver l'API de test ; les
     // niveaux la ferment ensuite jusqu'au premier alignement écran.
     const illusionActive = true;
-    const edge: NavEdge = { from, to, cost, illusory, condition, illusionActive, enabled: false };
+    const edge: NavEdge = {
+      from,
+      to,
+      cost,
+      illusory,
+      condition: conditions[0] ?? null,
+      conditions: [...conditions],
+      illusionActive,
+      enabled: false,
+    };
     edge.enabled = this.evaluateEdgeEnabled(edge);
     edges.set(to, edge);
   }
@@ -279,11 +296,11 @@ export class NavGraph {
   }
 
   private evaluateEdgeEnabled(edge: NavEdge): boolean {
-    const conditionMet =
-      edge.condition === null ||
-      this.mechanismStates.get(edge.condition.mechanism) === edge.condition.equals;
+    const conditionsMet = edge.conditions.every(
+      (condition) => this.mechanismStates.get(condition.mechanism) === condition.equals,
+    );
     const illusionMet = !edge.illusory || edge.illusionActive;
-    return conditionMet && illusionMet;
+    return conditionsMet && illusionMet;
   }
 }
 

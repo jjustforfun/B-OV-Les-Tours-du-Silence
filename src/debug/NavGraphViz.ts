@@ -205,7 +205,7 @@ export class NavGraphViz {
       to: edge.to,
       enabled: edge.enabled,
       illusory: edge.illusory,
-      conditional: edge.condition !== null,
+      conditional: edge.conditions.length > 0,
     } satisfies NavGraphVizEdgeUserData;
     line.userData = data;
 
@@ -216,13 +216,13 @@ export class NavGraphViz {
   }
 
   private edgeState(graph: NavGraph, edge: NavEdge): NavGraphVizEdgeKind {
-    const conditionMet =
-      edge.condition === null ||
-      graph.getMechanismState(edge.condition.mechanism) === edge.condition.equals;
+    const conditionMet = edge.conditions.every(
+      (condition) => graph.getMechanismState(condition.mechanism) === condition.equals,
+    );
 
-    if (edge.condition !== null && !conditionMet) return 'conditional-closed';
+    if (edge.conditions.length > 0 && !conditionMet) return 'conditional-closed';
     if (edge.illusory) return edge.enabled ? 'illusion-open' : 'illusion-closed';
-    if (edge.condition !== null) return 'conditional-open';
+    if (edge.conditions.length > 0) return 'conditional-open';
     return edge.enabled ? 'edge' : 'edge-disabled';
   }
 

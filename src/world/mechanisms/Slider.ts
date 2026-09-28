@@ -16,7 +16,7 @@ import {
   type MechanismContext,
   type MechanismDragPoint,
 } from './Mechanism';
-import type { NavGraph } from '../NavGraph';
+import type { NavGraph, NodeId } from '../NavGraph';
 
 export interface SliderOptions {
   readonly axis?: 'x' | 'y' | 'z';
@@ -26,11 +26,23 @@ export interface SliderOptions {
   readonly stops?: number;
   readonly initial?: number;
   readonly snapSeconds?: number;
+  /** Nœuds transportés avec le sol lorsque le cran est validé. */
+  readonly affectedNodes?: readonly NodeId[];
+}
+
+interface StagedObject {
+  readonly object: Object3D;
+  readonly from: Vector3;
+  readonly to: Vector3;
+  readonly stage: number;
 }
 
 export class Slider extends BaseMechanism {
-  readonly root: Object3D = new Group();
+  readonly root = new Group();
+  readonly geometryRoot = new Group();
+  readonly interactionRoot = this.geometryRoot;
 
+  private readonly stagedObjects: StagedObject[] = [];
   private position: number;
   private dragStartPointerAngle = 0;
   private dragStartPosition = 0;
@@ -38,6 +50,8 @@ export class Slider extends BaseMechanism {
   private snapTo = 0;
   private snapElapsed = 0;
   private readonly axisVector = new Vector3();
+  private readonly interactionPosition = new Vector3();
+  private committedPosition: number;
   private snapDuration: number;
 
   constructor(
@@ -46,10 +60,15 @@ export class Slider extends BaseMechanism {
   ) {
     super(id);
     this.root.name = `Slider:${id}`;
+    this.geometryRoot.name = `SliderGeometry:${id}`;
+    this.root.add(this.geometryRoot);
     this.position = clamp01(options.initial ?? 0);
+    this.committedPosition = this.position;
     this.snapDuration = options.snapSeconds ?? 0.9;
     this.applyPosition();
     this.attachAffordance(0.2, 0.04);
+    const affordance = this.root.getObjectByName(`MechanismAffordance:${id}`);
+    if (affordance !== undefined) this.geometryRoot.add(affordance);
   }
 
   get normalizedPosition(): number {
@@ -58,6 +77,33 @@ export class Slider extends BaseMechanism {
 
   get currentStop(): number {
     return Math.round(this.position * (this.stops() - 1));
+  }
+
+  bindStagedObject(
+    object: Object3D,
+    target: readonly [number, number, number],
+    stage: number,
+  ): void {
+    this.stagedObjects.push({
+      object,
+      from: object.position.clone(),
+      to: new Vector3(target[0], target[1], target[2]),
+      stage: Math.min(this.stops() - 1, Math.max(1, Math.round(stage))),
+    });
+    this.applyStagedObjects();
+  }
+
+  override attachPassenger(object: Object3D): void {
+    if (this.passenger === object) return;
+    this.passenger = object;
+    this.geometryRoot.attach(object);
+  }
+
+  override detachPassenger(parent?: Object3D): void {
+    if (this.passenger === null) return;
+    if (parent !== undefined) parent.attach(this.passenger);
+    else this.passenger.removeFromParent();
+    this.passenger = null;
   }
 
   actuate(amount = 1): void {
@@ -109,6 +155,8 @@ export class Slider extends BaseMechanism {
     this.animating = false;
     this.position = this.snapTo;
     this.applyPosition();
+    this.transformAffectedNodes(context.graph);
+    this.committedPosition = this.position;
     this.applyToGraph(context.graph);
     this.emitSnap();
   }
@@ -142,6 +190,31 @@ export class Slider extends BaseMechanism {
     });
   }
 
+  protected override eventPosition(): { x: number; y: number; z: number } {
+    this.interactionRoot.getWorldPosition(this.interactionPosition);
+    return {
+      x: this.interactionPosition.x,
+      y: this.interactionPosition.y,
+      z: this.interactionPosition.z,
+    };
+  }
+
+  private transformAffectedNodes(graph: NavGraph): void {
+    const nodes = this.options.affectedNodes;
+    if (nodes === undefined || nodes.length === 0) return;
+    const distance = (this.position - this.committedPosition) * (this.options.travel ?? 1);
+    if (distance === 0) return;
+    const axis = this.options.axis ?? 'x';
+    for (const id of nodes) {
+      const node = graph.getNode(id);
+      if (node === undefined) continue;
+      const mutable = node.position as { x: number; y: number; z: number };
+      if (axis === 'x') mutable.x += distance;
+      else if (axis === 'y') mutable.y += distance;
+      else mutable.z += distance;
+    }
+  }
+
   private applyPosition(): void {
     this.axisVector.set(0, 0, 0);
     const axis = this.options.axis ?? 'x';
@@ -151,7 +224,17 @@ export class Slider extends BaseMechanism {
 
     const travel = this.options.travel ?? 1;
     const offset = (this.position - 0.5) * travel;
-    this.root.position.copy(this.axisVector).multiplyScalar(offset);
+    this.geometryRoot.position.copy(this.axisVector).multiplyScalar(offset);
+    this.applyStagedObjects();
+  }
+
+  private applyStagedObjects(): void {
+    const stageCount = this.stops() - 1;
+    for (const entry of this.stagedObjects) {
+      const start = (entry.stage - 1) / stageCount;
+      const progress = clamp01((this.position - start) * stageCount);
+      entry.object.position.lerpVectors(entry.from, entry.to, progress);
+    }
   }
 
   private stops(): number {

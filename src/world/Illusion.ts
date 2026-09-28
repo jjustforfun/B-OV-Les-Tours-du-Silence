@@ -25,6 +25,7 @@ export interface IllusionCandidate {
   readonly oneWay?: boolean;
   readonly cost?: number;
   readonly condition?: EdgeCondition;
+  readonly conditions?: readonly EdgeCondition[];
 }
 
 /** Tolérance en pixels : la superposition doit être visuellement parfaite. */
@@ -132,6 +133,7 @@ export function resolveIllusions(
         ...(candidate.oneWay === undefined ? {} : { oneWay: candidate.oneWay }),
         ...(candidate.cost === undefined ? {} : { cost: candidate.cost }),
         ...(candidate.condition === undefined ? {} : { condition: candidate.condition }),
+        ...(candidate.conditions === undefined ? {} : { conditions: candidate.conditions }),
       });
     }
     graph.setIllusoryConnectionEnabled(

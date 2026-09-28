@@ -2,7 +2,8 @@
  * PressurePlate.ts — dalle qui s'enfonce sous Turpal ou sous Borz.
  *
  * Variantes maintenue et verrouillante. La dalle publie son état dans le
- * NavGraph et dessine un lien lumineux vers ce qu'elle commande.
+ * NavGraph, dessine un lien lumineux vers ce qu'elle commande et peut
+ * abaisser des volumes d'architecture sans déplacer son ancre monde.
  */
 import { BufferGeometry, Group, Line, LineBasicMaterial, Vector3, type Object3D } from 'three';
 import { bus } from '@core/EventBus';
@@ -15,22 +16,41 @@ export interface PressurePlateOptions {
   readonly triggerNode: NodeId;
   /** Reste enfoncée une fois activée. */
   readonly latching?: boolean;
-  /** Point de destination du lien lumineux de cause à effet. */
+  /** Point de destination local du lien lumineux de cause à effet. */
   readonly linkTo?: readonly [number, number, number];
+  /** Passage que Borz matérialise lorsqu'il est le poids de cette dalle. */
+  readonly borzBridge?: readonly [NodeId, NodeId];
   readonly pressDepth?: number;
   readonly pressSeconds?: number;
+  /** Durée du mouvement architectural lié à la dalle. */
+  readonly loweringSeconds?: number;
+}
+
+interface LoweredObject {
+  readonly object: Object3D;
+  readonly from: Vector3;
+  readonly to: Vector3;
+  readonly stage: number;
 }
 
 export class PressurePlate extends BaseMechanism {
-  readonly root: Object3D = new Group();
+  readonly root = new Group();
+  readonly geometryRoot = new Group();
+  readonly interactionRoot = this.geometryRoot;
 
+  private readonly loweredObjects: LoweredObject[] = [];
+  private readonly interactionPosition = new Vector3();
   private pressed = false;
   private visualPressed = 0;
   private fromPressed = 0;
   private targetPressed = 0;
+  private loweringProgress = 0;
+  private fromLowering = 0;
+  private targetLowering = 0;
   private elapsed = 0;
   private readonly pressDepth: number;
   private readonly pressSeconds: number;
+  private readonly loweringSeconds: number;
 
   constructor(
     id: string,
@@ -38,9 +58,14 @@ export class PressurePlate extends BaseMechanism {
   ) {
     super(id);
     this.root.name = `PressurePlate:${id}`;
+    this.geometryRoot.name = `PressurePlateGeometry:${id}`;
+    this.root.add(this.geometryRoot);
     this.pressDepth = options.pressDepth ?? 0.08;
     this.pressSeconds = options.pressSeconds ?? 0.18;
+    this.loweringSeconds = options.loweringSeconds ?? 0.9;
     this.attachAffordance(0.18, 0.025);
+    const affordance = this.root.getObjectByName(`${id}:affordance`);
+    if (affordance !== undefined) this.geometryRoot.add(affordance);
     this.createCauseLink();
   }
 
@@ -52,6 +77,24 @@ export class PressurePlate extends BaseMechanism {
     return this.options.triggerNode;
   }
 
+  get borzBridge(): readonly [NodeId, NodeId] | undefined {
+    return this.options.borzBridge;
+  }
+
+  bindStagedObject(
+    object: Object3D,
+    target: readonly [number, number, number],
+    stage: number,
+  ): void {
+    this.loweredObjects.push({
+      object,
+      from: object.position.clone(),
+      to: new Vector3(target[0], target[1], target[2]),
+      stage: Math.max(1, Math.round(stage)),
+    });
+    this.applyLoweredObjects();
+  }
+
   /** Appelé quand une entité entre ou sort du nœud déclencheur. */
   setOccupied(occupied: boolean): void {
     if (this.pressed && this.options.latching === true) return;
@@ -59,6 +102,8 @@ export class PressurePlate extends BaseMechanism {
     this.pressed = occupied;
     this.fromPressed = this.visualPressed;
     this.targetPressed = occupied ? 1 : 0;
+    this.fromLowering = this.loweringProgress;
+    this.targetLowering = occupied ? 1 : 0;
     this.elapsed = 0;
     this.animating = true;
   }
@@ -71,15 +116,25 @@ export class PressurePlate extends BaseMechanism {
   override update(context: MechanismContext, delta: number): void {
     super.update(context, delta);
     if (!this.animating) return;
-    this.elapsed = Math.min(this.pressSeconds, this.elapsed + delta);
-    const t = elasticOut(this.elapsed / this.pressSeconds);
-    this.visualPressed = this.fromPressed + (this.targetPressed - this.fromPressed) * t;
-    this.root.position.y = -this.pressDepth * this.visualPressed;
 
-    if (this.elapsed < this.pressSeconds) return;
+    const totalSeconds =
+      this.loweredObjects.length === 0 ? this.pressSeconds : this.loweringSeconds;
+    this.elapsed = Math.min(totalSeconds, this.elapsed + delta);
+
+    const pressT = elasticOut(Math.min(1, this.elapsed / this.pressSeconds));
+    this.visualPressed = this.fromPressed + (this.targetPressed - this.fromPressed) * pressT;
+    this.geometryRoot.position.y = -this.pressDepth * this.visualPressed;
+
+    const lowerT = smoothStep(Math.min(1, this.elapsed / totalSeconds));
+    this.loweringProgress = this.fromLowering + (this.targetLowering - this.fromLowering) * lowerT;
+    this.applyLoweredObjects();
+
+    if (this.elapsed < totalSeconds) return;
     this.animating = false;
     this.visualPressed = this.targetPressed;
-    this.root.position.y = -this.pressDepth * this.visualPressed;
+    this.loweringProgress = this.targetLowering;
+    this.geometryRoot.position.y = -this.pressDepth * this.visualPressed;
+    this.applyLoweredObjects();
     this.applyToGraph(context.graph);
     bus.emit('mechanism:snap', {
       id: this.id,
@@ -102,6 +157,27 @@ export class PressurePlate extends BaseMechanism {
     });
   }
 
+  protected override eventPosition(): { x: number; y: number; z: number } {
+    this.interactionRoot.getWorldPosition(this.interactionPosition);
+    return {
+      x: this.interactionPosition.x,
+      y: this.interactionPosition.y,
+      z: this.interactionPosition.z,
+    };
+  }
+
+  private applyLoweredObjects(): void {
+    let stageCount = 1;
+    for (const entry of this.loweredObjects) stageCount = Math.max(stageCount, entry.stage);
+    for (const entry of this.loweredObjects) {
+      const progress = Math.min(
+        1,
+        Math.max(0, this.loweringProgress * stageCount - (entry.stage - 1)),
+      );
+      entry.object.position.lerpVectors(entry.from, entry.to, smoothStep(progress));
+    }
+  }
+
   private createCauseLink(): void {
     const target = this.options.linkTo;
     if (!target) return;
@@ -118,4 +194,8 @@ export class PressurePlate extends BaseMechanism {
     line.name = `PressurePlateLink:${this.id}`;
     this.root.add(line);
   }
+}
+
+function smoothStep(value: number): number {
+  return value * value * (3 - 2 * value);
 }

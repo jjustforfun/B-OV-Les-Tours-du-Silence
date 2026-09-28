@@ -28,6 +28,8 @@ export const SKY_PALETTES = {
   dusk: { top: 0x141a2a, bottom: 0xc2643f, fog: 0x6b6273, fogDensity: 0.022 },
   /** Cimes enneigées, lumière presque blanche. */
   snow: { top: 0x46536b, bottom: 0xe8eef5, fog: 0xd7dee7, fogDensity: 0.035 },
+  /** Épilogue : la neige cède doucement à l'or de la vallée réunie. */
+  gold: { top: 0x1a2030, bottom: 0xd9a441, fog: 0xb59a6b, fogDensity: 0.018 },
 } as const satisfies Record<string, SkyPalette>;
 
 export type SkyPaletteName = keyof typeof SKY_PALETTES;
@@ -42,12 +44,25 @@ export class Sky {
   private readonly bottom = new Color();
   private readonly animatedTop = new Color();
   private readonly animatedBottom = new Color();
+  private readonly transitionFromTop = new Color();
+  private readonly transitionFromBottom = new Color();
+  private readonly transitionToTop = new Color();
+  private readonly transitionToBottom = new Color();
+  private readonly transitionFromFog = new Color();
+  private readonly transitionToFog = new Color();
+  private transitionStartSeconds: number | null = null;
+  private transitionDurationSeconds = 0;
+  private transitionFromDensity = 0;
+  private transitionToDensity = 0;
+  private transitionPending = false;
 
   constructor(private readonly scene: Scene) {}
 
   apply(palette: SkyPalette): void {
     this.top.setHex(palette.top);
     this.bottom.setHex(palette.bottom);
+    this.transitionPending = false;
+    this.transitionStartSeconds = null;
 
     this.texture?.dispose();
     this.texture = createGradientTexture(palette.top, palette.bottom, this.data);
@@ -59,8 +74,29 @@ export class Sky {
     this.apply(SKY_PALETTES[name]);
   }
 
+  /** Fond progressivement vers une autre heure du jour, sans remplacer le ciel. */
+  transitionTo(palette: SkyPalette, durationSeconds = 3.5): void {
+    this.transitionFromTop.copy(this.top);
+    this.transitionFromBottom.copy(this.bottom);
+    this.transitionToTop.setHex(palette.top);
+    this.transitionToBottom.setHex(palette.bottom);
+    const fog = this.scene.fog;
+    this.transitionFromFog.copy(fog instanceof FogExp2 ? fog.color : this.bottom);
+    this.transitionToFog.setHex(palette.fog);
+    this.transitionFromDensity = fog instanceof FogExp2 ? fog.density : palette.fogDensity;
+    this.transitionToDensity = palette.fogDensity;
+    this.transitionDurationSeconds = Math.max(0.001, durationSeconds);
+    this.transitionStartSeconds = null;
+    this.transitionPending = true;
+  }
+
+  transitionToNamed(name: SkyPaletteName, durationSeconds = 3.5): void {
+    this.transitionTo(SKY_PALETTES[name], durationSeconds);
+  }
+
   update(elapsedSeconds: number): void {
     if (!this.texture) return;
+    this.updateTransition(elapsedSeconds);
 
     const wave =
       Math.sin(elapsedSeconds * RENDER.sky.animationSpeed) * RENDER.sky.animationAmplitude;
@@ -75,6 +111,27 @@ export class Sky {
     this.texture = null;
     this.scene.background = null;
     this.scene.fog = null;
+    this.transitionPending = false;
+    this.transitionStartSeconds = null;
+  }
+
+  private updateTransition(elapsedSeconds: number): void {
+    if (!this.transitionPending) return;
+    this.transitionStartSeconds ??= elapsedSeconds;
+    const elapsed = elapsedSeconds - this.transitionStartSeconds;
+    const progress = smoothstep(Math.min(1, elapsed / this.transitionDurationSeconds));
+    this.top.copy(this.transitionFromTop).lerp(this.transitionToTop, progress);
+    this.bottom.copy(this.transitionFromBottom).lerp(this.transitionToBottom, progress);
+    const fog = this.scene.fog;
+    if (fog instanceof FogExp2) {
+      fog.color.copy(this.transitionFromFog).lerp(this.transitionToFog, progress);
+      fog.density =
+        this.transitionFromDensity +
+        (this.transitionToDensity - this.transitionFromDensity) * progress;
+    }
+    if (progress < 1) return;
+    this.transitionPending = false;
+    this.transitionStartSeconds = null;
   }
 }
 

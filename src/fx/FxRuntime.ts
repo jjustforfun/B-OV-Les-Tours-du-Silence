@@ -63,6 +63,7 @@ export class FxRuntime {
   private snow: Snow | null = null;
   private fireflies: Fireflies | null = null;
   private moteAccumulator = 0;
+  private currentChapter = -1;
   private quality: QualitySettings;
 
   /** Options d'émission réutilisées pour la poussière des rais. */
@@ -125,6 +126,7 @@ export class FxRuntime {
    */
   attachLevel(level: Level): void {
     this.detachLevel();
+    this.currentChapter = level.definition.chapter;
 
     let hasSnow = false;
     let minX = 0;
@@ -169,6 +171,7 @@ export class FxRuntime {
   }
 
   detachLevel(): void {
+    this.currentChapter = -1;
     this.snow?.dispose();
     this.snow = null;
     this.fireflies?.dispose();
@@ -251,8 +254,41 @@ export class FxRuntime {
         const first = points[0];
         if (first !== undefined) this.celebrate.celebrate('discover', { at: first });
       }),
+      bus.on('illusion:crossed', (event) => {
+        // Confirmation a posteriori seulement : six grains de lumière, 120 ms.
+        this.pool.emit({
+          x: event.to.x,
+          y: event.to.y + 0.08,
+          z: event.to.z,
+          count: 6,
+          color: 0xd9a441,
+          speed: 0.08,
+          speedVariance: 0.02,
+          size: 0.045,
+          sizeEnd: 0,
+          lifetime: 0.12,
+          lifetimeVariance: 0,
+          gravity: 0,
+          drag: 1.8,
+          upBias: 0.5,
+        });
+      }),
+      bus.on('finale:towerLit', (event) => {
+        if (this.currentChapter === 7) this.celebrate.celebrate('discover', { at: event.at });
+      }),
+      bus.on('finale:threshold', (event) => {
+        if (this.currentChapter !== 7) return;
+        const towers = this.getTowers();
+        this.celebrate.chapterEnd(towers, event.at);
+        this.spawnGraceShafts(towers, event.at);
+        this.shafts.reveal(2.5);
+      }),
       bus.on('level:solved', (event) => {
         const origin = event.at ?? { x: 0, y: 0, z: 0 };
+        if (this.currentChapter === 7) {
+          this.celebrate.celebrate('solve', { at: origin });
+          return;
+        }
         const towers = this.getTowers();
         if (towers.length > 0) {
           this.celebrate.chapterEnd(towers, origin);

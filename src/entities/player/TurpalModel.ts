@@ -439,6 +439,18 @@ export class TurpalModel implements ICharacterModel {
       return;
     }
 
+    if (clip === 'handOnStone' || clip === 'offerHand') {
+      const phase = smootherstep(Math.min(time / 1.2, 1));
+      pose.bodyX = (clip === 'offerHand' ? -0.015 : -0.04) * phase;
+      pose.headPitch = (clip === 'offerHand' ? 0.06 : 0.12) * phase;
+      pose.rightArmX = -1.18 * phase;
+      pose.rightArmZ = (clip === 'offerHand' ? -0.38 : -0.2) * phase;
+      pose.rightForearmX = (clip === 'offerHand' ? -0.12 : -0.42) * phase;
+      pose.rightForearmZ = -0.08 * phase;
+      pose.leftArmZ = 0.08;
+      return;
+    }
+
     if (clip === 'lookSky') {
       const phase = smootherstep(Math.min(time / (TURPAL.skyLookMs / 1000), 1));
       pose.bodyX = -0.08 * phase;
@@ -447,6 +459,22 @@ export class TurpalModel implements ICharacterModel {
       pose.leftArmZ = 0.16;
       pose.rightArmZ = -0.16;
       pose.coatBackX = -0.04 * phase;
+      return;
+    }
+
+    if (clip === 'sit') {
+      const phase = smootherstep(Math.min(time / 1.25, 1));
+      pose.bodyY = -0.18 * phase + breath * 0.002;
+      pose.bodyX = -0.14 * phase;
+      pose.headPitch = 0.08 * phase;
+      pose.leftLegX = -1.18 * phase;
+      pose.rightLegX = -1.18 * phase;
+      pose.leftFootX = 0.86 * phase;
+      pose.rightFootX = 0.86 * phase;
+      pose.leftArmX = -0.28 * phase;
+      pose.rightArmX = -0.28 * phase;
+      pose.coatFrontX = 0.22 * phase;
+      pose.coatBackX = -0.1 * phase;
       return;
     }
 

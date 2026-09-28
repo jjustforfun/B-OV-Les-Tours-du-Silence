@@ -20,7 +20,7 @@ Le jeu n'est « terminé » que lorsque ces cinq lignes sont vertes :
 
 | #   | Critère                                                       | État        |
 | --- | ------------------------------------------------------------- | ----------- |
-| 1   | 8 chapitres jouables du début à la fin                        | ⬜ phase 9  |
+| 1   | 8 chapitres jouables du début à la fin                        | 🟢 8/8      |
 | 2   | 60 fps stables sur la cible mobile (Android 2021 / iPhone 11) | ⬜ phase 10 |
 | 3   | Lighthouse PWA ≥ 90, Performance ≥ 85                         | ⬜ phase 10 |
 | 4   | Zéro erreur console, zéro fuite mémoire entre niveaux         | ⬜ phase 10 |
@@ -150,6 +150,907 @@ Actions correctives (avec responsable et échéance) :
 ```
 
 <!-- prettier-ignore-end -->
+
+---
+
+# Rapport QA — Phase 9.7 : chapitre 7, « Le Chant revenu »
+
+**Date** : 2026-09-28 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟠 orange — fonctionnel et automatisé, validation navigateur à archiver**
+
+L'épilogue retire volontairement tout mécanisme et toute illusion. Un chemin
+unique conduit Turpal devant huit tours intactes, rend les quatre couches de
+musique, déclenche leur réponse commune au seuil familial puis redescend vers la
+communauté. Turpal s'assoit et Borz se couche ; l'aigle final ne se pose sur son
+épaule que si les sept secrets antérieurs figurent dans la sauvegarde. La
+solution en un tap, les 13 états de navigation et les captures techniques sont
+verts. Les captures WebGL, le profilage CPU ×4 et les chronométrages humains
+restent à exécuter hors du bac à sable sans navigateur.
+
+## Checks automatiques
+
+| Étape            | Commande                        | Résultat | Valeur                              |
+| ---------------- | ------------------------------- | -------- | ----------------------------------- |
+| Lint             | `pnpm lint`                     | 🟢       | 0 erreur, 0 avertissement           |
+| Typecheck        | `pnpm typecheck`                | 🟢       | 0 erreur                            |
+| Tests unitaires  | `pnpm test`                     | 🟢       | 281 tests / 38 fichiers             |
+| Test du chapitre | `vitest run epilogue-level`     | 🟢       | 12/12                               |
+| Couverture       | `vitest run --coverage`         | 🟢       | 54,16 % statements / 55,77 % lignes |
+| Build            | `pnpm build`                    | 🟢       | 1 054 modules transformés           |
+| Budget de bundle | `pnpm check-bundle`             | 🟢       | 358,1 ko gzip / 1 464,8 ko — 24,4 % |
+| Capture XML      | `xml.etree.ElementTree.parse`   | 🟢       | 2/2 SVG valides                     |
+| Tests e2e WebGL  | navigateur système indisponible | 🟠       | non relancé sans changement réseau  |
+
+Chunk hors bundle initial : `level-07-epilogue` **1,69 ko gzip**, très
+inférieur au budget de 400 ko. Le tableau vivant, les braises persistantes, la
+pose assise et la transition générique du ciel restent dans le bundle initial ;
+celui-ci occupe 24,4 % du plafond.
+
+## Performance et cadrage
+
+| Mesure                        | Desktop 1920 × 1080 | Mobile 390 × 844 | Budget     | État |
+| ----------------------------- | ------------------- | ---------------- | ---------- | ---- |
+| Nœuds visibles                | 18/18               | 18/18            | 100 %      | 🟢   |
+| Candidats / arêtes illusoires | 0 / 0               | 0 / 0            | volontaire | 🟢   |
+| Draw calls estimés du décor   | 70                  | 70               | < 120      | 🟢   |
+| Triangles du décor            | 6 080               | 6 080            | < 150 000  | 🟢   |
+| FPS / CPU ×4 / mémoire GPU    | non mesuré          | non mesuré       | —          | 🟠   |
+| Durée de première découverte  | cible 5 min         | cible 5 min      | 5–12 min   | 🟠   |
+
+La boîte du niveau mesure **25,00 × 12,75 × 17,50 unités**. Les deux captures
+techniques sont archivées dans `docs/qa/chapter-7/`. Elles utilisent les
+projections réelles de la route complète et représentent la variante 7/7 pour
+l'aigle. La durée est une cible de level design et non une médiane observée,
+faute de playtest humain dans cet environnement.
+
+## Solution automatique
+
+1. un tap sur la terrasse finale suffit : le pathfinder suit l'unique chaîne de
+   treize nœuds depuis `start` jusqu'à `gathering-seat` ;
+2. les huit passages `tower-0` à `tower-7` allument une braise persistante au
+   sommet de chaque tour, dans l'ordre des huit chapitres ;
+3. les couches reviennent sans redescendre : bourdon au départ, pondar à T2,
+   percussion à T4 et mélodie au seuil ;
+4. `family-threshold` joue la main sur la pierre, fait répondre les huit tours
+   ensemble et demande au ciel une transition `snow` → `gold` en 4 s ;
+5. Turpal emprunte `descent-a` puis `descent-b`, sans coupe ni téléportation ;
+6. à `gathering-seat`, Turpal s'assoit parmi les quatre personnes aidées et
+   Borz rejoint la terrasse avant de se coucher ;
+7. si — et seulement si — les identifiants des sept aigles précédents sont
+   sauvegardés, l'aigle final apparaît sur l'épaule de Turpal. Le but, les
+   arêtes et la musique sont identiques dans les deux variantes.
+
+Test : `tests/unit/epilogue-level.test.ts`.
+
+## Exhaustivité et absence d'impasse
+
+`validateNoDeadEnds()` explore les **13 états de navigation** atteignables et
+l'unique combinaison sans mécanisme. Résultat : **0 violation**.
+
+Garanties supplémentaires :
+
+- aucune condition, aucun timer et aucun mécanisme ne peut fermer la route ;
+- aucune arête n'est illusoire : la projection ne décide jamais de la
+  connectivité ;
+- le seuil puis la terrasse finale appartiennent à la même chaîne obligatoire ;
+- la réponse commune des tours est monotone et ne se rejoue pas lors d'un
+  retour au seuil ;
+- la variante 0–6 aigles et la variante 7/7 résolvent exactement le même
+  graphe ;
+- les résidents et l'aigle n'ont aucune arête et ne peuvent être confondus avec
+  une destination utile.
+
+## Fonctionnel, audiovisuel et culture
+
+| Point                                                     | État | Preuve                                              |
+| --------------------------------------------------------- | ---- | --------------------------------------------------- |
+| Huit tours intactes, palettes des chapitres 0→7           | 🟢   | huit `VainakhTower` et huit `towerPalette` testées  |
+| Allumage individuel puis réponse commune unique           | 🟢   | événements 0→7 puis un seul `finale:threshold`      |
+| Quatre couches musicales complètes                        | 🟢   | progression `[1,2,3,4]`, Ré dorien `D3–A3–D4`       |
+| Ciel neige virant progressivement à l'or                  | 🟢   | interpolation texture + brouillard testée           |
+| Voyageur, enfant, ancien et rival sur les terrasses       | 🟢   | quatre modèles présents, aucun acteur de quête      |
+| Turpal assis parmi les siens, Borz couché                 | 🟢   | pose `sit` et échelle de repos vérifiées en runtime |
+| Aigle sur l'épaule uniquement avec les sept secrets       | 🟢   | variantes 6/7 et 7/7 simulées                       |
+| Absence volontaire d'illusion et de nouvelle mécanique    | 🟢   | 0 candidat, 0 mécanisme, route en un tap            |
+| Palette or réunissant les teintes précédentes             | 🟢   | palette `epilogue` + huit palettes de tours         |
+| Vent, feu et aigle                                        | 🟢   | couches `wind`, `fire`, `eagle`                     |
+| Tours entières, gestes civils, aucun vocabulaire guerrier | 🟢   | géométrie et acteurs procéduraux sans débris        |
+| Écoute subjective et relecture culturelle humaine         | 🟠   | non réalisables automatiquement                     |
+
+## Bugs trouvés
+
+| ID      | Gravité | Description                                                                    | Statut  |
+| ------- | ------- | ------------------------------------------------------------------------------ | ------- |
+| CH7-001 | majeur  | La célébration générique allumait les tours au but plutôt qu'au seuil.         | corrigé |
+| CH7-002 | mineur  | Le ciel ne savait auparavant qu'appliquer une palette instantanément.          | corrigé |
+| CH7-003 | majeur  | Le runtime ne recevait pas les aigles persistés nécessaires à la variante 7/7. | corrigé |
+
+## Décision
+
+**Phase validée : oui pour l'implémentation et l'automatisation ; orange pour
+les contrôles nécessitant un navigateur ou une personne.**
+
+Actions restantes non bloquantes : captures WebGL artistiques, profilage sur
+mobile émulé et réel, écoute subjective et playtest humain chronométré.
+
+---
+
+# Rapport QA — Phase 9.6 : chapitre 6, « L'Humilité »
+
+**Date** : 2026-09-28 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟠 orange — fonctionnel et automatisé, validation navigateur à archiver**
+
+Turpal renonce à l'ascension directe : le névé descend sous ses pieds, la tour
+ouvre une paroi, puis deux changements d'orientation le conduisent sous l'arche.
+Borz porte séparément le voyageur, l'enfant, l'ancien et le rival tandis que
+Turpal reste à pied. Le plafond et le sentier supérieur, distants dans le monde,
+se confondent à 0 px après le quatrième dépôt. La solution automatique, les 79
+états atteignables et les captures techniques sont verts. Les captures WebGL,
+le profilage CPU ×4 et les chronométrages humains restent à exécuter hors du bac
+à sable sans navigateur.
+
+## Checks automatiques
+
+| Étape            | Commande                        | Résultat | Valeur                              |
+| ---------------- | ------------------------------- | -------- | ----------------------------------- |
+| Lint             | `pnpm lint`                     | 🟢       | 0 erreur, 0 avertissement           |
+| Typecheck        | `pnpm typecheck`                | 🟢       | 0 erreur                            |
+| Tests unitaires  | `pnpm test`                     | 🟢       | 269 tests / 37 fichiers             |
+| Test du chapitre | `vitest run humility-level`     | 🟢       | 11/11                               |
+| Build            | `pnpm build`                    | 🟢       | 1 053 modules transformés           |
+| Budget de bundle | `pnpm check-bundle`             | 🟢       | 356,2 ko gzip / 1 464,8 ko — 24,3 % |
+| Capture XML      | `xml.etree.ElementTree.parse`   | 🟢       | 2/2 SVG valides                     |
+| Tests e2e WebGL  | navigateur système indisponible | 🟠       | non relancé sans changement réseau  |
+
+Chunk hors bundle initial : `level-06-humilite` **1,77 ko gzip**, très
+inférieur au budget de 400 ko. Les acteurs procéduraux de la procession et
+l'orchestration générique restent dans le bundle initial ; celui-ci occupe
+24,3 % du plafond.
+
+## Performance et cadrage
+
+| Mesure                            | Desktop 1920 × 1080 | Mobile 390 × 844 | Budget    | État |
+| --------------------------------- | ------------------- | ---------------- | --------- | ---- |
+| Nœuds visibles                    | 26/26               | 26/26            | 100 %     | 🟢   |
+| Écart plafond ↔ sentier supérieur | 0 px                | 0 px             | ≤ 6 px    | 🟢   |
+| Draw calls estimés du décor       | 14                  | 14               | < 120     | 🟢   |
+| Triangles du décor                | 934                 | 934              | < 150 000 | 🟢   |
+| FPS / CPU ×4 / mémoire GPU        | non mesuré          | non mesuré       | —         | 🟠   |
+| Durée de première découverte      | cible 12 min        | cible 12 min     | 5–12 min  | 🟠   |
+
+La boîte du niveau mesure **20,30 × 11,00 × 17,40 unités**. Les deux captures
+techniques sont archivées dans `docs/qa/chapter-6/`. Elles utilisent les
+projections réelles après descente du névé, alignement de la tour, deux
+bascules et complétion de la procession. La durée est une cible de level design
+et non une médiane observée, faute de playtest humain dans cet environnement.
+
+## Solution automatique
+
+1. actionner `snow-slab` : son nœud et Turpal descendent ensemble de 2 unités ;
+2. rejoindre `mountain-tower`, tourner sur la face 1 et ouvrir la liaison vers
+   la paroi ; ce geste lance aussi la procession autonome de Borz ;
+3. actionner `wall-gravity`, prendre `up=[0,0,1]` et descendre la face extérieure
+   jusqu'à la charnière de l'arche ;
+4. actionner `arch-gravity`, prendre `up=[0,-1,0]`, marcher sous la montagne et
+   révéler l'aigle volant encore plus bas ;
+5. pendant ce parcours, Borz effectue quatre allers chargés et trois retours à
+   vide : voyageur, enfant, ancien, rival ;
+6. `others-raised=true` après le quatrième dépôt déverrouille la jonction, mais
+   seulement si les deux gravités et la tour conservent leur état résolu ;
+7. franchir la liaison illusoire à 0 px et atteindre le sommet à pied, en
+   dernier, toujours retourné avec la vallée visuellement au-dessus de la tête.
+
+Test : `tests/unit/humility-level.test.ts`.
+
+## Exhaustivité et absence d'impasse
+
+`validateNoDeadEnds()` explore **79 états étendus** et **38 combinaisons** de la
+dalle, des quatre faces de la tour, des deux chemins de gravité et de
+`others-raised`. Résultat : **0 violation**.
+
+Garanties supplémentaires :
+
+- le névé et la tour restent réversibles tant que Turpal se trouve sur leur nœud
+  d'action ;
+- une mauvaise face de tour conserve toujours une route et une nouvelle
+  tentative ;
+- chaque bascule peut être annulée depuis sa charnière, sans chute ni
+  téléportation ;
+- la procession est autonome, monotone et n'emporte jamais Turpal ;
+- la jonction finale exige le dernier dépôt, les deux orientations résolues et
+  l'alignement caméra ≤ 6 px ;
+- l'aigle n'a aucune arête et ne participe jamais à la solution.
+
+## Fonctionnel, audiovisuel et culture
+
+| Point                                                 | État | Preuve                                               |
+| ----------------------------------------------------- | ---- | ---------------------------------------------------- |
+| Névé mobile sous les pieds de Turpal                  | 🟢   | modèle et nœud translatés de Y=4 à Y=2, test runtime |
+| Deux bascules successives et roulis caméra            | 🟢   | `up` Z puis −Y et caméra vérifiés                    |
+| Borz porte voyageur, enfant, ancien, rival            | 🟢   | quatre positions finales vérifiées après 7 trajets   |
+| Turpal n'est jamais passager                          | 🟢   | appel manuel désactivé, parent de Turpal testé       |
+| Wow unique : vallée visuellement au-dessus au sommet  | 🟢   | plafond puis jonction superposée à 0 px              |
+| Aigle sous Turpal après la seconde bascule            | 🟢   | secret révélé uniquement par `arch-gravity=up`       |
+| Palette blanc neige / bleu glacier                    | 🟢   | palette `humilite`, ciel `snow`                      |
+| Musique La dorien `A3–E4–A4`                          | 🟢   | définition du niveau                                 |
+| Vent et aigle                                         | 🟢   | couches `wind`, `eagle`                              |
+| Montagne et tour intactes, aucun vocabulaire guerrier | 🟢   | volumes procéduraux sans débris                      |
+| Écoute subjective et relecture culturelle humaine     | 🟠   | non réalisables automatiquement                      |
+
+## Bugs trouvés
+
+| ID      | Gravité | Description                                                              | Statut  |
+| ------- | ------- | ------------------------------------------------------------------------ | ------- |
+| CH6-001 | majeur  | L'état `carrying` de Borz interrompait son trajet narratif explicite.    | corrigé |
+| CH6-002 | mineur  | Le slider cherchait son affordance sous un ancien nom d'objet incorrect. | corrigé |
+
+## Décision
+
+**Phase validée : oui pour l'implémentation et l'automatisation ; orange pour
+les contrôles nécessitant un navigateur ou une personne.**
+
+Actions restantes non bloquantes : captures WebGL artistiques, profilage sur
+mobile émulé et réel, écoute subjective et playtest humain chronométré.
+
+---
+
+# Rapport QA — Phase 9.5 : chapitre 5, « Le Pardon »
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟠 orange — fonctionnel et automatisé, validation navigateur à archiver**
+
+Deux moitiés de tour à quatre faces produisent 16 combinaisons réversibles.
+Turpal doit régler l'ouest, quitter puis rejoindre la corniche et tendre la main
+avant chaque réponse ; le rival anime et commande seul l'est. La seule fermeture
+possible est ouest 1, puis est 2→3. Les deux balcons déjà présents se rencontrent
+alors au centre, sans pierre ajoutée. La solution automatique, les 876 états
+atteignables et les captures techniques sont verts. Les captures WebGL, le
+profilage CPU ×4 et les chronométrages humains restent à exécuter hors du bac à
+sable sans navigateur.
+
+## Checks automatiques
+
+| Étape            | Commande                        | Résultat | Valeur                              |
+| ---------------- | ------------------------------- | -------- | ----------------------------------- |
+| Lint             | `pnpm lint`                     | 🟢       | 0 erreur, 0 avertissement           |
+| Typecheck        | `pnpm typecheck`                | 🟢       | 0 erreur                            |
+| Tests unitaires  | `pnpm test`                     | 🟢       | 258 tests / 36 fichiers             |
+| Test du chapitre | `vitest run pardon-level`       | 🟢       | 10/10                               |
+| Build            | `pnpm build`                    | 🟢       | 1 052 modules transformés           |
+| Budget de bundle | `pnpm check-bundle`             | 🟢       | 354,9 ko gzip / 1 464,8 ko — 24,2 % |
+| Capture XML      | `xml.etree.ElementTree.parse`   | 🟢       | 2/2 SVG valides                     |
+| Tests e2e WebGL  | navigateur système indisponible | 🟠       | non relancé sans changement réseau  |
+
+Chunk hors bundle initial : `level-05-pardon` **1,58 ko gzip**, très inférieur
+au budget de 400 ko. L'acteur rival et la modélisation générique de sa réponse
+restent dans le bundle initial ; celui-ci occupe 24,2 % du plafond.
+
+## Performance et cadrage
+
+| Mesure                         | Desktop 1920 × 1080 | Mobile 390 × 844 | Budget    | État |
+| ------------------------------ | ------------------- | ---------------- | --------- | ---- |
+| Nœuds visibles                 | 15/15               | 15/15            | 100 %     | 🟢   |
+| Écart balcon ouest ↔ est final | 0 px                | 0 px             | ≤ 6 px    | 🟢   |
+| Draw calls estimés du décor    | 20                  | 20               | < 120     | 🟢   |
+| Triangles du décor             | 336                 | 336              | < 150 000 | 🟢   |
+| FPS / CPU ×4 / mémoire GPU     | non mesuré          | non mesuré       | —         | 🟠   |
+| Durée de première découverte   | cible 10 min        | cible 10 min     | 5–12 min  | 🟠   |
+
+Les deux captures techniques sont archivées dans `docs/qa/chapter-5/`. Elles
+utilisent les projections réelles après une rotation de l'ouest et trois de
+l'est. La durée est une cible de level design ; aucun playtest humain ne permet
+encore de la remplacer par une médiane observée.
+
+## Solution automatique
+
+1. basculer `fracture-gravity` de `down` vers `north` et franchir la courte
+   paroi dont les trois nœuds prennent `up=[0,0,1]` ;
+2. rejoindre la moitié ouest ; les premières avancées de Turpal font répondre
+   le rival de l'est 0→1 puis 1→2, sans fermer la fracture ;
+3. quitter chaque fois la corniche : `rival-response-spent` redevient prêt et
+   aucune orientation erronée n'emprisonne Turpal ;
+4. régler `west-half` sur la face 1 et avancer une troisième fois ;
+5. l'arrivée pose `turpal-advanced=true`, joue la paume ouverte de Turpal puis
+   déclenche, et seulement alors, la rotation autonome est 2→3 ;
+6. `fracture-closed=true` verrouille les deux tours, cache l'aigle et rend
+   actifs les deux nœuds de balcon superposés ;
+7. franchir la liaison illusoire à 0 px et atteindre le faîte oriental.
+
+Test : `tests/unit/pardon-level.test.ts`.
+
+## Exhaustivité et absence d'impasse
+
+`validateNoDeadEnds()` explore **876 états étendus** et **136 combinaisons** de
+`fracture-gravity`, des quatre faces ouest, des quatre faces est, de
+`turpal-advanced`, du tour de réponse et de la fermeture. Résultat : **0
+violation**.
+
+Garanties supplémentaires :
+
+- les 16 paires de faces sont atteignables avant la fermeture ;
+- seule la transition `(ouest=1, est=2) → (ouest=1, est=3)` ferme la fracture ;
+- une réponse ne peut pas se répéter sans que Turpal quitte la corniche ;
+- les mauvaises combinaisons conservent toujours une route vers la roue et une
+  nouvelle tentative ;
+- la fermeture est monotone, puis les deux mécanismes deviennent inactifs ;
+- l'aigle n'a aucune arête et ne participe jamais à la solution.
+
+## Fonctionnel, audiovisuel et culture
+
+| Point                                                               | État | Preuve                                                     |
+| ------------------------------------------------------------------- | ---- | ---------------------------------------------------------- |
+| Deux rotations indépendantes à quatre faces                         | 🟢   | 16 combinaisons testées                                    |
+| Turpal avance avant la réponse du rival                             | 🟢   | test runtime avant/après le cran est 2→3                   |
+| `GravityPath` court avec `up=[0,0,1]`                               | 🟢   | orientation et retour `down` testés                        |
+| Wow unique sans apparition de pierre                                | 🟢   | deux blocs `bridge` présents dès le départ, aucun `moveTo` |
+| Aigle visible uniquement dans la fracture ouverte                   | 🟢   | état initial visible, fermeture cachée                     |
+| Palette brun rouille / braise                                       | 🟢   | palette `pardon`                                           |
+| Musique Ré éolien `D3–A3–F4`                                        | 🟢   | définition du niveau                                       |
+| Vent, aigle et respiration de pierre                                | 🟢   | couches `wind`, `eagle`, `stone`                           |
+| Tours géométriquement séparées, sans débris ni vocabulaire guerrier | 🟢   | volumes intacts et acteur sans arme                        |
+| Écoute subjective et relecture culturelle humaine                   | 🟠   | non réalisables automatiquement                            |
+
+## Bugs trouvés
+
+| ID      | Gravité | Description                                                                 | Statut  |
+| ------- | ------- | --------------------------------------------------------------------------- | ------- |
+| CH5-001 | majeur  | Une tour désactivée refusait aussi la rotation autonome du rival.           | corrigé |
+| CH5-002 | majeur  | L'exploration devait distinguer arrivée consommée et retour à la corniche.  | corrigé |
+| CH5-003 | mineur  | Un secret conditionné vrai dès l'état initial restait auparavant invisible. | corrigé |
+
+## Décision
+
+**Phase validée : oui pour l'implémentation et l'automatisation ; orange pour
+les contrôles nécessitant un navigateur ou une personne.**
+
+Actions restantes non bloquantes : captures WebGL artistiques, profilage sur
+mobile émulé et réel, écoute subjective et playtest humain chronométré.
+
+---
+
+# Rapport QA — Phase 9.4 : chapitre 4, « La Patience »
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟠 orange — fonctionnel et automatisé, validation navigateur à archiver**
+
+Le lac Kezenoy-Am contient deux copies verticalement symétriques du NavGraph.
+Une tour entière pivote avec ses deux silhouettes et ses nœuds ; Borz rejoint
+une dalle inaccessible à Turpal, matérialise le pont d'argent et lance une
+montée de lune irréversible de 40 secondes. Le zénith révèle l'aigle pendant
+exactement 6 secondes, puis la porte s'ouvre définitivement et la jonction à la
+surface rend le reflet jouable. La solution automatique et les 126 états
+atteignables sont verts. Les captures WebGL, le profilage CPU ×4 et les
+chronométrages humains restent à exécuter hors du bac à sable sans navigateur.
+
+## Checks automatiques
+
+| Étape            | Commande                      | Résultat | Valeur                                                         |
+| ---------------- | ----------------------------- | -------- | -------------------------------------------------------------- |
+| Lint             | `pnpm lint`                   | 🟢       | 0 erreur, 0 avertissement                                      |
+| Typecheck        | `pnpm typecheck`              | 🟢       | 0 erreur                                                       |
+| Tests unitaires  | `pnpm test`                   | 🟢       | 248 tests / 35 fichiers                                        |
+| Test du chapitre | `vitest run patience-level`   | 🟢       | 10/10                                                          |
+| Build            | `pnpm build`                  | 🟢       | 1 051 modules transformés                                      |
+| Budget de bundle | `pnpm check-bundle`           | 🟢       | 353,8 ko gzip / 1 464,8 ko — 24,2 %                            |
+| Capture XML      | `xml.etree.ElementTree.parse` | 🟢       | 2/2 SVG valides                                                |
+| Tests e2e WebGL  | `pnpm test:e2e`               | 🟠       | navigateur système absent ; non relancé sans changement réseau |
+
+Chunk hors bundle initial : `level-04-patience` **1,67 ko gzip**. La logique
+générique du cycle lunaire et du parentage des tours ajoute environ 1,4 ko gzip
+au bundle initial, qui reste à 24,2 % du budget.
+
+## Performance et cadrage
+
+| Mesure                           | Desktop 1920 × 1080 | Mobile 390 × 844 | Budget    | État |
+| -------------------------------- | ------------------- | ---------------- | --------- | ---- |
+| Nœuds visibles                   | 21/21               | 21/21            | 100 %     | 🟢   |
+| Écart réel ↔ reflet à la surface | 0 px                | 0 px             | ≤ 6 px    | 🟢   |
+| Draw calls estimés du décor      | 26                  | 26               | < 120     | 🟢   |
+| Triangles du décor               | 1 664               | 1 664            | < 150 000 | 🟢   |
+| FPS / CPU ×4 / mémoire GPU       | non mesuré          | non mesuré       | —         | 🟠   |
+| Durée de première découverte     | cible 11 min        | cible 11 min     | 5–12 min  | 🟠   |
+
+Les deux captures techniques sont archivées dans `docs/qa/chapter-4/`. Elles
+utilisent les projections produites après deux rotations réelles de la tour.
+La durée est une cible de level design ; aucun playtest humain ne permet encore
+de la remplacer par une médiane observée.
+
+## Solution automatique
+
+1. rejoindre `shore-wheel` et tourner `lake-tower` de la face 0 à la face 1 ;
+2. traverser la tour jusqu'à `plate-overlook` ;
+3. appeler Borz : son graphe propre devient
+   `borz-start → borz-mid → borz-plate` ;
+4. la dalle verrouille `moon-plate=true`, crée le pont d'argent et lance le
+   cycle sans possibilité de remettre le compteur à zéro ;
+5. revenir à la roue et tourner la tour sur la face 2 ;
+6. attendre la fin des 40 secondes ; entre 34 s et 40 s, l'aigle est visible ;
+7. descendre jusqu'à `water-real`, franchir la liaison illusoire superposée vers
+   `water-reflection`, parcourir la tour miroir, le pont et la porte ;
+8. atteindre `goal` sur la rive reflétée.
+
+Test : `tests/unit/patience-level.test.ts`.
+
+## Exhaustivité et absence d'impasse
+
+`validateNoDeadEnds()` explore **126 états étendus**, soit **24 combinaisons**
+de `lake-tower ∈ {0,1,2,3}`, `moon-plate ∈ {false,true}` et
+`moon-cycle ∈ {waiting,zenith,open}`, en tenant compte de leur atteignabilité
+locale et de la progression monotone du cycle. Résultat : **0 violation**.
+
+Garanties supplémentaires :
+
+- les quatre faces de la tour restent réversibles depuis la roue ;
+- la dalle de Borz est verrouillante et le pont ne peut donc plus disparaître ;
+- une interruption du signal de départ mettrait le cycle en pause sans perdre
+  le temps déjà attendu ;
+- `open` n'a aucune transition inverse ;
+- les deux côtés de la surface restent reliés après l'ouverture ;
+- l'aigle ne possède aucune arête et ne participe jamais à la solution.
+
+## Fonctionnel, audiovisuel et culture
+
+| Point                                                        | État | Preuve                                                    |
+| ------------------------------------------------------------ | ---- | --------------------------------------------------------- |
+| `TowerRotation` déplace géométrie et nœuds                   | 🟢   | test des faces 1 et 2                                     |
+| Reflet = copie du graphe, miroir en Y                        | 🟢   | trois paires contrôlées                                   |
+| Transition sans téléportation ni changement de caméra        | 🟢   | arête illusoire unique à 0 px                             |
+| Attente maximale de 40 s, monde animé                        | 🟢   | lune, trois brumes, trois oiseaux et lumière procédurales |
+| Secret visible uniquement au zénith                          | 🟢   | états `zenith` puis `open`, fenêtre 6 s                   |
+| Palette bleu nuit / argent                                   | 🟢   | `patience` et eau translucide                             |
+| Musique Mi éolien `E2–B2–E3`                                 | 🟢   | définition du niveau                                      |
+| Vent et eau                                                  | 🟢   | couches `wind`, `river`                                   |
+| Tours vainakhes intactes, aucun motif religieux ou politique | 🟢   | deux tours procédurales canoniques                        |
+| Écoute subjective et relecture culturelle humaine            | 🟠   | non réalisables automatiquement                           |
+
+## Bugs trouvés
+
+| ID      | Gravité | Description                                                                            | Statut  |
+| ------- | ------- | -------------------------------------------------------------------------------------- | ------- |
+| CH4-001 | majeur  | La rotation négative animait +270° tandis que les nœuds faisaient −90°.                | corrigé |
+| CH4-002 | majeur  | Les tours parentées au mécanisme n'étaient pas gérées par `LevelGeometry`.             | corrigé |
+| CH4-003 | mineur  | Le validateur ne modélisait ni les quatre faces ni la progression autonome de la lune. | corrigé |
+
+## Décision
+
+**Phase validée : oui pour l'implémentation et l'automatisation ; orange pour
+les contrôles nécessitant un navigateur ou une personne.**
+
+Actions restantes non bloquantes : captures WebGL artistiques, profilage sur
+mobile émulé et réel, écoute subjective et playtest humain chronométré.
+
+---
+
+# Rapport QA — Phase 9.3 : chapitre 3, « Le Respect des anciens »
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟠 orange — fonctionnel et automatisé, validation navigateur à archiver**
+
+Le chapitre est jouable de bout en bout dans la nécropole de Nikaroy : Turpal
+abaisse une première travée, Borz rejoint seul la deuxième dalle, puis la
+dernière pression déclenche une cascade architecturale. Un ancien procédural
+avance à son propre rythme, sans limite de temps, avant de traverser deux tours
+physiquement séparées mais parfaitement superposées à l'écran. La solution et
+l'exploration exhaustive sont vertes. Les captures WebGL, le profilage CPU ×4
+et les chronométrages humains restent bloqués par l'absence de navigateur ;
+deux captures techniques réelles les remplacent provisoirement.
+
+## Checks automatiques
+
+| Étape            | Commande                          | Résultat | Valeur                                                         |
+| ---------------- | --------------------------------- | -------- | -------------------------------------------------------------- |
+| Lint             | `pnpm lint`                       | 🟢       | 0 erreur, 0 avertissement                                      |
+| Typecheck        | `pnpm typecheck`                  | 🟢       | 0 erreur                                                       |
+| Tests unitaires  | `pnpm test`                       | 🟢       | 238 tests / 34 fichiers                                        |
+| Test de solution | `vitest … elders-level.test.ts`   | 🟢       | 9/9 : Borz, ancien, illusion, secret, impasses, caméra, rendu  |
+| Tests mécanisme  | `vitest … mechanisms.test.ts`     | 🟢       | dalle ancrée et abaissement échelonné                          |
+| Tests e2e        | installation Chromium déjà tentée | 🟠       | navigateur absent ; 5 téléchargements interrompus `ECONNRESET` |
+| Build            | `pnpm build`                      | 🟢       | production et PWA générées                                     |
+| Budget de bundle | `pnpm check-bundle`               | 🟢       | 352,5 ko gzip / 1 464,8 ko (24,1 %)                            |
+| Chunk chapitre 3 | build Vite                        | 🟢       | 1,68 ko gzip / 400 ko                                          |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → 238 tests → build
+→ budget. Le chunk du chapitre reste chargé à la demande.
+
+## Validation du niveau
+
+| Critère (`docs/LEVEL_DESIGN.md` § 10)     | Statut | Mesure / preuve                                                          |
+| ----------------------------------------- | ------ | ------------------------------------------------------------------------ |
+| Wow unique : l'architecture épouse le pas | 🟢     | trois abaissements, dernier palier en cascade, puis route finale         |
+| Illusion des tours jumelles               | 🟢     | portes séparées de `[8,8,8]`, écart projeté **0 px** aux deux viewports  |
+| Un secret sans impact mécanique           | 🟢     | aigle sur stèle, nœud déconnecté, visible après la dernière descente     |
+| Durée 5–12 min                            | 🟠     | cible déclarée 9 min ; trois playtests humains non disponibles           |
+| Une seule mécanique nouvelle              | 🟢     | trois instances du même `pressurePlate`                                  |
+| Coopération avec Borz                     | 🟢     | deuxième dalle dans son graphe propre, inaccessible à Turpal             |
+| Aucun test de rapidité                    | 🟢     | l'ancien garde une boucle d'attente animée ; aucune échéance             |
+| Salut final                               | 🟢     | Turpal salue à portée de l'ancien, sans être remplacé par le regard ciel |
+| Aucune impasse                            | 🟢     | **77 états étendus**, 15 états mécanisme/récit, 0 violation              |
+| Solution automatique                      | 🟢     | dalle A → Borz/B → dalle C → ancien → fausse tour → but                  |
+| Portrait 390×844 / paysage 1920×1080      | 🟢     | 18/18 nœuds visibles ; illusion à 0 px dans les deux viewports           |
+| Draw calls niveau                         | 🟢     | **23** estimés (décor seul), budget < 120                                |
+| Triangles niveau                          | 🟢     | **1 700** (décor seul), budget < 150 000                                 |
+| Chunk de niveau                           | 🟢     | 1,68 ko gzip, budget < 400 ko                                            |
+| `dispose()`                               | 🟢     | dalles, volumes, ancien, Borz, aigle, matériaux et graphe libérés        |
+| Culture                                   | 🟢     | tours et stèles intactes, aucun texte funéraire inventé                  |
+
+## Séquence et triggers vérifiés
+
+1. Turpal rejoint la dalle A. Elle s'enfonce sans déplacer son ancre et abaisse
+   la première travée en 900 ms.
+2. Cette pression ouvre uniquement le graphe local de Borz. Appelé depuis la
+   dalle A, il rejoint la dalle B ; ses conditions de graphe sont resynchronisées
+   à chaque appel.
+3. La dalle B abaisse la deuxième travée et libère la descente de Turpal vers C.
+4. Pendant ces gestes, l'ancien avance lentement d'une stèle à l'autre. Si la
+   suite n'est pas prête, son animation continue calmement : aucune punition.
+5. La dalle C abaisse trois blocs l'un après l'autre et descend la stèle de
+   l'aigle à hauteur de regard.
+6. L'ancien traverse les portes des tours distantes de huit unités sur chaque
+   axe mais alignées à 0 px, puis désigne la direction cachée d'un mouvement du
+   menton.
+7. `elder-crossed=true` ouvre une seule route finale. Turpal suit la même fausse
+   tour, rejoint l'ancien, le salue et atteint le but.
+
+## Captures
+
+| Fichier                                          | Type                        | Statut |
+| ------------------------------------------------ | --------------------------- | ------ |
+| `docs/qa/chapter-3/elders-desktop-1920x1080.svg` | projection technique réelle | 🟢     |
+| `docs/qa/chapter-3/elders-mobile-390x844.svg`    | projection technique réelle | 🟢     |
+| Capture WebGL 1920×1080                          | navigateur de production    | 🟠     |
+| Capture WebGL 390×844                            | navigateur mobile émulé     | 🟠     |
+
+Les SVG utilisent la caméra, les positions, l'état final et les projections du
+niveau de production. Les hauteurs fantômes, doubles contours et tracés
+d'acteurs sont des annotations QA, absentes du jeu. Le niveau reste inspectable
+dans le live preview `?level=03-anciens`.
+
+## Performance et risques
+
+| Point                       | Statut | Note                                                                         |
+| --------------------------- | ------ | ---------------------------------------------------------------------------- |
+| FPS desktop / CPU ×4        | ⬜     | non mesurable sans navigateur                                                |
+| 60 fps appareil physique    | ⬜     | aucun appareil disponible                                                    |
+| Durée sur 3 joueurs         | ⬜     | cible 9 min, mesure humaine à programmer                                     |
+| Écoute du mix               | 🟠     | Do dorien, cloches et événements testés ; écoute subjective hors bac à sable |
+| Relecture culturelle native | 🔴     | exigence projet toujours ouverte, sans contenu attribué non vérifié          |
+
+## Décision
+
+**Chapitre validé côté code et logique : oui. Validation finale de production :
+non**, tant que les captures WebGL, le profilage CPU ×4 et trois chronométrages
+humains ne sont pas joints. Aucun défaut de séquence, de solvabilité ou d'état
+bloquant n'est ouvert.
+
+---
+
+# Rapport QA — Phase 9.2 : chapitre 2, « La Parole donnée »
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟠 orange — fonctionnel et automatisé, validation navigateur à archiver**
+
+Le chapitre est jouable de bout en bout dans la gorge de l'Argun : un slider à
+quatre crans transfère réellement, une par une, les trois mêmes dalles du
+raccourci vers le pont promis. Un enfant se lève et rit à l'arrivée du dernier
+bloc, le torrent et le mode de La éolien portent l'ambiance, et un aigle reste
+caché sous le pont sur une rive basse optionnelle. La solution automatique et
+l'exploration exhaustive des états sont vertes. Les captures WebGL, le
+profilage CPU ×4 et les chronométrages humains restent bloqués par l'absence de
+navigateur ; deux captures techniques réelles les remplacent provisoirement.
+
+## Checks automatiques
+
+| Étape            | Commande                          | Résultat | Valeur                                                         |
+| ---------------- | --------------------------------- | -------- | -------------------------------------------------------------- |
+| Lint             | `pnpm lint`                       | 🟢       | 0 erreur, 0 avertissement                                      |
+| Typecheck        | `pnpm typecheck`                  | 🟢       | 0 erreur                                                       |
+| Tests unitaires  | `pnpm test`                       | 🟢       | 229 tests / 33 fichiers                                        |
+| Test de solution | `vitest … promise-level.test.ts`  | 🟢       | 9/9 : séquence, runtime, secret, impasses, caméra et rendu     |
+| Tests mécanisme  | `vitest … mechanisms.test.ts`     | 🟢       | slider ancré et trois transferts échelonnés                    |
+| Tests e2e        | installation Chromium déjà tentée | 🟠       | navigateur absent ; 5 téléchargements interrompus `ECONNRESET` |
+| Build            | `pnpm build`                      | 🟢       | production et PWA générées                                     |
+| Budget de bundle | `pnpm check-bundle`               | 🟢       | 351,2 ko gzip / 1 464,8 ko (24,0 %)                            |
+| Chunk chapitre 2 | build Vite                        | 🟢       | 1,28 ko gzip / 400 ko                                          |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → 229 tests → build
+→ budget. Le chunk du chapitre reste chargé à la demande.
+
+## Validation du niveau
+
+| Critère (`docs/LEVEL_DESIGN.md` § 10)     | Statut | Mesure / preuve                                                           |
+| ----------------------------------------- | ------ | ------------------------------------------------------------------------- |
+| Wow unique : le raccourci devient le pont | 🟢     | dernier transfert → route est, accord, traînée et réaction de l'enfant    |
+| Un secret sans impact mécanique           | 🟢     | aigle sous le pont, nœud déconnecté et rive basse hors solution           |
+| Durée 5–12 min                            | 🟠     | cible déclarée 8 min ; trois playtests humains non disponibles            |
+| Une seule mécanique nouvelle              | 🟢     | un slider à 4 états / 3 transferts                                        |
+| Un seul jeu de pierres                    | 🟢     | exactement 3 meshes parentés, `moveStage` 1/2/3, aucune duplication       |
+| Renoncement lisible                       | 🟢     | une dalle quitte le raccourci à chaque cran ; route coupée dès le premier |
+| Promesse tenue                            | 🟢     | pont praticable seulement à `promise-slider=3`                            |
+| Aucune impasse                            | 🟢     | **36 états étendus**, 4 états mécanisme, 0 violation                      |
+| Solution automatique                      | 🟢     | départ → pierre → trois crans → enfant → but                              |
+| Portrait 390×844 / paysage 1920×1080      | 🟢     | 13/13 nœuds projetés dans les deux viewports                              |
+| Draw calls niveau                         | 🟢     | **23** estimés (décor seul), budget < 120                                 |
+| Triangles niveau                          | 🟢     | **1 652** (décor seul), budget < 150 000                                  |
+| Chunk de niveau                           | 🟢     | 1,28 ko gzip, budget < 400 ko                                             |
+| `dispose()`                               | 🟢     | dalles, slider, enfant, aigle, matériaux et graphe libérés                |
+| Culture                                   | 🟢     | tours intactes, parole donnée sans texte attribué ni conflit              |
+
+## Séquence et triggers vérifiés
+
+1. Turpal rejoint la pierre du slider ; le raccourci de trois dalles semble
+   offrir l'itinéraire le plus direct, mais son arrivée ne mène nulle part.
+2. Au premier cran, la première dalle quitte visiblement le raccourci. Celui-ci
+   n'est plus praticable et la dalle rejoint la première mortaise du pont.
+3. Au deuxième cran, la deuxième dalle est transférée et la troisième couche
+   musicale entre ; le choix du renoncement devient irréversible seulement en
+   apparence, car le slider permet toujours de revenir sans bloquer Turpal.
+4. Au troisième et dernier transfert, le raccourci est entièrement vide et le
+   pont devient franchissable. Une seule liaison `path:connected` déclenche le
+   moment « wow ».
+5. L'enfant se lève et émet `child:bridgeReady` une seule fois. Le rire stylisé
+   est synthétisé et sous-titré ; il ne se répète pas si le slider repart.
+6. Turpal traverse les trois dalles, atteint l'autre rive puis le but.
+7. En option, le détour bas révèle l'aigle sous le pont sans modifier le puzzle.
+
+## Captures
+
+| Fichier                                           | Type                        | Statut |
+| ------------------------------------------------- | --------------------------- | ------ |
+| `docs/qa/chapter-2/promise-desktop-1920x1080.svg` | projection technique réelle | 🟢     |
+| `docs/qa/chapter-2/promise-mobile-390x844.svg`    | projection technique réelle | 🟢     |
+| Capture WebGL 1920×1080                           | navigateur de production    | 🟠     |
+| Capture WebGL 390×844                             | navigateur mobile émulé     | 🟠     |
+
+Les SVG utilisent la caméra, les positions, l'état final et les projections du
+niveau de production. Les volumes fantômes montrent l'emplacement initial du
+raccourci uniquement pour l'audit ; ils n'existent pas dans le jeu. Les
+captures WebGL devront être ajoutées sur une machine où Chromium est
+disponible. Le niveau reste inspectable dans le live preview
+`?level=02-parole`.
+
+## Performance et risques
+
+| Point                       | Statut | Note                                                                          |
+| --------------------------- | ------ | ----------------------------------------------------------------------------- |
+| FPS desktop / CPU ×4        | ⬜     | non mesurable sans navigateur                                                 |
+| 60 fps appareil physique    | ⬜     | aucun appareil disponible                                                     |
+| Durée sur 3 joueurs         | ⬜     | cible 8 min, mesure humaine à programmer                                      |
+| Écoute du mix               | 🟠     | accordage, événements et synthèse testés ; écoute subjective hors bac à sable |
+| Relecture culturelle native | 🔴     | exigence projet toujours ouverte, sans contenu attribué non vérifié           |
+
+## Décision
+
+**Chapitre validé côté code et logique : oui. Validation finale de production :
+non**, tant que les captures WebGL, le profilage CPU ×4 et trois chronométrages
+humains ne sont pas joints. Aucun défaut de séquence, de solvabilité ou d'état
+bloquant n'est ouvert.
+
+---
+
+# Rapport QA — Phase 9.1 : chapitre 1, « L'Hospitalité »
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟠 orange — fonctionnel et automatisé, validation navigateur à archiver**
+
+Le chapitre est jouable de bout en bout : village d'Itum-Kale, passerelle
+radiale à quatre crans, voyageur autonome, route morale verrouillée, retour de
+la fumée sur un toit, aigle contemplatif et conduite musicale en Sol dorien. La
+solution automatique prouve qu'orienter directement la roue vers Turpal ne
+suffit pas. Le validateur explore exhaustivement les états atteignables sans
+trouver d'impasse. Les captures WebGL et chronométrages humains restent bloqués
+par l'absence de navigateur ; deux captures techniques réelles les remplacent
+provisoirement.
+
+## Checks automatiques
+
+| Étape            | Commande                                | Résultat | Valeur                                                         |
+| ---------------- | --------------------------------------- | -------- | -------------------------------------------------------------- |
+| Lint             | `pnpm lint`                             | 🟢       | 0 erreur, 0 avertissement                                      |
+| Typecheck        | `pnpm typecheck`                        | 🟢       | 0 erreur                                                       |
+| Tests unitaires  | `pnpm test`                             | 🟢       | 219 tests / 32 fichiers                                        |
+| Test de solution | `vitest … hospitality-level.test.ts`    | 🟢       | 6/6 : séquence, runtime, raccourci, secret, impasses, rendu    |
+| Tests acteur     | `vitest … traveler.test.ts`             | 🟢       | 2/2 : trajet garanti et fumée                                  |
+| Tests e2e        | `pnpm exec playwright install chromium` | 🟠       | navigateur absent ; 5 téléchargements interrompus `ECONNRESET` |
+| Build            | `pnpm build`                            | 🟢       | production générée                                             |
+| Budget de bundle | `pnpm check-bundle`                     | 🟢       | 349,8 ko gzip / 1 464,8 ko (23,9 %)                            |
+| Chunk chapitre 1 | build Vite                              | 🟢       | 1,44 ko gzip / 400 ko                                          |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → 219 tests → build
+→ budget. Le chunk du chapitre reste chargé à la demande.
+
+## Validation du niveau
+
+| Critère (`docs/LEVEL_DESIGN.md` § 10)    | Statut | Mesure / preuve                                                         |
+| ---------------------------------------- | ------ | ----------------------------------------------------------------------- |
+| Wow unique : le chemin de Turpal revient | 🟢     | liaison sud ouverte seulement au dernier cran après l'accueil           |
+| Un secret sans impact mécanique          | 🟢     | aigle au troisième cran, nœud déconnecté, aucune récompense de gameplay |
+| Durée 5–12 min                           | 🟠     | cible déclarée 7 min ; trois playtests humains non disponibles          |
+| Une seule mécanique nouvelle             | 🟢     | un rotator à quatre positions                                           |
+| Aucune illusion géométrique              | 🟢     | zéro arête `illusory`, conformément au croquis validé                   |
+| Service du voyageur obligatoire          | 🟢     | conditions `wheel=270` **et** `traveler-served=true`                    |
+| Raccourci direct impossible              | 🟢     | test explicite : `wheel=270`, but toujours inaccessible                 |
+| Aucune impasse                           | 🟢     | **67 états étendus**, 7 états mécanisme/récit, 0 violation              |
+| Solution automatique                     | 🟢     | place → roue nord → voyageur → roue sud → but                           |
+| Portrait 390×844 / paysage 1920×1080     | 🟢     | 19/19 nœuds projetés dans les deux viewports                            |
+| Draw calls niveau                        | 🟢     | **11** estimés (décor seul), budget < 120                               |
+| Triangles niveau                         | 🟢     | **958** (décor seul), budget < 150 000                                  |
+| Chunk de niveau                          | 🟢     | 1,44 ko gzip, budget < 400 ko                                           |
+| `dispose()`                              | 🟢     | passerelle parentée, acteur, fumée, aigle et graphe libérés             |
+| Culture                                  | 🟢     | tour intacte, hospitalité jouée sans texte ni imaginaire de conflit     |
+
+## Séquence et triggers vérifiés
+
+1. Turpal gravit la place jusqu'à la roue ; le bourdon est seul.
+2. Pointer directement la passerelle au sud laisse le but fermé.
+3. Au cran nord (90°), le voyageur s'engage et la roue est verrouillée pendant
+   ses pas : elle ne peut jamais se dérober sous lui.
+4. À son arrivée, `traveler-served` devient vrai, une fumée légère revient sur
+   le toit et la troisième couche musicale entre.
+5. Le cran oriental (180°), inutile au puzzle, rend l'aigle visible près de la
+   meurtrière ; quitter ce cran le dissimule s'il n'a pas été découvert.
+6. Au cran sud (270°), les deux conditions de la route deviennent vraies : le
+   chemin se rallume, l'accord de connexion et la traînée dorée forment
+   l'unique moment « wow ».
+7. Turpal traverse, gagne la terrasse finale et débloque le proverbe.
+
+## Captures
+
+| Fichier                                               | Type                        | Statut |
+| ----------------------------------------------------- | --------------------------- | ------ |
+| `docs/qa/chapter-1/hospitality-desktop-1920x1080.svg` | projection technique réelle | 🟢     |
+| `docs/qa/chapter-1/hospitality-mobile-390x844.svg`    | projection technique réelle | 🟢     |
+| Capture WebGL 1920×1080                               | navigateur de production    | 🟠     |
+| Capture WebGL 390×844                                 | navigateur mobile émulé     | 🟠     |
+
+Les SVG utilisent la caméra, les positions, l'état final et les projections du
+niveau de production. Le repère cardinal et le tracé du voyageur sont des
+annotations QA, absentes du jeu. Les captures WebGL devront être ajoutées sur
+une machine où Chromium est disponible. Le niveau reste inspectable dans le
+live preview `?level=01-hospitalite`.
+
+## Performance et risques
+
+| Point                       | Statut | Note                                                                |
+| --------------------------- | ------ | ------------------------------------------------------------------- |
+| FPS desktop / CPU ×4        | ⬜     | non mesurable sans navigateur                                       |
+| 60 fps appareil physique    | ⬜     | aucun appareil disponible                                           |
+| Durée sur 3 joueurs         | ⬜     | cible 7 min, mesure humaine à programmer                            |
+| Écoute du mix               | 🟠     | conduite et accordage testés ; écoute subjective hors bac à sable   |
+| Relecture culturelle native | 🔴     | exigence projet toujours ouverte, sans contenu attribué non vérifié |
+
+## Décision
+
+**Chapitre validé côté code et logique : oui. Validation finale de production :
+non**, tant que les captures WebGL, le profilage CPU ×4 et trois chronométrages
+humains ne sont pas joints. Aucun défaut de séquence, de solvabilité ou d'état
+bloquant n'est ouvert.
+
+---
+
+# Rapport QA — Phase 9.0 : chapitre 0, « Le Retour »
+
+**Date** : 2026-09-27 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟠 orange — fonctionnel et automatisé, validation navigateur à archiver**
+
+Le prologue est construit de bout en bout : géométrie instanciée, tour canonique,
+NavGraph, illusion, triggers narratifs, éveil de Borz, aigle secret, palette et
+conduite audio. La solution automatique et le validateur d'impasse sont verts.
+La capture WebGL, la mesure FPS CPU ×4 et trois chronométrages humains restent
+bloqués localement par l'absence de navigateur Playwright ; deux captures
+techniques issues de la projection réelle sont archivées en remplacement
+provisoire.
+
+## Checks automatiques
+
+| Étape            | Commande                                | Résultat | Valeur                                                         |
+| ---------------- | --------------------------------------- | -------- | -------------------------------------------------------------- |
+| Lint             | `pnpm lint`                             | 🟢       | 0 erreur, 0 avertissement                                      |
+| Typecheck        | `pnpm typecheck`                        | 🟢       | 0 erreur                                                       |
+| Tests unitaires  | `pnpm test`                             | 🟢       | 210 tests / 30 fichiers                                        |
+| Test de solution | `vitest … prologue-level.test.ts`       | 🟢       | 6/6 : solution, illusion, secret, impasses, rendu              |
+| Tests e2e        | `pnpm exec playwright install chromium` | 🟠       | navigateur absent ; 5 téléchargements interrompus `ECONNRESET` |
+| Build            | `pnpm build`                            | 🟢       | production générée                                             |
+| Budget de bundle | `pnpm check-bundle`                     | 🟢       | 347,9 ko gzip / 1 464,8 ko (23,8 %)                            |
+| Chunk prologue   | build Vite                              | 🟢       | 1,14 ko gzip / 400 ko                                          |
+
+Commande de synthèse : `pnpm check` 🟢 — lint → typecheck → 210 tests → build
+→ budget. Le chunk du prologue reste chargé à la demande.
+
+## Validation du niveau
+
+| Critère (`docs/LEVEL_DESIGN.md` § 10)    | Statut | Mesure / preuve                                                       |
+| ---------------------------------------- | ------ | --------------------------------------------------------------------- |
+| Wow unique : l'escalier rejoint le seuil | 🟢     | liaison `last-step ↔ threshold`, confirmation seulement après passage |
+| Un secret sans impact mécanique          | 🟢     | `00-prologue:eagle`, nœud hors solution, illustration sans compteur   |
+| Durée 5–12 min                           | 🟠     | cible déclarée 5 min ; trois playtests humains non disponibles        |
+| Une seule mécanique nouvelle             | 🟢     | tap-to-move + illusion ; aucun mécanisme actionnable                  |
+| Illusion ≤ 6 px                          | 🟢     | **0 px** en 1920×1080 et **0 px** en 390×844                          |
+| Aucune impasse                           | 🟢     | 12 états étendus, 1 état de mécanismes, 0 violation                   |
+| Solution automatique                     | 🟢     | start → cour → escalier → dernière marche → seuil                     |
+| Portrait 390×844 / paysage 1920×1080     | 🟢     | auto-fit et projections couverts par tests ; capture WebGL en réserve |
+| Draw calls niveau                        | 🟢     | **10** estimés (géométrie seule), budget < 120                        |
+| Triangles niveau                         | 🟢     | **862** (géométrie seule), budget < 150 000                           |
+| Chunk de niveau                          | 🟢     | 1,14 ko gzip, budget < 400 ko                                         |
+| `dispose()`                              | 🟢     | géométrie, matériaux, aigle et graphe libérés par le cycle de `Level` |
+| Culture                                  | 🟢     | tour intacte, aucun symbole politique, arme ou imaginaire de conflit  |
+
+## Parcours et triggers vérifiés
+
+1. Le carton reprend exactement `story.prologue.intro` dans les trois langues
+   complètes.
+2. Turpal traverse le sentier et la cour ; la musique passe du bourdon à deux
+   couches.
+3. Au troisième palier, l'aigle devient visible sans indice et la troisième
+   couche musicale entre.
+4. La dernière marche et le seuil, séparés de `[6, 6, 6]` dans le monde,
+   coïncident à 0 px ; le franchissement émet une lueur de 120 ms et une note.
+5. Au seuil, Turpal pose la paume sur la pierre, Borz ouvre les yeux et la
+   quatrième couche musicale complète le moment « wow ».
+6. Toucher l'aigle déclenche le cri, la sauvegarde idempotente et l'illustration
+   du carnet, sans altérer le chemin principal.
+
+## Captures
+
+| Fichier                                            | Type                        | Statut |
+| -------------------------------------------------- | --------------------------- | ------ |
+| `docs/qa/chapter-0/prologue-desktop-1920x1080.svg` | projection technique réelle | 🟢     |
+| `docs/qa/chapter-0/prologue-mobile-390x844.svg`    | projection technique réelle | 🟢     |
+| Capture WebGL 1920×1080                            | navigateur de production    | 🟠     |
+| Capture WebGL 390×844                              | navigateur mobile émulé     | 🟠     |
+
+Les SVG ne sont pas présentés comme des captures artistiques : ils tracent la
+projection réelle du décor et du NavGraph, avec l'alignement à 0 px. Les deux
+captures WebGL devront les compléter sur une machine où Chromium est disponible.
+Le niveau reste inspectable dans le live preview `?level=00-prologue`.
+
+## Performance et risques
+
+| Point                       | Statut | Note                                                               |
+| --------------------------- | ------ | ------------------------------------------------------------------ |
+| FPS desktop / CPU ×4        | ⬜     | non mesurable sans navigateur                                      |
+| 60 fps appareil physique    | ⬜     | aucun appareil disponible                                          |
+| Durée sur 3 joueurs         | ⬜     | cible 5 min, mesure humaine à programmer                           |
+| Écoute du mix               | 🟠     | conduite et accordage testés ; écoute subjective hors bac à sable  |
+| Relecture culturelle native | 🔴     | exigence projet toujours ouverte, sans contenu nouveau non vérifié |
+
+## Décision
+
+**Chapitre validé côté code et logique : oui. Validation finale de production :
+non**, tant que les captures WebGL, le profilage CPU ×4 et trois chronométrages
+humains ne sont pas joints. Ces réserves sont environnementales et documentées ;
+aucun défaut de solvabilité ou état bloquant n'est ouvert.
 
 ---
 
@@ -938,21 +1839,21 @@ complète) · `AudioManager` 5,7 ko · dictionnaires paresseux `ru` 2,8 /
 
 ## Fonctionnel — écrans de la phase
 
-| Écran / réglage          | Attendu (tasks.md)                                  | Statut | Note                                                             |
-| ------------------------ | --------------------------------------------------- | ------ | ---------------------------------------------------------------- |
-| Pile d'écrans            | un seul actif, `Échap` remonte, focus piégé          | 🟢     | `UIRoot` push/pop/popAll + base ; piège Tab first/last            |
-| Écran titre              | Commencer/Continuer/Réglages/Recueil au clavier seul | 🟢     | toute la surface démarre ; menu discret ; « Chapitres » si save   |
-| Carton de chapitre       | fondu 1200 ms, passable à tout moment                | 🟢     | voile 1200 ms + noir interne 1800 ms ; écourt tap/Entrée/Espace   |
-| Intro de chapitre        | 2 phrases, voile translucide, ducking, sortie auto   | 🟢     | `levels.*.intro` ×3 langues ; `ui:speaking` → duck ; 9 s          |
-| Pause                    | gèle la simulation, jamais le rendu                  | 🟢     | 5 entrées ; `update()` early-return ; FX/rendu continuent         |
-| Volumes 4 canaux         | application immédiate, persistance                   | 🟢     | fusion table persistée + défauts avant unlock (2 tests)           |
-| Qualité manuelle         | tier fige l'adaptation (ADR-013)                     | 🟢     | `auto`/low/medium/high ; `setTier(tier, 'user')`                  |
-| Accessibilité            | mouvement, texte, contraste, daltonien               | 🟢     | `--font-scale` 0,875/1/1,25 ; `html.ui-hc` opaque ; braise toujours doublée d'un liseré |
-| Remappage                | capture physique, conflit, défauts                   | 🟢     | `event.code`, modificateurs refusés, conflit `role=alert`, `getLayoutMap` |
-| Carnet                   | 8 entrées verrouillées, « inspiré de »               | 🟢     | croquis SVG inline ; offerte = braise, scellée = silhouette 0,18  |
-| i18n 4 langues           | sans rechargement ; `ce`→`fr` sans trou              | 🟢     | 122 clés ×3 ; `ce` partiel ; réétiquettage par `i18n.onChange`    |
-| Sous-titres sonores      | activables, aucun puzzle ne dépend du son            | 🟢     | interrupteur Réglages ; 4 légendes via toast `aria-live`          |
-| Sauvegarde auto          | jamais de bouton ; corruption ignorée en silence     | 🟢     | à chaque chapitre + à la pause ; format versionné v1              |
+| Écran / réglage     | Attendu (tasks.md)                                   | Statut | Note                                                                                    |
+| ------------------- | ---------------------------------------------------- | ------ | --------------------------------------------------------------------------------------- |
+| Pile d'écrans       | un seul actif, `Échap` remonte, focus piégé          | 🟢     | `UIRoot` push/pop/popAll + base ; piège Tab first/last                                  |
+| Écran titre         | Commencer/Continuer/Réglages/Recueil au clavier seul | 🟢     | toute la surface démarre ; menu discret ; « Chapitres » si save                         |
+| Carton de chapitre  | fondu 1200 ms, passable à tout moment                | 🟢     | voile 1200 ms + noir interne 1800 ms ; écourt tap/Entrée/Espace                         |
+| Intro de chapitre   | 2 phrases, voile translucide, ducking, sortie auto   | 🟢     | `levels.*.intro` ×3 langues ; `ui:speaking` → duck ; 9 s                                |
+| Pause               | gèle la simulation, jamais le rendu                  | 🟢     | 5 entrées ; `update()` early-return ; FX/rendu continuent                               |
+| Volumes 4 canaux    | application immédiate, persistance                   | 🟢     | fusion table persistée + défauts avant unlock (2 tests)                                 |
+| Qualité manuelle    | tier fige l'adaptation (ADR-013)                     | 🟢     | `auto`/low/medium/high ; `setTier(tier, 'user')`                                        |
+| Accessibilité       | mouvement, texte, contraste, daltonien               | 🟢     | `--font-scale` 0,875/1/1,25 ; `html.ui-hc` opaque ; braise toujours doublée d'un liseré |
+| Remappage           | capture physique, conflit, défauts                   | 🟢     | `event.code`, modificateurs refusés, conflit `role=alert`, `getLayoutMap`               |
+| Carnet              | 8 entrées verrouillées, « inspiré de »               | 🟢     | croquis SVG inline ; offerte = braise, scellée = silhouette 0,18                        |
+| i18n 4 langues      | sans rechargement ; `ce`→`fr` sans trou              | 🟢     | 122 clés ×3 ; `ce` partiel ; réétiquettage par `i18n.onChange`                          |
+| Sous-titres sonores | activables, aucun puzzle ne dépend du son            | 🟢     | interrupteur Réglages ; 4 légendes via toast `aria-live`                                |
+| Sauvegarde auto     | jamais de bouton ; corruption ignorée en silence     | 🟢     | à chaque chapitre + à la pause ; format versionné v1                                    |
 
 Mesures encore impossibles dans le bac à sable : FPS navigateur ⬜,
 captures d'écran ⬜ (Chromium non installable, P0-006). Les modules
@@ -961,13 +1862,13 @@ transforment sans erreur via le serveur de dev (vérifié : `/`, `main.ts`,
 
 ## Bugs trouvés en phase 8
 
-| ID     | Gravité | Description                                                                  | Étapes de reproduction                                | Statut                                    |
-| ------ | ------- | ---------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------ |
-| P0-008 | majeur  | `SettingsStore` corrompu : méthodes de classe insérées dans `sanitize`, déclaration `result` écrasée | relire le fichier après le patch de section ui         | corrigé (reconstruction, tsc/ESLint verts) |
-| P0-009 | mineur  | `nextLevelId` dupliqué dans `levels/index.ts`                                 | importer le registre                                   | corrigé                                     |
-| P0-010 | majeur  | `LevelRuntime` : `InputEvents` utilisé mais non importé (8 erreurs de type)   | `pnpm typecheck`                                       | corrigé                                     |
-| P0-011 | majeur  | `AudioDirector.setVolume` : chaque réglage avant déverrouillage écrasait les autres canaux et `muted` | régler deux curseurs depuis l'écran titre               | corrigé + 2 tests de régression            |
-| P0-012 | mineur  | `Toast.show` inférait la durée du littéral `2600` du jeton `as const`         | passer une durée différente                            | corrigé (`durationMs?: number`)             |
+| ID     | Gravité | Description                                                                                           | Étapes de reproduction                         | Statut                                     |
+| ------ | ------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------ |
+| P0-008 | majeur  | `SettingsStore` corrompu : méthodes de classe insérées dans `sanitize`, déclaration `result` écrasée  | relire le fichier après le patch de section ui | corrigé (reconstruction, tsc/ESLint verts) |
+| P0-009 | mineur  | `nextLevelId` dupliqué dans `levels/index.ts`                                                         | importer le registre                           | corrigé                                    |
+| P0-010 | majeur  | `LevelRuntime` : `InputEvents` utilisé mais non importé (8 erreurs de type)                           | `pnpm typecheck`                               | corrigé                                    |
+| P0-011 | majeur  | `AudioDirector.setVolume` : chaque réglage avant déverrouillage écrasait les autres canaux et `muted` | régler deux curseurs depuis l'écran titre      | corrigé + 2 tests de régression            |
+| P0-012 | mineur  | `Toast.show` inférait la durée du littéral `2600` du jeton `as const`                                 | passer une durée différente                    | corrigé (`durationMs?: number`)            |
 
 ## Décision
 

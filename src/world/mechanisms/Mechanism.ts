@@ -36,6 +36,16 @@ export interface MechanismDragPoint {
 export interface Mechanism {
   readonly id: string;
   readonly root: Object3D;
+  /** Sous-racine mobile optionnelle pour la géométrie parentée. */
+  readonly geometryRoot?: Object3D;
+  /** Point visuel de picking quand il diffère de l'ancre monde. */
+  readonly interactionRoot?: Object3D;
+  /** Enregistre un volume qui se déplace à un cran précis d'une séquence. */
+  bindStagedObject?(
+    object: Object3D,
+    target: readonly [number, number, number],
+    stage: number,
+  ): void;
   /** Le joueur peut-il l'actionner en ce moment ? */
   readonly interactive: boolean;
   /** Une animation est-elle en cours ? (le jeu bloque les entrées pendant.) */
@@ -43,6 +53,8 @@ export interface Mechanism {
 
   /** Actionne le mécanisme. `amount` = glissement normalisé pour les gestes. */
   actuate(amount?: number): void;
+  /** Verrou narratif temporaire, par exemple pendant la traversée d'un invité. */
+  setEnabled(enabled: boolean): void;
   beginDrag?(point: MechanismDragPoint): void;
   drag?(point: MechanismDragPoint): void;
   endDrag?(): void;
@@ -64,7 +76,7 @@ export abstract class BaseMechanism implements Mechanism {
 
   private readonly ownedGeometries: BufferGeometry[] = [];
   private readonly ownedMaterials: Material[] = [];
-  private passenger: Object3D | null = null;
+  protected passenger: Object3D | null = null;
   private affordanceTime = 0;
   private affordanceMaterial: MeshBasicMaterial | null = null;
   private hintGlowValue = 0;

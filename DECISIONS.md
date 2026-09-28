@@ -11,39 +11,42 @@ Statut : `Proposé` | `Accepté` | `Remplacé par ADR-YYY`.
 > numéros à quatre chiffres (`ADR-0001`…). Ils ont été refondus dans la
 > numérotation à trois chiffres ci-dessous, qui fait désormais seule
 > autorité : **ADR-001 à ADR-014** couvrent les décisions de conception du
-> jeu, **ADR-015 à ADR-026** les décisions d'outillage et de production.
+> jeu, **ADR-015 à ADR-029** les décisions d'outillage et de production.
 > Toutes les références du dépôt ont été mises à jour.
 
 **Index**
 
-| #                                                                                | Décision                                                | Statut  |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------- | ------- |
-| [001](#adr-001--threejs-plutôt-que-babylonjs-playcanvas-ou-unity-webgl)          | three.js plutôt que Babylon, PlayCanvas ou Unity WebGL  | Accepté |
-| [002](#adr-002--caméra-orthographique-isométrique-fixe-par-scène)                | Caméra orthographique isométrique fixe par scène        | Accepté |
-| [003](#adr-003--navigation-par-graphe-de-nœuds-plutôt-que-navmesh)               | Navigation par graphe de nœuds plutôt que navmesh       | Accepté |
-| [004](#adr-004--un-vecteur--up--par-nœud)                                        | Un vecteur « up » par nœud                              | Accepté |
-| [005](#adr-005--a-recalculé-à-chaque-changement-détat-arrêt-au-dernier-nœud-sûr) | A\* recalculé à chaque changement d'état                | Accepté |
-| [006](#adr-006--personnage-v1-procédural-derrière-icharactermodel)               | Personnage v1 procédural derrière `ICharacterModel`     | Accepté |
-| [007](#adr-007--audio-procédural-tonejs-et-karplus-strong)                       | Audio procédural : Tone.js et Karplus-Strong            | Accepté |
-| [008](#adr-008--rendu-stylisé-toon-ramp-vertex-colors-ao-de-sommets)             | Rendu stylisé : toon ramp, vertex colors, AO de sommets | Accepté |
-| [009](#adr-009--post-processing-pmndrspostprocessing-dégressif)                  | Post-processing pmndrs dégressif                        | Accepté |
-| [010](#adr-010--niveaux-décrits-en-typescript-chargés-en-lazy-import)            | Niveaux en TypeScript, chargés en lazy import           | Accepté |
-| [011](#adr-011--sauvegarde-locale-via-platformstorage)                           | Sauvegarde locale via `Platform.storage`                | Accepté |
-| [012](#adr-012--ui-en-htmlcss-superposée-au-canvas)                              | UI en HTML/CSS superposée au canvas                     | Accepté |
-| [013](#adr-013--qualité-adaptative-mesure-sur-3-secondes)                        | Qualité adaptative mesurée sur 3 secondes               | Accepté |
-| [014](#adr-014--portage-android-futur-via-capacitor-pwa-dabord)                  | Portage Android via Capacitor, PWA d'abord              | Accepté |
-| [015](#adr-015--le-jeu-vit-à-la-racine-du-dépôt)                                 | Le jeu vit à la racine du dépôt                         | Accepté |
-| [016](#adr-016--typescript-épinglé-en-59)                                        | TypeScript épinglé en 5.9                               | Accepté |
-| [017](#adr-017--eslint-plugin-import-retiré)                                     | `eslint-plugin-import` retiré                           | Accepté |
-| [018](#adr-018--deux-tsconfig-le-jeu-et-loutillage)                              | Deux `tsconfig` : le jeu et l'outillage                 | Accepté |
-| [019](#adr-019--allowedhosts-true-en-développement)                              | `allowedHosts: true` en développement                   | Accepté |
-| [020](#adr-020--briefyaml-est-la-spécification-faisant-autorité)                 | `brief.yaml` fait autorité                              | Accepté |
-| [021](#adr-021--des-tours--fracturées--jamais-en-ruine)                          | Des tours « fracturées », jamais en ruine               | Accepté |
-| [022](#adr-022--aucune-shadow-map-dynamique-sur-mobile)                          | Aucune shadow map dynamique sur mobile                  | Accepté |
-| [023](#adr-023--raccourcis-clavier-liés-aux-touches-physiques)                   | Raccourcis clavier liés aux touches physiques           | Accepté |
-| [024](#adr-024--le-picking-se-fait-sur-la-projection-écran-des-nœuds-pas-sur-la-géométrie) | Picking par projection écran des nœuds | Accepté |
-| [025](#adr-025--tonejs-chargé-après-le-premier-geste-gains-nominaux-en-décibels) | Tone.js après le premier geste, gains en dB             | Accepté |
-| [026](#adr-026--timelines-manuelles-pour-le--juice--pas-de-gsap)                 | Timelines manuelles pour le « juice », pas de gsap      | Accepté |
+| #                                                                                          | Décision                                                | Statut  |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------- | ------- |
+| [001](#adr-001--threejs-plutôt-que-babylonjs-playcanvas-ou-unity-webgl)                    | three.js plutôt que Babylon, PlayCanvas ou Unity WebGL  | Accepté |
+| [002](#adr-002--caméra-orthographique-isométrique-fixe-par-scène)                          | Caméra orthographique isométrique fixe par scène        | Accepté |
+| [003](#adr-003--navigation-par-graphe-de-nœuds-plutôt-que-navmesh)                         | Navigation par graphe de nœuds plutôt que navmesh       | Accepté |
+| [004](#adr-004--un-vecteur--up--par-nœud)                                                  | Un vecteur « up » par nœud                              | Accepté |
+| [005](#adr-005--a-recalculé-à-chaque-changement-détat-arrêt-au-dernier-nœud-sûr)           | A\* recalculé à chaque changement d'état                | Accepté |
+| [006](#adr-006--personnage-v1-procédural-derrière-icharactermodel)                         | Personnage v1 procédural derrière `ICharacterModel`     | Accepté |
+| [007](#adr-007--audio-procédural-tonejs-et-karplus-strong)                                 | Audio procédural : Tone.js et Karplus-Strong            | Accepté |
+| [008](#adr-008--rendu-stylisé-toon-ramp-vertex-colors-ao-de-sommets)                       | Rendu stylisé : toon ramp, vertex colors, AO de sommets | Accepté |
+| [009](#adr-009--post-processing-pmndrspostprocessing-dégressif)                            | Post-processing pmndrs dégressif                        | Accepté |
+| [010](#adr-010--niveaux-décrits-en-typescript-chargés-en-lazy-import)                      | Niveaux en TypeScript, chargés en lazy import           | Accepté |
+| [011](#adr-011--sauvegarde-locale-via-platformstorage)                                     | Sauvegarde locale via `Platform.storage`                | Accepté |
+| [012](#adr-012--ui-en-htmlcss-superposée-au-canvas)                                        | UI en HTML/CSS superposée au canvas                     | Accepté |
+| [013](#adr-013--qualité-adaptative-mesure-sur-3-secondes)                                  | Qualité adaptative mesurée sur 3 secondes               | Accepté |
+| [014](#adr-014--portage-android-futur-via-capacitor-pwa-dabord)                            | Portage Android via Capacitor, PWA d'abord              | Accepté |
+| [015](#adr-015--le-jeu-vit-à-la-racine-du-dépôt)                                           | Le jeu vit à la racine du dépôt                         | Accepté |
+| [016](#adr-016--typescript-épinglé-en-59)                                                  | TypeScript épinglé en 5.9                               | Accepté |
+| [017](#adr-017--eslint-plugin-import-retiré)                                               | `eslint-plugin-import` retiré                           | Accepté |
+| [018](#adr-018--deux-tsconfig-le-jeu-et-loutillage)                                        | Deux `tsconfig` : le jeu et l'outillage                 | Accepté |
+| [019](#adr-019--allowedhosts-true-en-développement)                                        | `allowedHosts: true` en développement                   | Accepté |
+| [020](#adr-020--briefyaml-est-la-spécification-faisant-autorité)                           | `brief.yaml` fait autorité                              | Accepté |
+| [021](#adr-021--des-tours--fracturées--jamais-en-ruine)                                    | Des tours « fracturées », jamais en ruine               | Accepté |
+| [022](#adr-022--aucune-shadow-map-dynamique-sur-mobile)                                    | Aucune shadow map dynamique sur mobile                  | Accepté |
+| [023](#adr-023--raccourcis-clavier-liés-aux-touches-physiques)                             | Raccourcis clavier liés aux touches physiques           | Accepté |
+| [024](#adr-024--le-picking-se-fait-sur-la-projection-écran-des-nœuds-pas-sur-la-géométrie) | Picking par projection écran des nœuds                  | Accepté |
+| [025](#adr-025--tonejs-chargé-après-le-premier-geste-gains-nominaux-en-décibels)           | Tone.js après le premier geste, gains en dB             | Accepté |
+| [026](#adr-026--timelines-manuelles-pour-le--juice--pas-de-gsap)                           | Timelines manuelles pour le « juice », pas de gsap      | Accepté |
+| [027](#adr-027--linterface-est-une-pile-décrans-dom-orchestrée-par-gameflow)               | Interface en pile DOM orchestrée par `GameFlow`         | Accepté |
+| [028](#adr-028--géométrie-de-niveau-instanciée-acteurs-secrets-séparés-du-parcours)        | Géométrie instanciée, secrets hors du parcours          | Accepté |
+| [029](#adr-029--les-états-narratifs-sont-des-conditions-monotones-du-navgraph)             | États narratifs monotones dans le NavGraph              | Accepté |
 
 ---
 
@@ -1138,12 +1141,12 @@ titre → chapitre → célébration → chapitre suivant.
 
 ### Alternatives considérées
 
-| Option                          | Pourquoi écartée                                                                                          |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **Une machine à états générique** | Huit écrans ne justifient pas un DSL ; un champ `state` + des méthodes nommées se lisent en une page     |
-| **gsap pour les fondus d'UI**   | ADR-026 le réservait à cet usage ; les transitions CSS suffisent et suivent `prefers-reduced-motion` seules |
-| **Un overlay WebGL pour l'UI**  | Contredit ADR-012 : lisibilité, lecteur d'écran et safe-areas se gèrent en DOM pour rien                  |
-| **Suspendre par `stopPropagation`** | Fragile (ordre des écouteurs) ; un drapeau explicite se teste et se documente                          |
+| Option                              | Pourquoi écartée                                                                                            |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Une machine à états générique**   | Huit écrans ne justifient pas un DSL ; un champ `state` + des méthodes nommées se lisent en une page        |
+| **gsap pour les fondus d'UI**       | ADR-026 le réservait à cet usage ; les transitions CSS suffisent et suivent `prefers-reduced-motion` seules |
+| **Un overlay WebGL pour l'UI**      | Contredit ADR-012 : lisibilité, lecteur d'écran et safe-areas se gèrent en DOM pour rien                    |
+| **Suspendre par `stopPropagation`** | Fragile (ordre des écouteurs) ; un drapeau explicite se teste et se documente                               |
 
 ### Conséquences
 
@@ -1154,3 +1157,108 @@ titre → chapitre → célébration → chapitre suivant.
   scène procédurale, libérée seulement au démontage du flux.
 - Le ducking des cartons passe par un événement typé `ui:speaking` : l'audio
   reste découplé de l'UI (même bus que le reste, ADR-025).
+
+---
+
+## ADR-028 : Géométrie de niveau instanciée, acteurs secrets séparés du parcours
+
+- **Date** : 2026-09-27 · **Statut** : Accepté
+
+### Contexte
+
+Le chapitre 0 est le premier niveau livré depuis `LevelDefinition`. ADR-010
+interdit d'introduire du comportement dans son module de données, tandis que la
+tour vainakh exige une silhouette canonique plus riche qu'une pile de cubes.
+L'aigle caché doit être touchable mais ne doit jamais devenir une destination de
+Turpal ni modifier la solvabilité. Enfin, l'illusion du seuil dépend de la
+direction isométrique : recentrer le décor ne doit pas changer cette direction.
+
+### Décision
+
+1. **`LevelGeometry` interprète les `LevelBlockDef`**. Les volumes réguliers
+   sont regroupés par surface dans des `InstancedMesh`; `kind: 'tower'`
+   délègue à `VainakhTower`, générateur procédural spécialisé et sans asset.
+2. **Le `Level` possède le décor et ses acteurs secrets**. Il construit,
+   borne, anime et libère la géométrie et l'aigle dans le même cycle de vie que
+   le graphe. Les métriques de décor (`estimatedDrawCalls`, `triangleCount`)
+   sont exposées pour les tests de budget.
+3. **Un secret a un nœud de projection, pas une arête**. Le nœud permet le
+   picking écran après révélation, mais reste déconnecté du NavGraph de Turpal.
+   Le déclencheur de découverte persiste l'identifiant du secret et n'accorde
+   aucune récompense de gameplay.
+4. **Le cadrage translate la caméra sans la réorienter**. `lookAtPoint` conserve
+   le vecteur isométrique initial; la paire `[−2,3,2]` / `[4,9,8]`, séparée de
+   `[6,6,6]`, reste donc superposée en portrait comme en paysage.
+
+### Alternatives considérées
+
+| Option                                                   | Pourquoi écartée                                                                                                      |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Décrire chaque pierre comme un `Mesh` dans le niveau** | Trop de draw calls, données illisibles, détails architecturaux dupliqués dans les huit chapitres                      |
+| **Exporter une tour GLB**                                | Asset lourd et moins paramétrable alors que la silhouette est obtenue avec 862 triangles de décor pour le prologue    |
+| **Relier l'aigle au NavGraph**                           | Turpal pourrait marcher sur le toit; le secret deviendrait un état de solution et fausserait le validateur d'impasses |
+| **Orienter la caméra vers le centre à chaque cadrage**   | Casse l'invariant de projection dont dépend la liaison illusoire                                                      |
+| **Révéler le secret par un compteur ou un indice**       | Contredit le GDD : contemplation optionnelle, sans checklist ni avantage                                              |
+
+### Conséquences
+
+- Une tour reste une donnée concise dans chaque niveau et respecte le même canon
+  architectural; ses matériaux suivent la palette du chapitre.
+- La géométrie du prologue tient en 10 draw calls estimés et 862 triangles,
+  hors personnages et FX.
+- Les secrets futurs peuvent réutiliser le contrat, mais tout nouveau `kind`
+  d'acteur devra fournir explicitement révélation, picking et `dispose()`.
+- La direction de caméra est désormais couverte par un test de non-régression,
+  en plus des audits de l'illusion à 1920×1080 et 390×844.
+
+---
+
+## ADR-029 : Les états narratifs sont des conditions monotones du NavGraph
+
+- **Date** : 2026-09-27 · **Statut** : Accepté
+
+### Contexte
+
+Dans « L'Hospitalité », la passerelle ne doit ouvrir la route sud que lorsque
+deux faits sont vrais : la roue pointe vers Turpal **et** le voyageur a déjà
+traversé. Une condition simple de mécanisme ne suffit pas. Coder cette exception
+dans `LevelRuntime` rendrait le chapitre impossible à relire dans ses données et
+invisible au validateur d'impasses.
+
+### Décision
+
+1. Une arête accepte désormais `conditions`, une conjonction de
+   `EdgeCondition`. Le raccourci historique `condition` reste valide.
+2. Un `LevelActorDef` déclare le départ automatique d'un acteur, son trajet, le
+   mécanisme temporairement verrouillé et l'état logique produit à son arrivée.
+3. Cet état narratif vit dans le même magasin du `NavGraph` que les mécanismes.
+   Pour l'hospitalité, `traveler-served` passe une seule fois de `false` à
+   `true` : il est monotone et ne peut jamais retirer une progression acquise.
+4. Le validateur applique automatiquement la complétion garantie de l'acteur
+   lorsqu'il explore son état de départ. Il couvre donc les combinaisons
+   réellement atteignables plutôt qu'une approximation écrite dans un test de
+   chapitre.
+5. Les volumes `LevelBlockDef.parent` sont attachés au mécanisme correspondant
+   et conservent leur transformation monde. La passerelle visible et la
+   connectivité logique tournent ainsi sous la même source de vérité.
+
+### Alternatives considérées
+
+| Option                                            | Pourquoi écartée                                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Autoriser immédiatement le cran sud**           | Contredit le récit : l'accueil ne serait plus la seule séquence valide          |
+| **Déclencheur impératif propre au chapitre**      | État caché au level data, au visualiseur et au validateur d'impasses            |
+| **Deuxième mécanisme visible ou dalle**           | Introduit une mécanique que le chapitre ne doit pas enseigner                   |
+| **Retirer le chemin sud jusqu'à une cinématique** | Téléportation du graphe sans cause architecturale lisible                       |
+| **Faire du voyageur un second joueur NavGraph**   | Complexité de pathfinding et risques de blocage inutiles pour un trajet garanti |
+
+### Conséquences
+
+- La route du chapitre 1 exige explicitement `hospitality-wheel=270` et
+  `traveler-served=true`; pointer directement vers le sud ne fonctionne pas.
+- La roue est désactivée pendant les pas du voyageur : la passerelle ne peut pas
+  se dérober sous lui, puis redevient manipulable à son arrivée.
+- L'exploration exhaustive couvre 67 états étendus et 7 combinaisons de
+  mécanisme/état narratif, sans impasse.
+- Les futurs acteurs autonomes peuvent réutiliser ce contrat, à condition que
+  leur complétion soit garantie et que leur état ne régresse pas.

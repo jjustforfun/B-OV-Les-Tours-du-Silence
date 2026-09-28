@@ -55,7 +55,7 @@ describe('Slider', () => {
     world.add(slider.root, passenger);
 
     slider.attachPassenger(passenger);
-    expect(passenger.parent).toBe(slider.root);
+    expect(passenger.parent).toBe(slider.geometryRoot);
 
     slider.beginDrag({ centerX: 0, centerY: 0, pointerX: 1, pointerY: 0 });
     slider.drag({ centerX: 0, centerY: 0, pointerX: -1, pointerY: 0 });
@@ -67,6 +67,30 @@ describe('Slider', () => {
 
     slider.detachPassenger(world);
     expect(passenger.parent).toBe(world);
+    slider.dispose();
+  });
+
+  it('garde son ancre monde et transfère trois volumes un par un', () => {
+    const graph = new NavGraph();
+    const slider = new Slider('promise', { stops: 4, travel: 3, snapSeconds: 0.9 });
+    slider.root.position.set(7, 2, -4);
+    const stones = [new Group(), new Group(), new Group()];
+    stones.forEach((stone, index) => {
+      stone.position.set(index * 2, 0, 3);
+      slider.root.add(stone);
+      slider.bindStagedObject(stone, [index * 2, 0, 0], index + 1);
+    });
+
+    for (let stop = 1; stop <= 3; stop += 1) {
+      slider.actuate();
+      slider.update(context(graph), 0.9);
+      expect(slider.root.position.toArray()).toEqual([7, 2, -4]);
+      expect(graph.getMechanismState('promise')).toBe(stop);
+      stones.forEach((stone, index) => {
+        expect(stone.position.z).toBeCloseTo(index < stop ? 0 : 3, 5);
+      });
+    }
+
     slider.dispose();
   });
 });
@@ -87,7 +111,8 @@ describe('PressurePlate', () => {
     plate.update(context(graph), 0.18);
 
     expect(plate.isPressed).toBe(true);
-    expect(plate.root.position.y).toBeCloseTo(-0.08, 3);
+    expect(plate.root.position.y).toBe(0);
+    expect(plate.geometryRoot.position.y).toBeCloseTo(-0.08, 3);
     expect(graph.areConnected('a', 'b')).toBe(true);
     expect(sound).toBe('stone-plate');
     expect(plate.root.children.some((child) => child.name.startsWith('PressurePlateLink'))).toBe(
@@ -116,6 +141,14 @@ describe('TowerRotation', () => {
     expect(graph.getNode('mobile')?.position.x).toBeCloseTo(0, 5);
     expect(graph.getNode('mobile')?.position.z).toBeCloseTo(1, 5);
     expect(tower.isInSilence).toBe(true);
+
+    // Le retour antihoraire doit faire −90°, jamais une rotation visuelle de +270°.
+    tower.actuate(-1);
+    tower.update(context(graph), 1.2);
+    expect(tower.currentFace).toBe(0);
+    expect(tower.root.rotation.y).toBeCloseTo(0, 5);
+    expect(graph.getNode('mobile')?.position.x).toBeCloseTo(1, 5);
+    expect(graph.getNode('mobile')?.position.z).toBeCloseTo(0, 5);
     tower.dispose();
   });
 });

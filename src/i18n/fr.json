@@ -74,6 +74,7 @@
   "ui.muteOn": "Son coupé",
   "ui.muteOff": "Son rétabli",
   "ui.proverbOffered": "Un proverbe vous est offert.",
+  "ui.eagleFound": "Un aigle s'élève au loin.",
   "ui.backToTitle": "Retour au titre",
   "settings.title": "Réglages",
   "settings.audio": "Son",
@@ -111,6 +112,7 @@
   "captions.chapter": "[signature du chapitre]",
   "captions.snap": "[la pierre se pose]",
   "captions.chord": "[accord de connexion]",
+  "captions.childLaugh": "[un enfant rit au-dessus du torrent]",
   "captions.celebration": "[les tours s’illuminent]",
   "chapters.title": "Chapitres",
   "chapters.completed": "Parcouru",
@@ -119,6 +121,7 @@
   "proverbs.title": "Recueil de proverbes",
   "proverbs.locked": "Pas encore offerte",
   "proverbs.note": "Textes originaux, inspirés de l'esprit du Nokhchalla.",
+  "proverbs.illustrationRevealed": "Une illustration du lieu s'est révélée.",
   "virtues.prologue": "Prologue",
   "virtues.epilogue": "Épilogue"
 }

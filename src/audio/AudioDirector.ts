@@ -191,6 +191,16 @@ export class AudioDirector {
       this.manager?.pondar.playConnectionChord();
     });
 
+    bus.on('child:bridgeReady', () => {
+      this.manager?.sfx.childLaugh();
+    });
+
+    bus.on('illusion:crossed', () => {
+      const manager = this.manager;
+      if (manager === null) return;
+      manager.pondar.pluck(tuningForChapter(this.chapter).rootMidi + 12);
+    });
+
     bus.on('level:solved', () => {
       const manager = this.manager;
       if (manager === null) return;
