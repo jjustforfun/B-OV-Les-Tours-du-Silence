@@ -37,6 +37,22 @@ describe('CameraRig', () => {
     expect(position.x).toBeCloseTo(position.z, 6);
   });
 
+  it("recentrer un niveau ne change jamais l'angle isométrique", () => {
+    const rig = new CameraRig(16 / 9);
+    const before = rig.camera.position
+      .clone()
+      .sub(new Vector3(0, 0, 0))
+      .normalize();
+    const target = new Vector3(7, 13, -4);
+
+    rig.lookAtPoint(target);
+    const after = rig.camera.position.clone().sub(target).normalize();
+
+    expect(after.x).toBeCloseTo(before.x, 6);
+    expect(after.y).toBeCloseTo(before.y, 6);
+    expect(after.z).toBeCloseTo(before.z, 6);
+  });
+
   it('cadre un niveau entier en paysage 1920×1080', () => {
     const rig = new CameraRig(1920 / 1080);
     const min = new Vector3(-6, 0, -6);

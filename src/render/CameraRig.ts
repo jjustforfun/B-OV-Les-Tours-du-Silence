@@ -18,6 +18,7 @@ export class CameraRig {
 
   private viewSize: number = CAMERA.viewSize;
   private readonly target = new Vector3(0, 0, 0);
+  private readonly orbitOffset = new Vector3();
   private readonly frameCenter = new Vector3();
   private readonly frameCorner = new Vector3();
 
@@ -34,11 +35,12 @@ export class CameraRig {
     const elevation = MathUtils.degToRad(elevationDeg);
     const horizontal = Math.cos(elevation) * CAMERA.distance;
 
-    this.camera.position.set(
+    this.orbitOffset.set(
       Math.sin(azimuth) * horizontal,
       Math.sin(elevation) * CAMERA.distance,
       Math.cos(azimuth) * horizontal,
     );
+    this.camera.position.copy(this.target).add(this.orbitOffset);
     this.camera.lookAt(this.target);
     this.camera.updateMatrixWorld();
   }
@@ -108,6 +110,9 @@ export class CameraRig {
 
   lookAtPoint(point: Vector3): void {
     this.target.copy(point);
+    // Recentrer ne doit jamais changer l'angle isométrique : l'illusion dépend
+    // de la direction de visée, pas de la position du niveau dans le monde.
+    this.camera.position.copy(this.target).add(this.orbitOffset);
     this.camera.lookAt(this.target);
     this.camera.updateMatrixWorld();
   }

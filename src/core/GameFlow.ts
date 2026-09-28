@@ -17,7 +17,7 @@
  * La scène du titre (vallée en plan large) vit sous les chapitres : on la
  * détache plutôt que de la disposer, elle est petite et procédurale.
  */
-import { Vector3, type Object3D } from 'three';
+import type { Object3D } from 'three';
 import { Engine } from '@core/Engine';
 import { bus } from '@core/EventBus';
 import { isReducedMotion, setReducedMotionOverride } from '@core/motion';
@@ -71,25 +71,10 @@ function paletteForChapter(chapter: number): ChapterPaletteName {
   return names[chapter] ?? 'prologue';
 }
 
-/** Emprise du graphe (min/max des nœuds) pour le cadrage de la caméra. */
+/** Emprise du décor et du graphe pour garder la tour entière dans le cadre. */
 function frameLevelBounds(engine: Engine, level: Level): void {
-  const nodes = level.graph.allNodes();
-  if (nodes.length === 0) return;
-  let minX = Number.POSITIVE_INFINITY;
-  let minY = Number.POSITIVE_INFINITY;
-  let minZ = Number.POSITIVE_INFINITY;
-  let maxX = Number.NEGATIVE_INFINITY;
-  let maxY = Number.NEGATIVE_INFINITY;
-  let maxZ = Number.NEGATIVE_INFINITY;
-  for (const node of nodes) {
-    minX = Math.min(minX, node.position.x);
-    minY = Math.min(minY, node.position.y);
-    minZ = Math.min(minZ, node.position.z);
-    maxX = Math.max(maxX, node.position.x);
-    maxY = Math.max(maxY, node.position.y);
-    maxZ = Math.max(maxZ, node.position.z);
-  }
-  engine.frameLevel(new Vector3(minX, minY, minZ), new Vector3(maxX, maxY + 2, maxZ), 0.1);
+  if (level.bounds.isEmpty()) return;
+  engine.frameLevel(level.bounds.min, level.bounds.max, 0.1);
 }
 
 function delay(ms: number): Promise<void> {
@@ -198,11 +183,7 @@ export class GameFlow {
 
   private async showTitle(): Promise<void> {
     this.state = 'title';
-    this.engine.frameLevel(
-      this.demo.bounds.min,
-      this.demo.bounds.max,
-      TITLE_FRAME_MARGIN,
-    );
+    this.engine.frameLevel(this.demo.bounds.min, this.demo.bounds.max, TITLE_FRAME_MARGIN);
     if (this.title !== null) this.uiRoot.setBase(this.title);
     if (this.veil.isBlack) await this.veil.reveal();
   }
@@ -233,6 +214,7 @@ export class GameFlow {
       camera: this.engine.cameraRig.camera,
       input: this.input,
       viewport: () => this.engine.renderer.size,
+      foundEagleIds: this.save.snapshot.eagles,
     });
     this.fx.attachLevel(level);
     frameLevelBounds(this.engine, level);
@@ -428,9 +410,7 @@ export class GameFlow {
   }
 
   private applyMotion(choice: UiSettingsState['reducedMotion']): void {
-    setReducedMotionOverride(
-      choice === 'reduced' ? true : choice === 'full' ? false : undefined,
-    );
+    setReducedMotionOverride(choice === 'reduced' ? true : choice === 'full' ? false : undefined);
     const reduced = choice === 'reduced' || (choice === 'auto' && isReducedMotion());
     document.documentElement.classList.toggle('ui-motion-reduced', reduced);
   }
@@ -452,6 +432,7 @@ export class GameFlow {
         proverbKey,
         virtueKey: `virtues.${levelVirtue(id)}`,
         unlocked: this.save.snapshot.proverbs.includes(proverbKey),
+        illustrationUnlocked: this.save.hasEagle(`${id}:eagle`),
       };
     });
   }
@@ -565,8 +546,18 @@ export class GameFlow {
       // Sous-titres des événements sonores : discrets, désactivables, et
       // aucun puzzle ne dépend du son (docs/GDD.md accessibilité).
       bus.on('level:loaded', () => this.caption('captions.chapter')),
+      bus.on('sky:transition', ({ palette, durationSeconds }) => {
+        this.engine.sky.transitionToNamed(palette, durationSeconds);
+      }),
       bus.on('mechanism:snap', () => this.caption('captions.snap')),
       bus.on('path:connected', () => this.caption('captions.chord')),
+      bus.on('child:bridgeReady', () => this.caption('captions.childLaugh')),
+      bus.on('narrative:text', ({ key }) => this.toast.show(i18n.t(key))),
+      bus.on('secret:eagleFound', ({ secretId }) => {
+        this.save.markEagleFound(secretId);
+        this.toast.show(i18n.t('ui.eagleFound'));
+        void this.save.flush();
+      }),
     );
   }
 

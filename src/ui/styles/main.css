@@ -624,6 +624,18 @@
   fill: var(--color-ember);
 }
 
+.ui-proverb__figure.is-illustrated {
+  color: var(--color-ember-soft);
+  filter: drop-shadow(0 0 0.35rem rgb(217 164 65 / 35%));
+}
+
+.ui-proverb__illustration {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  font-style: italic;
+  color: var(--color-ember-soft);
+}
+
 /* Page offerte : la braise veille, le texte se lit. */
 .ui-proverb__entry.is-offered .ui-proverb__text {
   font-family: var(--font-display);

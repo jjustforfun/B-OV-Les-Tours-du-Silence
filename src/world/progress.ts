@@ -57,9 +57,10 @@ function isMechanismResolved(
   actuated: ReadonlySet<string>,
 ): boolean {
   const state = states.get(mechanism.id);
-  const conditions = (mechanism.affects ?? []).flatMap((edge) =>
-    edge.condition === undefined ? [] : [edge.condition],
-  );
+  const conditions = (mechanism.affects ?? []).flatMap((edge) => [
+    ...(edge.condition === undefined ? [] : [edge.condition]),
+    ...(edge.conditions ?? []),
+  ]);
 
   if (conditions.length === 0) return actuated.has(mechanism.id);
   if (state === undefined) return false;
@@ -75,7 +76,7 @@ export function edgeKey(from: string, to: string): string {
 export function conditionalEdgeSnapshot(graph: NavGraph): Map<string, boolean> {
   const snapshot = new Map<string, boolean>();
   for (const edge of graph.allEdges()) {
-    if (edge.condition === null) continue;
+    if (edge.conditions.length === 0) continue;
     snapshot.set(edgeKey(edge.from, edge.to), edge.enabled);
   }
   return snapshot;

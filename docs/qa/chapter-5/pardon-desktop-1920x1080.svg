@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#241a16"/>
+      <stop offset="1" stop-color="#c2643f"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#8a6a55"/>
+      <stop offset="1" stop-color="#4a2c22"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <style>
+    .solution{fill:none;stroke:#f0ddd2;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;filter:url(#glow)}
+    .wall{fill:none;stroke:#d9a441;stroke-width:4;stroke-dasharray:8 6}
+    .node circle{fill:#4a2c22;stroke:#f0ddd2;stroke-width:2}.node text{fill:#f7e9df;font:17px sans-serif}
+    .annotation{fill:#f7e9df;font:18px sans-serif}.muted{opacity:.68}.small{font-size:15px}
+    .half{fill:url(#stone);stroke:#d5b09a;stroke-width:4}.roof{fill:#4a2c22;stroke:#d5b09a;stroke-width:3}
+    .matrix{fill:#241a16;stroke:#8a6a55;stroke-width:2}.win{fill:#d9a441;stroke:#fff1c7;stroke-width:3;filter:url(#glow)}
+  </style>
+  <rect width="100%" height="100%" fill="url(#sky)"/>
+  <path d="M0 780 Q330 650 640 745 T1280 720 T1920 760 V1080 H0Z" fill="#241a16" opacity=".72"/>
+
+  <polygon points="718,690 895,690 895,345 748,345" class="half"/>
+  <polygon points="748,345 895,345 866,314 774,314" class="roof"/>
+  <polygon points="969,690 1110,690 1085,345 969,345" class="half"/>
+  <polygon points="969,345 1085,345 1057,314 994,314" class="roof"/>
+  <line x1="866" y1="555" x2="932.22" y2="554.88" stroke="#d5b09a" stroke-width="24"/>
+  <line x1="932.22" y1="554.88" x2="994" y2="555" stroke="#d5b09a" stroke-width="24"/>
+  <line x1="932.22" y1="365" x2="932.22" y2="545" stroke="#f0ddd2" stroke-width="3" stroke-dasharray="9 9" opacity=".5"/>
+
+  <polyline points="701.09,449.67 705.54,513.83 672.20,504.84 638.87,493.30 647.76,490.73 705.54,542.05 798.88,670.36 854.44,607.49 932.22,554.88 1065.56,631.87 1158.90,657.53 1296.69,652.40" class="solution"/>
+  <polyline points="705.54,513.83 672.20,504.84 638.87,493.30 647.76,490.73" class="wall"/>
+  <path d="M932 555 C845 495 758 530 706 542" fill="none" stroke="#d9a441" stroke-width="3" stroke-dasharray="10 8" opacity=".8"/>
+  <text x="780" y="492" class="annotation small" fill="#d9a441">retours réversibles</text>
+
+  <g class="node"><circle cx="701.09" cy="449.67" r="7"/><text x="665" y="428">départ</text></g>
+  <g class="node"><circle cx="705.54" cy="513.83" r="7"/><text x="716" y="527">gravité</text></g>
+  <g class="node"><circle cx="647.76" cy="490.73" r="7"/><text x="552" y="477">paroi · up 0,0,1</text></g>
+  <g class="node"><circle cx="798.88" cy="670.36" r="7"/><text x="754" y="701">ouest · face 1</text></g>
+  <g class="node"><circle cx="932.22" cy="554.88" r="10"/><circle cx="932.22" cy="554.88" r="26" fill="none" stroke="#d9a441" stroke-width="3" filter="url(#glow)"/><text x="852" y="528">jonction · 0 px</text></g>
+  <g class="node"><circle cx="1065.56" cy="631.87" r="7"/><text x="1019" y="666">est · face 3</text></g>
+  <g class="node"><circle cx="1296.69" cy="652.40" r="8"/><text x="1310" y="647">but</text></g>
+
+  <g transform="translate(1008 572)">
+    <circle cx="0" cy="0" r="16" fill="#5f372b" stroke="#f0ddd2" stroke-width="3"/>
+    <line x1="-8" y1="14" x2="-14" y2="45" stroke="#f0ddd2" stroke-width="5"/>
+    <line x1="8" y1="14" x2="14" y2="45" stroke="#f0ddd2" stroke-width="5"/>
+    <line x1="-13" y1="25" x2="-50" y2="2" stroke="#f0ddd2" stroke-width="5"/>
+    <text x="18" y="4" class="annotation small">rival · dernière rotation</text>
+  </g>
+
+  <g transform="translate(1435 205)">
+    <text x="0" y="0" class="annotation" font-weight="700">16 combinaisons</text>
+    <text x="110" y="34" class="annotation small">EST</text>
+    <text x="-54" y="135" class="annotation small" transform="rotate(-90 -54 135)">OUEST</text>
+    <g transform="translate(42 48)">
+      <text x="18" y="-12" class="annotation small">0</text><text x="73" y="-12" class="annotation small">1</text><text x="128" y="-12" class="annotation small">2</text><text x="183" y="-12" class="annotation small">3</text>
+      <text x="-22" y="32" class="annotation small">0</text><text x="-22" y="87" class="annotation small">1</text><text x="-22" y="142" class="annotation small">2</text><text x="-22" y="197" class="annotation small">3</text>
+      <rect x="0" y="0" width="55" height="55" class="matrix"/><rect x="55" y="0" width="55" height="55" class="matrix"/><rect x="110" y="0" width="55" height="55" class="matrix"/><rect x="165" y="0" width="55" height="55" class="matrix"/>
+      <rect x="0" y="55" width="55" height="55" class="matrix"/><rect x="55" y="55" width="55" height="55" class="matrix"/><rect x="110" y="55" width="55" height="55" class="matrix"/><rect x="165" y="55" width="55" height="55" class="win"/>
+      <rect x="0" y="110" width="55" height="55" class="matrix"/><rect x="55" y="110" width="55" height="55" class="matrix"/><rect x="110" y="110" width="55" height="55" class="matrix"/><rect x="165" y="110" width="55" height="55" class="matrix"/>
+      <rect x="0" y="165" width="55" height="55" class="matrix"/><rect x="55" y="165" width="55" height="55" class="matrix"/><rect x="110" y="165" width="55" height="55" class="matrix"/><rect x="165" y="165" width="55" height="55" class="matrix"/>
+      <text x="192" y="89" text-anchor="middle" class="annotation" fill="#241a16">✓</text>
+    </g>
+    <text x="40" y="298" class="annotation small">ouest 1 · est 2 → 3</text>
+    <text x="40" y="322" class="annotation small muted">Turpal avance avant la réponse</text>
+  </g>
+
+  <g transform="translate(932 410)" opacity=".72">
+    <text x="0" y="0" text-anchor="middle" fill="#d9a441" font-size="38">✧</text>
+    <text x="30" y="-3" class="annotation small">aigle visible dans la fente ouverte</text>
+  </g>
+  <text x="115" y="96" fill="#f7e9df" font-family="serif" font-size="36">Chapitre 5 — Le Pardon</text>
+  <text x="115" y="132" class="annotation muted">Capture technique · les balcons existants referment la fracture</text>
+  <text x="115" y="1025" class="annotation muted">Vue desktop-1920x1080 · ouest 1, est 3, fracture fermée</text>
+</svg>

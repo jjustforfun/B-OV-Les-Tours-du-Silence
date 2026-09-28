@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#46536b"/><stop offset="1" stop-color="#f2f7fb"/></linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#cfe0ec"/><stop offset="1" stop-color="#6d84a3"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <style>
+    .solution{fill:none;stroke:#f7fbff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:url(#glow)}
+    .inverted{fill:none;stroke:#9fb8cf;stroke-width:3;stroke-dasharray:5 4}.node{fill:#46536b;stroke:#f7fbff;stroke-width:1.5}
+    .annotation{fill:#243247;font:12px sans-serif}.light{fill:#f7fbff}.muted{opacity:.68}.stone{fill:url(#stone);stroke:#dceaf2;stroke-width:2}.snow{fill:#f2f7fb;stroke:#9fb8cf;stroke-width:2}.panel{fill:#46536b;fill-opacity:.86;stroke:#9fb8cf;stroke-width:1.5}
+  </style>
+  <rect width="390" height="844" fill="url(#sky)"/>
+  <path d="M0 555 Q90 500 190 542 T390 530 V844 H0Z" fill="#46536b" opacity=".25"/>
+  <text x="20" y="42" fill="#f7fbff" font-family="serif" font-size="25">Chapitre 6 — L’Humilité</text>
+  <text x="20" y="66" class="annotation light muted">Capture technique · plafond et sommet à 0 px</text>
+
+  <polygon points="111,372 178,313 218,373 181,418 118,405" class="snow"/>
+  <polygon points="158,407 179,302 210,305 213,399" class="stone"/>
+  <polygon points="175,443 218,366 281,339 318,473 251,514 185,491" class="stone"/>
+  <polygon points="179,370 220,333 281,339 302,374 258,366 215,393" class="snow"/>
+  <path d="M172 441 L172 502 L247 502 L247 441 L228 441 L228 479 Q210 459 192 479 L192 441 Z" class="stone"/>
+
+  <!-- projections réelles 390 × 844 -->
+  <polyline points="181.36,348.95 177.60,368.50 209.58,386.96 217.10,391.30 211.46,407.59 203.46,423.06 195.47,438.54 188.42,442.61 190.77,452.11 190.77,462.97 190.77,473.83 190.77,473.83 200.17,468.40 220.86,458.63" class="solution"/>
+  <polyline points="217.10,391.30 211.46,407.59 203.46,423.06 195.47,438.54 188.42,442.61 190.77,452.11 190.77,462.97 190.77,473.83" class="inverted"/>
+  <circle cx="181.36" cy="348.95" r="4" class="node"/><circle cx="177.60" cy="368.50" r="4" class="node"/>
+  <circle cx="217.10" cy="391.30" r="4" class="node"/><circle cx="188.42" cy="442.61" r="4" class="node"/>
+  <circle cx="190.77" cy="473.83" r="7" class="node"/><circle cx="190.77" cy="473.83" r="18" fill="none" stroke="#d6b66f" stroke-width="2" filter="url(#glow)"/>
+  <circle cx="220.86" cy="458.63" r="5" class="node"/>
+  <text x="126" y="337" class="annotation">départ</text><text x="126" y="386" class="annotation">tour</text>
+  <text x="224" y="399" class="annotation">up Z</text><text x="139" y="438" class="annotation">up −Y</text>
+  <text x="212" y="493" class="annotation" font-weight="700">0 px</text><text x="229" y="457" class="annotation">but</text>
+  <path d="M170 498 Q181 486 191 496 Q201 486 212 498 Q200 494 191 505 Q182 494 170 498Z" fill="#46536b"/>
+  <text x="220" y="506" class="annotation">aigle dessous</text>
+
+  <g transform="translate(31 562)">
+    <rect x="0" y="0" width="328" height="104" rx="12" class="panel"/>
+    <text x="16" y="26" class="annotation light" font-size="15" font-weight="700">Même pixel, lieux distants</text>
+    <text x="16" y="50" class="annotation light">plafond (1, −1, 4) · sommet (7, 5, 10)</text>
+    <text x="16" y="73" class="annotation light">écart monde (6, 6, 6) · axe isométrique</text>
+    <text x="16" y="94" fill="#d6b66f" font-family="sans-serif" font-size="13" font-weight="700">190,77 × 473,83 · écart écran 0 px</text>
+  </g>
+
+  <g transform="translate(31 689)">
+    <rect x="0" y="0" width="328" height="103" rx="12" class="panel"/>
+    <text x="16" y="25" class="annotation light" font-size="14" font-weight="700">Borz : quatre allers, trois retours</text>
+    <text x="16" y="50" class="annotation light">voyageur → enfant → ancien → rival</text>
+    <text x="16" y="74" class="annotation light">les quatre attendent en haut</text>
+    <text x="16" y="94" fill="#d6b66f" font-family="sans-serif" font-size="13">Turpal marche sous la montagne, en dernier</text>
+  </g>
+  <text x="20" y="823" class="annotation muted">Mobile 390×844 · 26/26 nœuds visibles · caméra retournée</text>
+</svg>

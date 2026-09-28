@@ -35,6 +35,14 @@ describe('SaveManager', () => {
     expect(save.snapshot.proverbs).toEqual(['proverbs.parole']);
   });
 
+  it("mémorise l'aigle sans compteur visible ni doublon", () => {
+    const save = new SaveManager();
+    save.markEagleFound('00-prologue:eagle');
+    save.markEagleFound('00-prologue:eagle');
+    expect(save.hasEagle('00-prologue:eagle')).toBe(true);
+    expect(save.snapshot.eagles).toEqual(['00-prologue:eagle']);
+  });
+
   it('cumule le temps de jeu et écrit seulement si nécessaire', async () => {
     const save = new SaveManager();
     expect(save.snapshot.playtimeSeconds).toBe(0);
@@ -59,7 +67,7 @@ describe('SaveManager', () => {
     const save = new SaveManager();
     save.markCompleted('06-humilite', '07-epilogue', 'proverbs.humilite');
     await save.reset();
-    expect(save.snapshot).toEqual(createEmptySave());
+    expect({ ...save.snapshot, updatedAt: 0 }).toEqual({ ...createEmptySave(), updatedAt: 0 });
     expect(save.hasProgress()).toBe(false);
   });
 });

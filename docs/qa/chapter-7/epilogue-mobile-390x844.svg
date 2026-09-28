@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#1a2030"/><stop offset="0.58" stop-color="#46536b"/><stop offset="1" stop-color="#d9a441"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <style>
+    .route{fill:none;stroke:#f7f0dd;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:url(#glow)}.node{fill:#2c3444;stroke:#f7f0dd;stroke-width:1.5}
+    .label{fill:#f7f0dd;font:12px sans-serif}.muted{opacity:.68}.tower{stroke:#f7f0dd;stroke-width:1}.panel{fill:#1a2030;fill-opacity:.84;stroke:#d9a441;stroke-width:1.5}
+  </style>
+  <rect width="390" height="844" fill="url(#sky)"/>
+  <path d="M0 550 Q95 485 195 530 T390 520 V844 H0Z" fill="#1a2030" opacity=".5"/>
+  <text x="20" y="42" class="label" font-family="serif" font-size="25">Le Chant revenu</text>
+  <text x="20" y="65" class="label muted">Capture technique · aucun piège pour le regard</text>
+
+  <!-- Huit tours sur les positions réellement projetées -->
+  <g transform="translate(142.86 395.49)"><path d="M-6 0 L-5 -39 L5 -39 L6 0Z" fill="#e3b7a6" class="tower"/><path d="M-5 -39 L0 -46 L5 -39Z" fill="#39425a"/><text x="0" y="11" text-anchor="middle" class="label" font-size="9">0</text></g>
+  <g transform="translate(151.20 405.12)"><path d="M-6 0 L-5 -41 L5 -41 L6 0Z" fill="#c9a35c" class="tower"/><path d="M-5 -41 L0 -48 L5 -41Z" fill="#5c5340"/><text x="0" y="11" text-anchor="middle" class="label" font-size="9">1</text></g>
+  <g transform="translate(155.37 417.16)"><path d="M-6 0 L-5 -43 L5 -43 L6 0Z" fill="#7fc2c9" class="tower"/><path d="M-5 -43 L0 -50 L5 -43Z" fill="#3a4750"/><text x="0" y="11" text-anchor="middle" class="label" font-size="9">2</text></g>
+  <g transform="translate(167.89 429.21)"><path d="M-6 0 L-5 -45 L5 -45 L6 0Z" fill="#e6d3a8" class="tower"/><path d="M-5 -45 L0 -52 L5 -45Z" fill="#55432c"/><text x="0" y="11" text-anchor="middle" class="label" font-size="9">3</text></g>
+  <g transform="translate(180.40 441.25)"><path d="M-6 0 L-5 -47 L5 -47 L6 0Z" fill="#8fa4c4" class="tower"/><path d="M-5 -47 L0 -54 L5 -47Z" fill="#1b2740"/><text x="0" y="11" text-anchor="middle" class="label" font-size="9">4</text></g>
+  <g transform="translate(194.58 454.25)"><path d="M-6 0 L-5 -45 L5 -45 L6 0Z" fill="#c2643f" class="tower"/><path d="M-5 -45 L0 -52 L5 -45Z" fill="#4a2c22"/><text x="0" y="11" text-anchor="middle" class="label" font-size="9">5</text></g>
+  <g transform="translate(209.60 467.74)"><path d="M-6 0 L-5 -43 L5 -43 L6 0Z" fill="#cfe0ec" class="tower"/><path d="M-5 -43 L0 -50 L5 -43Z" fill="#6d84a3"/><text x="0" y="11" text-anchor="middle" class="label" font-size="9">6</text></g>
+  <g transform="translate(222.11 479.78)"><path d="M-6 0 L-5 -41 L5 -41 L6 0Z" fill="#e8e0d2" class="tower"/><path d="M-5 -41 L0 -48 L5 -41Z" fill="#d9a441"/><text x="0" y="11" text-anchor="middle" class="label" font-size="9">7</text></g>
+
+  <polyline points="138.69,388.27 142.86,395.49 151.20,405.12 155.37,417.16 167.89,429.21 180.40,441.25 194.58,454.25 209.60,467.74 222.11,479.78 238.80,474.96 215.44,486.52 192.91,494.71 167.89,494.71" class="route"/>
+  <circle cx="138.69" cy="388.27" r="4" class="node"/><text x="99" y="379" class="label">départ</text>
+  <circle cx="238.80" cy="474.96" r="7" class="node"/><circle cx="238.80" cy="474.96" r="17" fill="none" stroke="#d9a441" stroke-width="2" filter="url(#glow)"/><text x="255" y="472" class="label">seuil</text><text x="255" y="487" class="label muted">8 ensemble</text>
+  <circle cx="167.89" cy="494.71" r="6" class="node"/><text x="105" y="516" class="label">assis parmi les siens</text>
+  <path d="M163 486 Q168 479 173 486 Q168 483 163 486Z" fill="#303746"/><text x="177" y="486" class="label">aigle 7/7</text>
+
+  <g transform="translate(31 565)"><rect width="328" height="105" rx="12" class="panel"/><text x="16" y="26" class="label" font-size="15" font-weight="700">Quatre couches retrouvées</text><text x="16" y="51" class="label">départ · bourdon      T2 · pondar</text><text x="16" y="73" class="label">T4 · percussion      seuil · mélodie</text><text x="16" y="95" fill="#d9a441" font-family="sans-serif" font-size="12">Ré dorien · D3–A3–D4</text></g>
+  <g transform="translate(31 694)"><rect width="328" height="92" rx="12" class="panel"/><text x="16" y="27" class="label" font-size="15" font-weight="700">La simplicité est la résolution</text><text x="16" y="52" class="label">0 mécanisme · 0 illusion · 0 impasse</text><text x="16" y="75" class="label">18/18 nœuds visibles · 8 tours intactes</text></g>
+  <text x="20" y="820" class="label muted">Mobile 390×844 · ciel neige → or · Borz au repos</text>
+</svg>

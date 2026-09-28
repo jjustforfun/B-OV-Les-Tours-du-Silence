@@ -21,6 +21,8 @@ export interface SaveData {
   completed: string[];
   /** Proverbes débloqués (clés i18n). */
   proverbs: string[];
+  /** Secrets contemplatifs trouvés, sans compteur affiché au joueur. */
+  eagles: string[];
   /** Secondes de jeu cumulées — affiché nulle part, utile à l'équilibrage. */
   playtimeSeconds: number;
   updatedAt: number;
@@ -32,6 +34,7 @@ export function createEmptySave(): SaveData {
     currentLevel: '00-prologue',
     completed: [],
     proverbs: [],
+    eagles: [],
     playtimeSeconds: 0,
     updatedAt: Date.now(),
   };
@@ -85,7 +88,12 @@ export class SaveManager {
     try {
       const parsed: unknown = JSON.parse(raw);
       if (isSaveData(parsed) && parsed.version === SAVE_VERSION) {
-        this.data = parsed;
+        this.data = {
+          ...parsed,
+          eagles: Array.isArray(parsed.eagles)
+            ? parsed.eagles.filter((entry): entry is string => typeof entry === 'string')
+            : [],
+        };
       }
     } catch {
       /* Sauvegarde corrompue : on repart d'une partie neuve, sans message d'erreur. */
@@ -100,6 +108,16 @@ export class SaveManager {
     }
     this.data.currentLevel = nextLevelId;
     this.dirty = true;
+  }
+
+  markEagleFound(secretId: string): void {
+    if (this.data.eagles.includes(secretId)) return;
+    this.data.eagles.push(secretId);
+    this.dirty = true;
+  }
+
+  hasEagle(secretId: string): boolean {
+    return this.data.eagles.includes(secretId);
   }
 
   addPlaytime(seconds: number): void {

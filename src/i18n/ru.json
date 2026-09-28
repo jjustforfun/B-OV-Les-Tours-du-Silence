@@ -74,6 +74,7 @@
   "ui.muteOn": "Звук выключен",
   "ui.muteOff": "Звук включён",
   "ui.proverbOffered": "Вам дарят пословицу.",
+  "ui.eagleFound": "Вдали взмывает орёл.",
   "ui.backToTitle": "Вернуться к заставке",
   "settings.title": "Настройки",
   "settings.audio": "Звук",
@@ -111,6 +112,7 @@
   "captions.chapter": "[сигнатура главы]",
   "captions.snap": "[камень ложится]",
   "captions.chord": "[аккорд связи]",
+  "captions.childLaugh": "[ребёнок смеётся над бурным потоком]",
   "captions.celebration": "[башни загораются]",
   "chapters.title": "Главы",
   "chapters.completed": "Пройдена",
@@ -119,6 +121,7 @@
   "proverbs.title": "Сборник пословиц",
   "proverbs.locked": "Ещё не подарена",
   "proverbs.note": "Оригинальные тексты, вдохновлённые духом нохчалла.",
+  "proverbs.illustrationRevealed": "Открылся рисунок этого места.",
   "virtues.prologue": "Пролог",
   "virtues.epilogue": "Эпилог"
 }

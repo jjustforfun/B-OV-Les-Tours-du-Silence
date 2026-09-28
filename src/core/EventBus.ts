@@ -111,6 +111,43 @@ export interface GameEvents extends EventMap {
   'music:progress': { readonly layers: number };
   'borz:called': { readonly from: string | null; readonly to: string };
   'borz:hint': { readonly active: boolean };
+  'borz:awakened': { readonly nodeId: string | null };
+  'illusion:crossed': {
+    readonly from: { readonly x: number; readonly y: number; readonly z: number };
+    readonly to: { readonly x: number; readonly y: number; readonly z: number };
+  };
+  'secret:eagleFound': { readonly levelId: string; readonly secretId: string };
+  /** Une tour de l'épilogue reconnaît le passage de Turpal. */
+  'finale:towerLit': {
+    readonly index: number;
+    readonly at: { readonly x: number; readonly y: number; readonly z: number };
+  };
+  /** Au seuil familial, les huit tours répondent ensemble. */
+  'finale:threshold': {
+    readonly at: { readonly x: number; readonly y: number; readonly z: number };
+  };
+  /** Transition diégétique du ciel, demandée par un trigger de niveau. */
+  'sky:transition': {
+    readonly palette: 'dawn' | 'mist' | 'dusk' | 'snow' | 'gold';
+    readonly durationSeconds: number;
+  };
+  'traveler:welcomed': {
+    readonly actorId: string;
+    readonly at: { readonly x: number; readonly y: number; readonly z: number };
+  };
+  'child:bridgeReady': { readonly id: string };
+  'elder:arrived': {
+    readonly actorId: string;
+    readonly at: { readonly x: number; readonly y: number; readonly z: number };
+  };
+  /** Étapes du cycle lunaire du lac : fenêtre du secret, puis ouverture définitive. */
+  'moon:phase': {
+    readonly id: string;
+    readonly phase: 'waiting' | 'zenith' | 'open';
+    readonly elapsedSeconds: number;
+    readonly progress: number;
+  };
+  'narrative:text': { readonly key: string };
   'ui:toast': { readonly message: string; readonly duration?: number };
   /** L'interface parle (carton de chapitre) : la musique s'efface derrière. */
   'ui:speaking': { readonly speaking: boolean };

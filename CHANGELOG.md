@@ -8,6 +8,67 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ### Ajouté
 
+- **Phase 9 — Chapitre 7, « Le Chant revenu »** : épilogue linéaire sans
+  mécanisme ni illusion, devant huit tours intactes reprenant les palettes des
+  chapitres 0 à 7. Chaque passage allume une tour et restaure progressivement
+  bourdon, pondar, percussion puis mélodie en Ré dorien `D3–A3–D4`. Au seuil
+  familial, la main de Turpal sur la pierre fait répondre les huit tours en
+  cascade et fond le ciel neige vers l'or ; il redescend ensuite s'asseoir parmi
+  le voyageur, l'enfant, l'ancien et le rival, tandis que Borz se couche. Les
+  sept secrets sauvegardés ne changent pas le chemin : ils font seulement se
+  poser l'aigle final sur l'épaule de Turpal. La solution complète tient en un
+  tap, 13 états de navigation sont explorés sans impasse, et 12 tests dédiés
+  couvrent les deux variantes de l'aigle, le ciel, la musique et la conclusion.
+- **Phase 9 — Chapitre 6, « L’Humilité »** : névé mobile qui descend Turpal
+  sous le sommet, tour à quatre faces et deux bascules de gravité successives
+  vers la paroi (`up=[0,0,1]`) puis le plafond (`up=[0,-1,0]`). La caméra roule
+  sans singularité avec l’orientation du nœud courant. Borz prend en charge une
+  procession autonome — voyageur, enfant, ancien, rival — en quatre allers et
+  trois retours, sans jamais porter Turpal. Après le dernier dépôt, le plafond
+  de l’arche et le sentier du sommet, séparés de `(6,6,6)` dans le monde, se
+  confondent à 0 px en desktop comme en portrait. L’aigle secret vole sous
+  Turpal après la seconde bascule. Le validateur explore 79 états étendus et 38
+  états de mécanismes/récit sans impasse ; solution, roulis, transport du
+  slider, procession et budgets sont couverts par 11 tests dédiés.
+- **Phase 9 — Chapitre 5, « Le Pardon »** : tour séparée en deux moitiés
+  intactes à quatre faces, pour 16 combinaisons réversibles. Turpal règle
+  l'ouest puis avance le premier ; un rival procédural répond d'un cran à l'est
+  et seule la séquence ouest 1 / est 2→3 referme définitivement la fracture.
+  Les deux balcons, présents depuis l'ouverture, se rencontrent sans pierre
+  ajoutée et superposent leurs nœuds à 0 px sur desktop comme sur mobile. Une
+  courte paroi introduit `GravityPath` avec `up=[0,0,1]` ; l'aigle reste visible
+  dans la fente ouverte. Le runtime et le validateur modélisent le tour de
+  réponse, le retrait obligatoire de la corniche et l'ordre des gestes : 876
+  états étendus et 136 états de mécanismes/récit sont explorés sans impasse.
+- **Phase 9 — Chapitre 4, « La Patience »** : lac Kezenoy-Am transparent et
+  graphe miroir jouable sous sa surface. Une `TowerRotation` entraîne deux
+  tours intactes, leurs escaliers et les nœuds associés ; Borz rejoint seul une
+  dalle verrouillante et matérialise le pont d'argent. Le nouveau `MoonCycle`
+  conserve le temps déjà attendu, atteint le zénith à 34 s, révèle l'aigle
+  pendant 6 s puis ouvre définitivement la porte à 40 s. Lune, brumes, oiseaux
+  et lumière restent procéduraux pendant l'attente. La jonction réel/reflet est
+  mesurée à 0 px en 1920×1080 et 390×844 ; 126 états étendus et 24 états de
+  mécanismes sont explorés sans impasse.
+- **Phase 9 — Chapitre 1, « L'Hospitalité »** : village d'Itum-Kale dans la
+  brume, terrasses, tour intacte et passerelle radiale à quatre crans. Le
+  voyageur au manteau trempé traverse automatiquement quand la roue pointe au
+  nord ; celle-ci reste verrouillée pendant ses pas, puis une fumée revient sur
+  un toit. La route sud exige à la fois le cran 270° et l'état persistant
+  `traveler-served`, ce qui rend le service de l'invité obligatoire sans texte
+  ni punition. Le troisième cran, inutile à la solution, révèle seulement un
+  aigle près d'une meurtrière. Conditions de NavGraph composables, acteur
+  narratif procédural, géométrie parentée aux mécanismes et exploration
+  exhaustive de 67 états ajoutés.
+- **Phase 9 — Chapitre 0, « Le Retour »** : aoul à l'aube, cour, escalier
+  extérieur et tour vainakh procédurale intacte ; générateur de géométrie
+  instanciée depuis `LevelBlockDef` et tour canonique (fruit 8 %, entrée au
+  premier étage, toit à cinq gradins). Le NavGraph relie la dernière marche au
+  seuil par une illusion mesurée à 0 px en 1920×1080 et 390×844 ; la traversée
+  déclenche un accroc de lumière, la paume de Turpal sur la pierre et l'éveil
+  des yeux d'ambre de Borz. Palette aube rose/ardoise, accordage dorien en Ré,
+  vent + aigle + respiration de pierre, progression musicale à quatre couches.
+  Un aigle optionnel révèle une illustration dans le carnet, sans compteur ni
+  avantage. Solution et absence d'impasse couvertes par test automatique.
 - **Phase 8 — UI et narration** : `UIRoot` pile d'écrans DOM (panneau de base
   + pile modale, `Échap` remonte d'un cran, focus piégé WCAG 2.4.3,
   suspension des intentions de jeu, ADR-027) orchestrée par `GameFlow`

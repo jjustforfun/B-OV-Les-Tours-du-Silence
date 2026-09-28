@@ -15,6 +15,7 @@ export interface ProverbEntryData {
   /** Clé i18n de la vertu du chapitre (ex. `virtues.patience`). */
   readonly virtueKey: string;
   readonly unlocked: boolean;
+  readonly illustrationUnlocked: boolean;
 }
 
 export interface ProverbBookOptions {
@@ -34,6 +35,16 @@ const TOWER_SVG = `
     <path d="M16 52h16M18 38h12" />
   </g>
   <circle class="ui-proverb__ember" cx="24" cy="11" r="2.5" />
+</svg>`;
+
+const EAGLE_ILLUSTRATION_SVG = `
+<svg class="ui-proverb__tower" viewBox="0 0 48 64" aria-hidden="true" focusable="false">
+  <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 57l11-17 7 9 7-14 13 22H5z" />
+    <path d="M17 57V37h14v20M19 37V26h10v11M21 26l3-8 3 8" />
+    <path d="M8 17c5-5 9-4 16 0 7-4 11-5 16 0-7-2-10 1-16 5-6-4-9-7-16-5z" />
+  </g>
+  <circle class="ui-proverb__ember" cx="24" cy="22" r="2" />
 </svg>`;
 
 export class ProverbBook implements UIPanel {
@@ -79,7 +90,8 @@ export class ProverbBook implements UIPanel {
       const item = el('li', 'ui-proverb__entry');
       item.classList.add(entry.unlocked ? 'is-offered' : 'is-sealed');
       const figure = el('div', 'ui-proverb__figure');
-      figure.innerHTML = TOWER_SVG;
+      figure.innerHTML = entry.illustrationUnlocked ? EAGLE_ILLUSTRATION_SVG : TOWER_SVG;
+      if (entry.illustrationUnlocked) figure.classList.add('is-illustrated');
       const body = el('div', 'ui-proverb__body');
       const virtue = el('h3', 'ui-proverb__virtue', i18n.t(entry.virtueKey));
       const text = el(
@@ -88,6 +100,9 @@ export class ProverbBook implements UIPanel {
         entry.unlocked ? i18n.t(entry.proverbKey) : i18n.t('proverbs.locked'),
       );
       body.append(virtue, text);
+      if (entry.illustrationUnlocked) {
+        body.append(el('p', 'ui-proverb__illustration', i18n.t('proverbs.illustrationRevealed')));
+      }
       item.append(figure, body);
       this.list.appendChild(item);
     }

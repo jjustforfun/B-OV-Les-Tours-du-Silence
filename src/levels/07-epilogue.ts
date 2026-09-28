@@ -1,14 +1,24 @@
 /**
- * 07-epilogue.ts — « Ce que l'on bâtit ».
+ * 07-epilogue.ts — chapitre 7, « Le Chant revenu ».
  *
- * Statut : squelette. Pas de puzzle : une montée.
- *
- * Toutes les structures manipulées par le joueur au cours des six chapitres
- * réapparaissent ici, assemblées en un seul escalier. Borz marche devant.
- * Le jeu se conclut sur la phrase qui le résume :
- * « Ce que l'on bâtit pour les autres finit par nous porter. »
+ * Aucune énigme et aucune illusion : Turpal traverse une dernière fois la
+ * vallée telle qu'elle est. Les huit tours rappellent les palettes du voyage,
+ * s'éveillent à son passage puis répondent ensemble au seuil familial. Il
+ * redescend ensuite s'asseoir parmi les siens ; Borz se couche près de lui.
  */
 import type { LevelDefinition } from '@world/Level';
+
+const PREVIOUS_EAGLES = [
+  '00-prologue:eagle',
+  '01-hospitalite:eagle',
+  '02-parole:eagle',
+  '03-anciens:eagle',
+  '04-patience:eagle',
+  '05-pardon:eagle',
+  '06-humilite:eagle',
+] as const;
+
+const BORZ = ['borz'] as const;
 
 export const level: LevelDefinition = {
   id: '07-epilogue',
@@ -17,17 +27,165 @@ export const level: LevelDefinition = {
   titleKey: 'levels.epilogue.title',
   proverbKey: 'proverbs.epilogue',
   sky: 'snow',
+  palette: 'epilogue',
   spawn: 'start',
-  goal: 'sky',
+  goal: 'gathering-seat',
+  durationMinutes: { target: 5, min: 5, max: 7 },
+  ambience: ['wind', 'fire', 'eagle'],
+  music: {
+    mode: 'dorian',
+    root: 'D3',
+    strings: ['D3', 'A3', 'D4'],
+  },
+  camera: {
+    target: [-0.5, 2.4, 2],
+    zoom: 0.94,
+  },
   nodes: [
-    { id: 'start', at: [0, 0, 0], tags: ['spawn'] },
-    { id: 'rise-1', at: [0, 1, -1] },
-    { id: 'rise-2', at: [0, 2, -2] },
-    { id: 'sky', at: [0, 3, -3], tags: ['goal'] },
+    { id: 'borz-start', at: [-10.7, 0, -3.7], tags: BORZ, surface: 'grass' },
+    { id: 'start', at: [-10, 0, -3], tags: ['spawn', ...BORZ], surface: 'grass' },
+    { id: 'tower-0', at: [-9, 0, -2.5], tags: BORZ, surface: 'stone' },
+    { id: 'tower-1', at: [-7, 0.5, -1.5], tags: BORZ, surface: 'stone' },
+    { id: 'tower-2', at: [-5, 1, 0], tags: BORZ, surface: 'stone' },
+    { id: 'tower-3', at: [-2.5, 1.5, 1], tags: BORZ, surface: 'stone' },
+    { id: 'tower-4', at: [0, 2, 2], tags: BORZ, surface: 'stone' },
+    { id: 'tower-5', at: [2.7, 2.5, 3], tags: BORZ, surface: 'stone' },
+    { id: 'tower-6', at: [5.5, 3, 4], tags: BORZ, surface: 'stone' },
+    { id: 'tower-7', at: [8, 3.5, 5], tags: BORZ, surface: 'stone' },
+    { id: 'family-threshold', at: [9.2, 4.2, 4.2], tags: BORZ, surface: 'stone' },
+    { id: 'descent-a', at: [8.2, 3.4, 6], tags: BORZ, surface: 'grass' },
+    { id: 'descent-b', at: [6.5, 2.2, 7], tags: BORZ, surface: 'grass' },
+    { id: 'gathering-seat', at: [4, 1.2, 7.5], tags: ['goal', ...BORZ], surface: 'grass' },
+
+    { id: 'resident-traveler', at: [-5.3, 1, -2.1], surface: 'grass' },
+    { id: 'resident-child', at: [-1.7, 1.5, 3.2], surface: 'grass' },
+    { id: 'resident-elder', at: [2.2, 2, 0.5], tags: ['elder'], surface: 'wood' },
+    { id: 'resident-rival', at: [6.4, 2.8, 6.2], surface: 'grass' },
   ],
   edges: [
-    { from: 'start', to: 'rise-1' },
-    { from: 'rise-1', to: 'rise-2' },
-    { from: 'rise-2', to: 'sky' },
+    { from: 'borz-start', to: 'start', oneWay: true },
+    { from: 'start', to: 'tower-0' },
+    { from: 'tower-0', to: 'tower-1' },
+    { from: 'tower-1', to: 'tower-2' },
+    { from: 'tower-2', to: 'tower-3' },
+    { from: 'tower-3', to: 'tower-4' },
+    { from: 'tower-4', to: 'tower-5' },
+    { from: 'tower-5', to: 'tower-6' },
+    { from: 'tower-6', to: 'tower-7' },
+    { from: 'tower-7', to: 'family-threshold' },
+    { from: 'family-threshold', to: 'descent-a' },
+    { from: 'descent-a', to: 'descent-b' },
+    { from: 'descent-b', to: 'gathering-seat' },
+  ],
+  finale: {
+    towerNodes: [
+      'tower-0',
+      'tower-1',
+      'tower-2',
+      'tower-3',
+      'tower-4',
+      'tower-5',
+      'tower-6',
+      'tower-7',
+    ],
+    thresholdNode: 'family-threshold',
+    seatNode: 'gathering-seat',
+    residentNodes: {
+      traveler: 'resident-traveler',
+      child: 'resident-child',
+      elder: 'resident-elder',
+      rival: 'resident-rival',
+    },
+    requiredEagles: PREVIOUS_EAGLES,
+  },
+  geometry: [
+    { kind: 'platform', at: [-10, -0.2, -3], size: [3, 0.4, 2.6], surface: 'grass' },
+    { kind: 'platform', at: [-9, -0.2, -2.5], size: [2.3, 0.4, 2.1] },
+    { kind: 'platform', at: [-7, 0.3, -1.5], size: [2.3, 0.4, 2.1] },
+    { kind: 'platform', at: [-5, 0.8, 0], size: [2.3, 0.4, 2.1] },
+    { kind: 'platform', at: [-2.5, 1.3, 1], size: [2.5, 0.4, 2.1] },
+    { kind: 'platform', at: [0, 1.8, 2], size: [2.5, 0.4, 2.1] },
+    { kind: 'platform', at: [2.7, 2.3, 3], size: [2.5, 0.4, 2.1] },
+    { kind: 'platform', at: [5.5, 2.8, 4], size: [2.5, 0.4, 2.1] },
+    { kind: 'platform', at: [8, 3.3, 5], size: [2.6, 0.4, 2.2] },
+
+    { kind: 'bridge', at: [-8, 0.05, -2], size: [2.5, 0.28, 0.85], rotationY: -27 },
+    { kind: 'bridge', at: [-6, 0.55, -0.75], size: [2.7, 0.28, 0.85], rotationY: -37 },
+    { kind: 'bridge', at: [-3.75, 1.05, 0.5], size: [2.9, 0.28, 0.85], rotationY: -22 },
+    { kind: 'bridge', at: [-1.25, 1.55, 1.5], size: [2.9, 0.28, 0.85], rotationY: -22 },
+    { kind: 'bridge', at: [1.35, 2.05, 2.5], size: [3, 0.28, 0.85], rotationY: -20 },
+    { kind: 'bridge', at: [4.1, 2.55, 3.5], size: [3.1, 0.28, 0.85], rotationY: -20 },
+    { kind: 'bridge', at: [6.75, 3.05, 4.5], size: [2.9, 0.28, 0.85], rotationY: -22 },
+
+    { kind: 'tower', at: [-9, 2.2, -4.2], size: [1.7, 4.4, 1.7], towerPalette: 'prologue' },
+    { kind: 'tower', at: [-7, 2.8, -3.4], size: [1.7, 4.6, 1.7], towerPalette: 'hospitalite' },
+    { kind: 'tower', at: [-5, 3.4, -2], size: [1.75, 4.8, 1.75], towerPalette: 'parole' },
+    { kind: 'tower', at: [-2.5, 4, -1], size: [1.8, 5, 1.8], towerPalette: 'anciens' },
+    { kind: 'tower', at: [0, 4.6, 0], size: [1.85, 5.2, 1.85], towerPalette: 'patience' },
+    { kind: 'tower', at: [2.7, 5, 1], size: [1.8, 5, 1.8], towerPalette: 'pardon' },
+    { kind: 'tower', at: [5.5, 5.4, 2], size: [1.75, 4.8, 1.75], towerPalette: 'humilite' },
+    { kind: 'tower', at: [8, 5.8, 3.2], size: [1.7, 4.6, 1.7], towerPalette: 'epilogue' },
+
+    { kind: 'stair', at: [8.55, 3.65, 4.6], size: [1.1, 0.35, 1.1] },
+    { kind: 'stair', at: [9, 3.95, 4.25], size: [1.1, 0.35, 1.1] },
+    { kind: 'platform', at: [9.2, 4, 4.2], size: [2.1, 0.4, 2.1] },
+    { kind: 'stair', at: [8.75, 3.65, 5.15], size: [1.1, 0.35, 1.1], surface: 'grass' },
+    { kind: 'stair', at: [8.2, 3.2, 6], size: [1.4, 0.4, 1.4], surface: 'grass' },
+    {
+      kind: 'bridge',
+      at: [7.35, 2.7, 6.5],
+      size: [2.1, 0.32, 1],
+      rotationY: -30,
+      surface: 'grass',
+    },
+    { kind: 'platform', at: [6.5, 2, 7], size: [2.2, 0.4, 2], surface: 'grass' },
+    {
+      kind: 'bridge',
+      at: [5.25, 1.5, 7.25],
+      size: [2.8, 0.32, 1],
+      rotationY: -11,
+      surface: 'grass',
+    },
+    { kind: 'platform', at: [4, 1, 7.5], size: [5, 0.4, 4], surface: 'grass' },
+    { kind: 'block', at: [4.3, 1.15, 7.8], size: [1.4, 0.3, 0.45], surface: 'wood' },
+
+    { kind: 'platform', at: [-5.3, 0.8, -2.1], size: [2.2, 0.4, 2], surface: 'grass' },
+    {
+      kind: 'block',
+      at: [-5.8, 1, -2.45],
+      size: [0.55, 0.25, 0.55],
+      color: 0xd9a441,
+      opacity: 0.75,
+    },
+    { kind: 'platform', at: [-1.7, 1.3, 3.2], size: [2.3, 0.4, 2.2], surface: 'grass' },
+    { kind: 'block', at: [-1.2, 1.55, 3.5], size: [0.35, 0.35, 0.35] },
+    { kind: 'block', at: [-1.2, 1.9, 3.5], size: [0.25, 0.25, 0.25] },
+    { kind: 'platform', at: [2.2, 1.8, 0.5], size: [2.2, 0.4, 2], surface: 'grass' },
+    { kind: 'block', at: [2.2, 1.95, 0.75], size: [1.3, 0.3, 0.45], surface: 'wood' },
+    { kind: 'platform', at: [6.4, 2.6, 6.2], size: [2.4, 0.4, 2.2], surface: 'grass' },
+
+    { kind: 'block', at: [-3, -1, -6], size: [18, 2, 4], color: 0x2c3444 },
+    { kind: 'block', at: [6, -1.5, 0], size: [14, 2.5, 5], color: 0x46536b },
+  ],
+  triggers: [
+    { id: 'epilogue:start', on: { levelStart: true }, play: { musicLayers: 1 } },
+    { id: 'epilogue:pondar', on: { node: 'tower-2' }, play: { musicLayers: 2 } },
+    { id: 'epilogue:percussion', on: { node: 'tower-4' }, play: { musicLayers: 3 } },
+    { id: 'epilogue:melody', on: { node: 'family-threshold' }, play: { musicLayers: 4 } },
+    {
+      id: 'epilogue:stone',
+      on: { node: 'family-threshold' },
+      play: { gesture: 'handOnStone', by: 'turpal' },
+    },
+    {
+      id: 'epilogue:golden-sky',
+      on: { node: 'family-threshold' },
+      play: { sky: 'gold', durationSeconds: 4 },
+    },
+    {
+      id: 'epilogue:sit',
+      on: { node: 'gathering-seat' },
+      play: { gesture: 'sit', by: 'turpal' },
+    },
   ],
 };

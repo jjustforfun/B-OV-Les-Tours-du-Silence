@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#1a2030"/><stop offset="0.56" stop-color="#46536b"/><stop offset="1" stop-color="#d9a441"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#f7f0dd"/></marker>
+  </defs>
+  <style>
+    .route{fill:none;stroke:#f7f0dd;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;filter:url(#glow);marker-end:url(#arrow)}
+    .node{fill:#2c3444;stroke:#f7f0dd;stroke-width:2}.label{fill:#f7f0dd;font:18px sans-serif}.small{font-size:15px}.muted{opacity:.68}
+    .tower{stroke:#f7f0dd;stroke-width:2}.panel{fill:#1a2030;fill-opacity:.82;stroke:#d9a441;stroke-width:2}.gold{fill:#d9a441}
+  </style>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <path d="M0 810 Q300 670 610 765 T1260 700 T1920 765 V1080 H0Z" fill="#1a2030" opacity=".48"/>
+  <path d="M0 870 Q360 760 700 830 T1390 790 T1920 845 V1080 H0Z" fill="#2c3444" opacity=".58"/>
+
+  <text x="100" y="86" class="label" font-family="serif" font-size="39">Chapitre 7 — Le Chant revenu</text>
+  <text x="100" y="124" class="label muted">Capture technique · le chemin est exactement ce qu’il paraît</text>
+
+  <!-- Les huit tours, chacune dans la palette d’un chapitre -->
+  <g transform="translate(803.68 460.52)"><path d="M-16 0 L-14 -82 L14 -82 L16 0Z" fill="#e3b7a6" class="tower"/><path d="M-14 -82 L0 -99 L14 -82Z" fill="#39425a" class="tower"/><text x="0" y="24" text-anchor="middle" class="label small">T0</text></g>
+  <g transform="translate(828.69 489.40)"><path d="M-16 0 L-14 -86 L14 -86 L16 0Z" fill="#c9a35c" class="tower"/><path d="M-14 -86 L0 -103 L14 -86Z" fill="#5c5340" class="tower"/><text x="0" y="24" text-anchor="middle" class="label small">T1</text></g>
+  <g transform="translate(841.20 525.50)"><path d="M-16 0 L-14 -90 L14 -90 L16 0Z" fill="#7fc2c9" class="tower"/><path d="M-14 -90 L0 -107 L14 -90Z" fill="#3a4750" class="tower"/><text x="0" y="24" text-anchor="middle" class="label small">T2</text></g>
+  <g transform="translate(878.71 561.60)"><path d="M-17 0 L-14 -94 L14 -94 L17 0Z" fill="#e6d3a8" class="tower"/><path d="M-14 -94 L0 -112 L14 -94Z" fill="#55432c" class="tower"/><text x="0" y="24" text-anchor="middle" class="label small">T3</text></g>
+  <g transform="translate(916.23 597.70)"><path d="M-17 0 L-14 -98 L14 -98 L17 0Z" fill="#8fa4c4" class="tower"/><path d="M-14 -98 L0 -116 L14 -98Z" fill="#1b2740" class="tower"/><text x="0" y="24" text-anchor="middle" class="label small">T4</text></g>
+  <g transform="translate(958.75 636.69)"><path d="M-17 0 L-14 -94 L14 -94 L17 0Z" fill="#c2643f" class="tower"/><path d="M-14 -94 L0 -112 L14 -94Z" fill="#4a2c22" class="tower"/><text x="0" y="24" text-anchor="middle" class="label small">T5</text></g>
+  <g transform="translate(1003.77 677.12)"><path d="M-16 0 L-14 -90 L14 -90 L16 0Z" fill="#cfe0ec" class="tower"/><path d="M-14 -90 L0 -107 L14 -90Z" fill="#6d84a3" class="tower"/><text x="0" y="24" text-anchor="middle" class="label small">T6</text></g>
+  <g transform="translate(1041.29 713.22)"><path d="M-16 0 L-14 -86 L14 -86 L16 0Z" fill="#e8e0d2" class="tower"/><path d="M-14 -86 L0 -103 L14 -86Z" fill="#d9a441" class="tower"/><text x="0" y="24" text-anchor="middle" class="label small">T7</text></g>
+
+  <!-- Projection réelle du chemin -->
+  <polyline points="791.17,438.86 803.68,460.52 828.69,489.40 841.20,525.50 878.71,561.60 916.23,597.70 958.75,636.69 1003.77,677.12 1041.29,713.22 1091.31,698.78 1021.28,733.44 953.75,757.99 878.71,757.99" class="route"/>
+  <circle cx="791.17" cy="438.86" r="8" class="node"/><text x="716" y="431" class="label">départ</text>
+  <circle cx="1091.31" cy="698.78" r="12" class="node"/><circle cx="1091.31" cy="698.78" r="36" fill="none" stroke="#d9a441" stroke-width="4" filter="url(#glow)"/>
+  <text x="1128" y="690" class="label" font-weight="700">seuil familial</text><text x="1128" y="716" class="label small">8 tours · ensemble</text>
+  <circle cx="878.71" cy="757.99" r="10" class="node"/><text x="760" y="797" class="label">Turpal s’assoit</text>
+
+  <!-- Les personnes aidées, aux projections mesurées -->
+  <g class="label small">
+    <circle cx="886.22" cy="490.85" r="7" fill="#c9a35c"/><text x="897" y="488">voyageur</text>
+    <circle cx="843.70" cy="604.92" r="7" fill="#7fc2c9"/><text x="753" y="609">enfant</text>
+    <circle cx="1008.77" cy="607.81" r="7" fill="#e6d3a8"/><text x="1020" y="605">ancien</text>
+    <circle cx="971.26" cy="727.66" r="7" fill="#c2643f"/><text x="982" y="728">rival</text>
+  </g>
+
+  <!-- Aigle conditionnel sur l’épaule -->
+  <g transform="translate(893 739)" filter="url(#glow)"><path d="M-26 5 Q-12 -9 0 3 Q12 -9 26 5 Q12 1 0 13 Q-12 1 -26 5Z" fill="#303746"/><text x="35" y="11" class="label small">aigle final si 7/7</text></g>
+  <g transform="translate(830 770)"><ellipse cx="0" cy="0" rx="17" ry="8" fill="#5d6574"/><circle cx="16" cy="-6" r="7" fill="#5d6574"/><text x="29" y="7" class="label small">Borz se couche</text></g>
+
+  <g transform="translate(1285 250)"><rect width="470" height="247" rx="18" class="panel"/><text x="26" y="40" class="label" font-weight="700">La musique se referme</text><text x="26" y="78" class="label">1 · départ — bourdon</text><text x="26" y="112" class="label">2 · T2 — pondar</text><text x="26" y="146" class="label">3 · T4 — percussion</text><text x="26" y="180" class="label">4 · seuil — mélodie</text><line x1="26" y1="204" x2="444" y2="204" stroke="#d9a441" stroke-width="2"/><text x="26" y="232" class="label small gold">Ré dorien · D3–A3–D4 · retour au prologue</text></g>
+  <g transform="translate(120 690)"><rect width="430" height="142" rx="18" class="panel"/><text x="24" y="39" class="label" font-weight="700">Aucune illusion</text><text x="24" y="73" class="label">0 arête illusoire · 0 mécanisme</text><text x="24" y="105" class="label">13 états de navigation · 0 impasse</text><text x="24" y="130" class="label small muted">La simplicité est la résolution.</text></g>
+
+  <text x="100" y="1020" class="label muted">Vue desktop 1920×1080 · 18/18 nœuds visibles · 8 tours allumées · ciel neige → or</text>
+</svg>

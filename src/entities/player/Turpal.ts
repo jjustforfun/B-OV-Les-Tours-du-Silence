@@ -165,10 +165,28 @@ export class Turpal {
     return false;
   }
 
+  /** Geste du prologue : paume ouverte contre la pierre du seuil. */
+  handOnStone(): void {
+    this.machine.transition('contemplating');
+    this.animator?.play('handOnStone', TURPAL.animationBlendMs / 1000);
+  }
+
+  /** Premier geste du pardon : Turpal avance une paume ouverte, sans imposer. */
+  offerHand(): void {
+    this.machine.transition('contemplating');
+    this.animator?.play('offerHand', TURPAL.animationBlendMs / 1000);
+  }
+
   /** Pose de fin de chapitre : Turpal lève les yeux vers le ciel. */
   lookAtSky(): void {
     this.machine.transition('contemplating');
     this.animator?.play('lookSky', TURPAL.animationBlendMs / 1000);
+  }
+
+  /** Épilogue : il ne domine pas la vallée, il s'assoit parmi les siens. */
+  sitAmongFamily(): void {
+    this.machine.transition('contemplating');
+    this.animator?.play('sit', TURPAL.animationBlendMs / 1000);
   }
 
   /** Avance le long du chemin courant. */

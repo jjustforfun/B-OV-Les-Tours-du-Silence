@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#46536b"/><stop offset="1" stop-color="#f2f7fb"/></linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#cfe0ec"/><stop offset="1" stop-color="#6d84a3"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#9fb8cf"/></marker>
+  </defs>
+  <style>
+    .solution{fill:none;stroke:#f7fbff;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;filter:url(#glow)}
+    .inverted{fill:none;stroke:#9fb8cf;stroke-width:4;stroke-dasharray:9 7;stroke-linecap:round}
+    .procession{fill:none;stroke:#d6b66f;stroke-width:4;stroke-dasharray:8 7;marker-end:url(#arrow)}
+    .node{fill:#46536b;stroke:#f7fbff;stroke-width:2}.annotation{fill:#243247;font:18px sans-serif}.light{fill:#f7fbff}.muted{opacity:.68}.small{font-size:15px}
+    .stone{fill:url(#stone);stroke:#dceaf2;stroke-width:4}.snow{fill:#f2f7fb;stroke:#9fb8cf;stroke-width:3}.panel{fill:#46536b;fill-opacity:.84;stroke:#9fb8cf;stroke-width:2}
+  </style>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <path d="M0 805 Q300 660 620 760 T1250 700 T1920 755 V1080 H0Z" fill="#46536b" opacity=".24"/>
+  <path d="M0 860 Q380 730 710 805 T1340 770 T1920 825 V1080 H0Z" fill="#6d84a3" opacity=".23"/>
+
+  <text x="105" y="88" fill="#f7fbff" font-family="serif" font-size="38">Chapitre 6 — L’Humilité</text>
+  <text x="105" y="126" class="annotation light muted">Capture technique · descendre pour atteindre le sommet</text>
+
+  <!-- silhouette du névé, de la tour et de la montagne -->
+  <polygon points="720,382 885,280 988,408 904,489 738,472" class="snow"/>
+  <polygon points="860,472 922,315 1001,327 1007,468" class="stone"/>
+  <polygon points="915,628 1000,430 1137,379 1238,621 1085,748 936,721" class="stone"/>
+  <polygon points="925,431 1000,360 1137,379 1197,457 1092,435 1008,472" class="snow"/>
+  <!-- arche et plafond marchable -->
+  <path d="M906 604 L906 746 L1100 746 L1100 604 L1052 604 L1052 684 Q1003 641 954 684 L954 604 Z" class="stone"/>
+  <line x1="940.06" y1="602.44" x2="947.18" y2="697.01" stroke="#f7fbff" stroke-width="13" opacity=".72"/>
+  <!-- sommet séparé dans le monde, confondu à l’écran -->
+  <path d="M947 697 L976 681 L1038 651 L1105 637" fill="none" stroke="#f2f7fb" stroke-width="19" stroke-linecap="round"/>
+  <path d="M947 697 L976 681 L1038 651" fill="none" stroke="#9fb8cf" stroke-width="3" opacity=".8"/>
+
+  <!-- projections réelles de la solution -->
+  <polyline points="918.69,318.71 907.30,377.92 1004.16,433.84 1026.95,447.00 1009.86,496.35 985.64,543.22 961.42,590.10 940.06,602.44 947.18,631.22 947.18,664.12 947.18,697.01 947.18,697.01 975.67,680.57 1038.34,650.96" class="solution"/>
+  <polyline points="1026.95,447.00 1009.86,496.35 985.64,543.22 961.42,590.10 940.06,602.44" class="inverted"/>
+  <polyline points="940.06,602.44 947.18,631.22 947.18,664.12 947.18,697.01" class="inverted"/>
+
+  <circle cx="918.69" cy="318.71" r="8" class="node"/><text x="841" y="298" class="annotation light">départ · névé</text>
+  <circle cx="907.30" cy="377.92" r="8" class="node"/><text x="803" y="402" class="annotation light">tour · face 1</text>
+  <circle cx="1026.95" cy="447" r="8" class="node"/><text x="1046" y="450" class="annotation">1re bascule</text>
+  <circle cx="940.06" cy="602.44" r="8" class="node"/><text x="779" y="616" class="annotation">2e bascule</text>
+  <circle cx="947.18" cy="697.01" r="11" class="node"/>
+  <circle cx="947.18" cy="697.01" r="34" fill="none" stroke="#d6b66f" stroke-width="4" filter="url(#glow)"/>
+  <text x="793" y="754" class="annotation" font-weight="700">plafond ↔ sommet · 0 px</text>
+  <circle cx="1038.34" cy="650.96" r="9" class="node"/><text x="1060" y="655" class="annotation">but</text>
+
+  <!-- vecteurs up et vallée au-dessus -->
+  <path d="M1084 528 L1140 528" class="inverted" marker-end="url(#arrow)"/><text x="1155" y="534" class="annotation">paroi · up [0,0,1]</text>
+  <path d="M1010 641 L1010 699" class="inverted" marker-end="url(#arrow)"/><text x="1030" y="709" class="annotation">plafond · up [0,-1,0]</text>
+  <g transform="translate(1265 465)">
+    <rect x="0" y="0" width="470" height="178" rx="18" class="panel"/>
+    <text x="26" y="38" class="annotation light" font-weight="700">Illusion principale</text>
+    <text x="26" y="72" class="annotation light">ceiling-end (1, −1, 4)</text>
+    <text x="26" y="102" class="annotation light">summit-start (7, 5, 10)</text>
+    <text x="26" y="132" class="annotation light">écart monde : (6, 6, 6) · axe de vue</text>
+    <text x="26" y="158" fill="#d6b66f" font-family="sans-serif" font-size="20" font-weight="700">écart écran : 0 px / tolérance 6 px</text>
+  </g>
+
+  <!-- procession de Borz, ordre strict -->
+  <polyline points="853.17,386.14 858.86,419.04 861.71,450.29" class="procession"/>
+  <g transform="translate(610 500)">
+    <rect x="0" y="0" width="267" height="185" rx="16" class="panel"/>
+    <text x="20" y="34" class="annotation light" font-weight="700">Borz monte les autres</text>
+    <text x="22" y="68" class="annotation light">1 · voyageur</text><text x="22" y="96" class="annotation light">2 · enfant</text>
+    <text x="22" y="124" class="annotation light">3 · ancien</text><text x="22" y="152" class="annotation light">4 · rival</text>
+    <text x="22" y="176" fill="#d6b66f" font-family="sans-serif" font-size="16">Turpal : à pied, en dernier</text>
+  </g>
+  <g transform="translate(947 735)" opacity=".78">
+    <path d="M-44 12 Q-20 -13 0 8 Q20 -13 44 12 Q19 3 0 23 Q-19 3 -44 12Z" fill="#46536b"/>
+    <text x="57" y="18" class="annotation">aigle secret sous Turpal</text>
+  </g>
+
+  <text x="105" y="1020" class="annotation muted">Vue desktop 1920×1080 · 26/26 nœuds visibles · procession terminée · caméra retournée</text>
+</svg>

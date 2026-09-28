@@ -76,6 +76,8 @@ export class SfxBank {
   private plateHeld: { osc: Tone.Oscillator; fifth: Tone.Oscillator; gain: Tone.Gain } | null =
     null;
   private uiSynth: Tone.Synth<Tone.SynthOptions> | null = null;
+  private childLaughSynth: Tone.NoiseSynth | null = null;
+  private childLaughFilter: Tone.Filter | null = null;
   private proverbSynth: Tone.Synth<Tone.SynthOptions> | null = null;
   private proverbNote = 62;
   private lastUiPitchIndex = -1;
@@ -178,6 +180,16 @@ export class SfxBank {
     this.uiSynth.triggerAttackRelease(pitch, 0.012, time, 0.16 * gainVariation());
   }
 
+  /** Rire bref et stylisé : trois souffles clairs, jamais une voix enregistrée. */
+  childLaugh(time = Tone.now()): void {
+    this.ensureChildLaughSynth();
+    if (this.childLaughSynth === null || this.childLaughFilter === null) return;
+    for (const [index, offset] of [0, 0.13, 0.29].entries()) {
+      this.childLaughFilter.frequency.setValueAtTime(1050 + index * 180, time + offset);
+      this.childLaughSynth.triggerAttackRelease(0.075 + index * 0.012, time + offset, 0.13);
+    }
+  }
+
   /**
    * Proverbe : une seule note, très longue, très réverbérée — le texte
    * respire autour d'elle.
@@ -213,6 +225,10 @@ export class SfxBank {
     this.stopPlateHeld();
     this.uiSynth?.dispose();
     this.uiSynth = null;
+    this.childLaughSynth?.dispose();
+    this.childLaughSynth = null;
+    this.childLaughFilter?.dispose();
+    this.childLaughFilter = null;
     this.proverbSynth?.dispose();
     this.proverbSynth = null;
     this.destination = null;
@@ -312,6 +328,19 @@ export class SfxBank {
       envelope: { attack: 0.001, decay: 0.012, sustain: 0, release: 0.004 },
     });
     this.uiSynth.connect(this.destination);
+  }
+
+  private ensureChildLaughSynth(): void {
+    if (this.childLaughSynth !== null || this.destination === null) return;
+    const synth = new Tone.NoiseSynth({
+      noise: { type: 'pink' },
+      envelope: { attack: 0.008, decay: 0.055, sustain: 0, release: 0.02 },
+    });
+    const filter = new Tone.Filter(1050, 'bandpass');
+    filter.Q.value = 5.5;
+    synth.chain(filter, this.destination);
+    this.childLaughSynth = synth;
+    this.childLaughFilter = filter;
   }
 
   private ensureProverbSynth(): void {

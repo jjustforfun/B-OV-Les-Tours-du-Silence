@@ -38,7 +38,7 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 | 6     | Audio                 | 0 / 13            |
 | 7     | FX et « juice »       | 0 / 11            |
 | 8     | UI et narration       | 1 / 16            |
-| 9     | Niveaux               | 0 / 19            |
+| 9     | Niveaux               | **10 / 19**       |
 | 10    | Polish, a11y, PWA, QA | 2 / 17            |
 | 11    | Android               | 0 / 9 (plus tard) |
 
@@ -212,25 +212,25 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 
 _Pour chaque chapitre, la grille de `docs/LEVEL_DESIGN.md` § 10 fait foi._
 
-- [ ] **Constructeur de géométrie depuis `LevelBlockDef`** — _Critère : blocs, escaliers, passerelles instanciés ; ≤ 120 draw calls._
-- [ ] **Générateur de tour vainakh** — _Critère : respecte le canon (fruit 8 %/niveau, gradins, entrée au 1er étage)._
+- [x] **Constructeur de géométrie depuis `LevelBlockDef`** — _Critère : blocs, escaliers, passerelles instanciés ; ≤ 120 draw calls._ — `LevelGeometry` regroupe les volumes par surface ; ch.0 : 10 draw calls de décor.
+- [x] **Générateur de tour vainakh** — _Critère : respecte le canon (fruit 8 %/niveau, gradins, entrée au 1er étage)._ — `VainakhTower` : 5 niveaux, fruit 8 %, entrée haute, ouvertures, encorbellements et 5 gradins.
 - [ ] **`LevelLoader` : charger → construire → jouer → libérer** — _Critère : `renderer.info.memory` revient à sa valeur initiale après 5 allers-retours._
 - [ ] **Transition de fin de niveau** — _Critère : fondu 1200 ms, sauvegarde, préchargement du suivant déjà terminé._
-- [ ] **Ch.0 — « Le Retour » : graphe et illusion** — _Critère : l'escalier rejoint le seuil, écart ≤ 6 px mesuré par `auditIllusions`._
-- [ ] **Ch.0 : géométrie, palette, son, éveil de Borz** — _Critère : jouable de bout en bout en 5 min, aucune façon d'échouer._
-- [ ] **Ch.1 — « L'Hospitalité » : rotator et voyageur** — _Critère : servir le voyageur est la seule séquence qui ouvre la suite._
-- [ ] **Ch.1 : finition et secret** — _Critère : aigle atteignable sans indice, sans impact mécanique._
+- [x] **Ch.0 — « Le Retour » : graphe et illusion** — _Critère : l'escalier rejoint le seuil, écart ≤ 6 px mesuré par `auditIllusions`._ — 0 px aux deux viewports de référence ; solution simulée par test.
+- [x] **Ch.0 : géométrie, palette, son, éveil de Borz** — _Critère : jouable de bout en bout en 5 min, aucune façon d'échouer._ — cible 5 min déclarée ; palette, musique, ambiance, paume sur pierre, Borz et aigle secret branchés.
+- [x] **Ch.1 — « L'Hospitalité » : rotator et voyageur** — _Critère : servir le voyageur est la seule séquence qui ouvre la suite._ — route sud soumise à la roue à 270° **et** à `traveler-served` ; raccourci direct couvert par test.
+- [x] **Ch.1 : finition et secret** — _Critère : aigle atteignable sans indice, sans impact mécanique._ — aigle visible uniquement au troisième cran, hors NavGraph ; palette, son, fumée du foyer et budgets validés.
 - [ ] **Ch.2 — « La Parole donnée » : slider et renoncement** — _Critère : le raccourci se referme visiblement pendant la construction._
 - [ ] **Ch.2 : finition et secret** — _Critère : durée mesurée 8 min ± 2 sur 3 playtests._
 - [ ] **Ch.3 — « Le Respect des anciens » : dalles et rythme** — _Critère : l'ancien n'attend jamais le joueur, le joueur n'attend jamais l'ancien plus de 10 s._
 - [ ] **Ch.3 : finition et secret** — _Critère : la « fausse tour » double tient l'alignement en portrait et en paysage._
-- [ ] **Ch.4 — « La Patience » : reflet jouable et lune** — _Critère : attente max 40 s, le monde bouge pendant._
-- [ ] **Ch.4 : finition et secret** — _Critère : passage réel ↔ reflet sans transition visible._
-- [ ] **Ch.5 — « Le Pardon » : deux demi-tours** — _Critère : une seule des 16 combinaisons résout, et elle exige d'avancer le premier._
-- [ ] **Ch.5 : finition et secret** — _Critère : aucune pierre remplacée à la fermeture de la fracture._
-- [ ] **Ch.6 — « L'Humilité » : parcours à l'envers** — _Critère : orientation toujours lisible après deux bascules successives._
-- [ ] **Ch.6 : finition et secret** — _Critère : Borz porte les autres, jamais Turpal._
-- [ ] **Ch.7 — « Le Chant revenu »** — _Critère : aucune énigme, 4 couches de musique, 8 tours allumées, aigle final si 7/7._
+- [x] **Ch.4 — « La Patience » : reflet jouable et lune** — _Critère : attente max 40 s, le monde bouge pendant._ — cycle monotone 0→34→40 s ; lune, brumes, oiseaux et lumière restent animés.
+- [x] **Ch.4 : finition et secret** — _Critère : passage réel ↔ reflet sans transition visible._ — jonction illusoire mesurée à 0 px dans les deux viewports ; aigle visible pendant les 6 s du zénith.
+- [x] **Ch.5 — « Le Pardon » : deux demi-tours** — _Critère : une seule des 16 combinaisons résout, et elle exige d'avancer le premier._ — ouest 1 puis réponse autonome est 2→3 ; l'ordre et les retours à la corniche sont des états explicites explorés par le validateur.
+- [x] **Ch.5 : finition et secret** — _Critère : aucune pierre remplacée à la fermeture de la fracture._ — les deux balcons parentés existent dès l'ouverture et se superposent à 0 px ; aigle visible uniquement dans la fente ouverte, captures et budgets validés.
+- [x] **Ch.6 — « L'Humilité » : parcours à l'envers** — _Critère : orientation toujours lisible après deux bascules successives._ — névé mobile, tour alignée, paroi `up=[0,0,1]`, plafond `up=[0,-1,0]` et roulis caméra testés ; la jonction plafond/sommet reste à 0 px en desktop et portrait.
+- [x] **Ch.6 : finition et secret** — _Critère : Borz porte les autres, jamais Turpal._ — procession stricte voyageur → enfant → ancien → rival en quatre allers et trois retours ; Turpal marche en dernier, aigle secret sous le plafond, captures et budgets validés.
+- [x] **Ch.7 — « Le Chant revenu »** — _Critère : aucune énigme, 4 couches de musique, 8 tours allumées, aigle final si 7/7._ — chemin unique sans mécanisme ni illusion ; huit tours aux palettes 0→7, réponse commune au seuil, ciel neige→or, retour de `D3–A3–D4`, Turpal assis et Borz couché ; l'aigle d'épaule dépend uniquement des sept secrets sauvegardés.
 
 ---
 

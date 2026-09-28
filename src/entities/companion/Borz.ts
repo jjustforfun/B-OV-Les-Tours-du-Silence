@@ -23,7 +23,7 @@ import { PACING } from '@/config';
 import { NavGraph, type NavEdge, type NodeId } from '@world/NavGraph';
 import { findPath } from '@world/Pathfinder';
 
-export type BorzState = 'waiting' | 'following' | 'carrying' | 'watching' | 'hinting';
+export type BorzState = 'dormant' | 'waiting' | 'following' | 'carrying' | 'watching' | 'hinting';
 
 const BORZ_SPEED = PACING.walkSpeed * 0.92;
 const WATCH_DISTANCE = 4;
@@ -48,6 +48,10 @@ export class Borz {
   private segmentLength = 1;
   private passenger: Object3D | null = null;
   private hinting = false;
+  private dormant = false;
+  private routeCompletionPending = false;
+  private resting = false;
+  private awakenElapsed = 0;
   private elapsed = 0;
   private eyePulseValue = 0;
 
@@ -62,6 +66,46 @@ export class Borz {
 
   get eyePulse(): number {
     return this.eyePulseValue;
+  }
+
+  get isMoving(): boolean {
+    return this.path.length > 0;
+  }
+
+  get hasPassenger(): boolean {
+    return this.passenger !== null;
+  }
+
+  get isResting(): boolean {
+    return this.resting;
+  }
+
+  /** Épilogue : Borz se couche près de Turpal et referme les yeux. */
+  lieDown(): void {
+    if (this.resting) return;
+    this.resting = true;
+    this.root.scale.set(1, 0.72, 1);
+    this.head.position.y = 0.2;
+    this.eyePulseValue = 0.06;
+  }
+
+  /** Prologue : Borz est encore une sculpture, yeux éteints et immobile. */
+  sleepStone(): void {
+    this.dormant = true;
+    this.state = 'dormant';
+    this.eyePulseValue = 0;
+    for (const eye of this.eyes) {
+      if (eye.material instanceof MeshBasicMaterial) eye.material.opacity = 0;
+    }
+  }
+
+  /** La paume sur la pierre rend ses yeux d'ambre au gardien. */
+  awaken(): void {
+    if (!this.dormant) return;
+    this.dormant = false;
+    this.state = 'waiting';
+    this.awakenElapsed = 1.6;
+    bus.emit('borz:awakened', { nodeId: this.currentNode });
   }
 
   placeAt(graph: NavGraph, nodeId: NodeId): void {
@@ -79,12 +123,14 @@ export class Borz {
       this.ownGraph.addNode(node.id, node.position, [...node.tags], node.up, node.surface);
     }
     for (const edge of source.allEdges()) this.copyBorzEdge(edge);
+    this.syncOwnGraphStates(source);
   }
 
   /** Tap sur Borz : il rejoint le nœud Borz le plus proche de Turpal. */
   callTo(source: NavGraph, turpalNode: NodeId): boolean {
-    if (this.currentNode === null) return false;
+    if (this.dormant || this.currentNode === null) return false;
     if (this.ownGraph.nodeCount === 0) this.rebuildOwnGraph(source);
+    else this.syncOwnGraphStates(source);
     const target = this.closestOwnNodeTo(source, turpalNode);
     if (!target) return false;
     if (target === this.currentNode) {
@@ -96,9 +142,40 @@ export class Borz {
     if (!result.found || result.path.length < 2) return false;
     this.path = result.path;
     this.pathIndex = 1;
+    this.routeCompletionPending = false;
     this.prepareSegment();
     this.state = 'following';
     bus.emit('borz:called', { from: this.currentNode, to: target });
+    return true;
+  }
+
+  /**
+   * Trajet narratif explicite, utilisé quand Borz porte quelqu'un d'autre que
+   * Turpal. Le premier nœud doit être sa position courante et chaque segment
+   * doit appartenir à son graphe propre.
+   */
+  startPath(source: NavGraph, path: readonly NodeId[]): boolean {
+    if (this.dormant || this.isMoving || this.currentNode === null || path.length < 2) return false;
+    if (path[0] !== this.currentNode) return false;
+    this.rebuildOwnGraph(source);
+    for (let index = 0; index < path.length - 1; index += 1) {
+      const from = path[index];
+      const to = path[index + 1];
+      if (from === undefined || to === undefined) return false;
+      if (!this.ownGraph.neighbors(from).some((edge) => edge.to === to)) return false;
+    }
+    this.path = [...path];
+    this.pathIndex = 1;
+    this.routeCompletionPending = false;
+    this.prepareSegment();
+    this.state = 'following';
+    return true;
+  }
+
+  /** Retourne vrai une seule fois après l'arrivée d'un trajet explicite. */
+  consumeRouteCompletion(): boolean {
+    if (!this.routeCompletionPending) return false;
+    this.routeCompletionPending = false;
     return true;
   }
 
@@ -161,8 +238,9 @@ export class Borz {
 
   update(delta: number): void {
     this.elapsed += delta;
+    this.awakenElapsed = Math.max(0, this.awakenElapsed - delta);
     this.updateEyes();
-    if (this.state !== 'following') return;
+    if (!this.isMoving) return;
 
     const nextId = this.path[this.pathIndex];
     if (nextId === undefined) {
@@ -197,13 +275,22 @@ export class Borz {
     this.root.clear();
   }
 
+  private syncOwnGraphStates(source: NavGraph): void {
+    for (const edge of source.allEdges()) {
+      for (const condition of edge.conditions) {
+        const value = source.getMechanismState(condition.mechanism);
+        if (value !== undefined) this.ownGraph.setMechanismState(condition.mechanism, value);
+      }
+    }
+  }
+
   private copyBorzEdge(edge: NavEdge): void {
     if (!this.ownGraph.hasNode(edge.from) || !this.ownGraph.hasNode(edge.to)) return;
     this.ownGraph.connect(edge.from, edge.to, {
       oneWay: true,
       cost: edge.cost,
       illusory: edge.illusory,
-      ...(edge.condition === null ? {} : { condition: edge.condition }),
+      ...(edge.conditions.length === 0 ? {} : { conditions: edge.conditions }),
     });
     if (edge.illusory && !edge.illusionActive) {
       this.ownGraph.setIllusoryConnectionEnabled(edge.from, edge.to, false, false);
@@ -234,11 +321,18 @@ export class Borz {
     this.path = [];
     this.pathIndex = 0;
     this.segmentProgress = 0;
+    this.routeCompletionPending = true;
     this.state = this.hinting ? 'hinting' : 'waiting';
   }
 
   private updateEyes(): void {
-    this.eyePulseValue = this.hinting ? 0.55 + Math.sin(this.elapsed * 5.2) * 0.35 : 0.22;
+    if (this.dormant) this.eyePulseValue = 0;
+    else if (this.resting) this.eyePulseValue = 0.06;
+    else if (this.awakenElapsed > 0) {
+      this.eyePulseValue = 0.7 + Math.sin(this.elapsed * 7.4) * 0.28;
+    } else {
+      this.eyePulseValue = this.hinting ? 0.55 + Math.sin(this.elapsed * 5.2) * 0.35 : 0.22;
+    }
     for (const eye of this.eyes) {
       const material = eye.material;
       if (material instanceof MeshBasicMaterial) material.opacity = this.eyePulseValue;

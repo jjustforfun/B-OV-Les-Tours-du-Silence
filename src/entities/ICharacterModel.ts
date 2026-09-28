@@ -19,8 +19,11 @@ export type CharacterClip =
   | 'stepUp'
   | 'stepDown'
   | 'salute'
+  | 'handOnStone'
+  | 'offerHand'
   | 'lookSky'
   | 'contemplate'
+  | 'sit'
   | 'arrive';
 
 export interface ICharacterModel {

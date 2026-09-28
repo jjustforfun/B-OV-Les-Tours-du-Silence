@@ -74,6 +74,7 @@
   "ui.muteOn": "Sound off",
   "ui.muteOff": "Sound on",
   "ui.proverbOffered": "A proverb is offered to you.",
+  "ui.eagleFound": "An eagle rises in the distance.",
   "ui.backToTitle": "Back to title",
   "settings.title": "Settings",
   "settings.audio": "Sound",
@@ -111,6 +112,7 @@
   "captions.chapter": "[chapter motif]",
   "captions.snap": "[stone settles]",
   "captions.chord": "[connection chord]",
+  "captions.childLaugh": "[a child laughs above the torrent]",
   "captions.celebration": "[the towers light up]",
   "chapters.title": "Chapters",
   "chapters.completed": "Visited",
@@ -119,6 +121,7 @@
   "proverbs.title": "Book of proverbs",
   "proverbs.locked": "Not yet offered",
   "proverbs.note": "Original texts, inspired by the spirit of the Nokhchalla.",
+  "proverbs.illustrationRevealed": "An illustration of the place has been revealed.",
   "virtues.prologue": "Prologue",
   "virtues.epilogue": "Epilogue"
 }

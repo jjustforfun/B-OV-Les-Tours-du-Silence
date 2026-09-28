@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#241a16"/><stop offset="1" stop-color="#c2643f"/></linearGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8a6a55"/><stop offset="1" stop-color="#4a2c22"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <style>
+    .solution{fill:none;stroke:#f0ddd2;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:url(#glow)}
+    .wall{fill:none;stroke:#d9a441;stroke-width:3;stroke-dasharray:5 4}.annotation{fill:#f7e9df;font:12px sans-serif}.muted{opacity:.68}
+    .node{fill:#4a2c22;stroke:#f0ddd2;stroke-width:1.5}.half{fill:url(#stone);stroke:#d5b09a;stroke-width:2}
+    .matrix{fill:#241a16;stroke:#8a6a55;stroke-width:1}.win{fill:#d9a441;stroke:#fff1c7;stroke-width:2;filter:url(#glow)}
+  </style>
+  <rect width="390" height="844" fill="url(#sky)"/>
+  <path d="M0 505 Q95 450 195 490 T390 500 V844 H0Z" fill="#241a16" opacity=".72"/>
+
+  <text x="20" y="42" fill="#f7e9df" font-family="serif" font-size="25">Chapitre 5 — Le Pardon</text>
+  <text x="20" y="66" class="annotation muted">Capture technique · fracture fermée sans pierre ajoutée</text>
+
+  <polygon points="128,475 183,475 183,300 137,300" class="half"/>
+  <polygon points="137,300 183,300 173,284 148,284" fill="#4a2c22" stroke="#d5b09a" stroke-width="2"/>
+  <polygon points="189,475 244,475 236,300 189,300" class="half"/>
+  <polygon points="189,300 236,300 226,284 201,284" fill="#4a2c22" stroke="#d5b09a" stroke-width="2"/>
+  <line x1="169" y1="427" x2="186.12" y2="426.76" stroke="#d5b09a" stroke-width="13"/>
+  <line x1="186.12" y1="426.76" x2="205" y2="427" stroke="#d5b09a" stroke-width="13"/>
+  <line x1="186.12" y1="322" x2="186.12" y2="418" stroke="#f0ddd2" stroke-width="2" stroke-dasharray="5 5" opacity=".48"/>
+
+  <polyline points="112.23,393.12 113.65,413.63 102.99,410.76 92.33,407.07 95.17,406.25 113.65,422.66 143.49,463.68 161.25,443.58 186.12,426.76 228.75,451.37 258.59,459.58 302.64,457.93" class="solution"/>
+  <polyline points="113.65,413.63 102.99,410.76 92.33,407.07 95.17,406.25" class="wall"/>
+  <circle cx="112.23" cy="393.12" r="4" class="node"/><circle cx="113.65" cy="413.63" r="4" class="node"/>
+  <circle cx="143.49" cy="463.68" r="4" class="node"/><circle cx="186.12" cy="426.76" r="7" class="node"/>
+  <circle cx="186.12" cy="426.76" r="16" fill="none" stroke="#d9a441" stroke-width="2" filter="url(#glow)"/>
+  <circle cx="228.75" cy="451.37" r="4" class="node"/><circle cx="302.64" cy="457.93" r="5" class="node"/>
+  <text x="73" y="382" class="annotation">départ</text><text x="72" y="436" class="annotation">gravité</text>
+  <text x="135" y="492" class="annotation">O 1</text><text x="219" y="480" class="annotation">E 3</text>
+  <text x="198" y="414" class="annotation">0 px</text><text x="309" y="461" class="annotation">but</text>
+  <text x="186" y="344" text-anchor="middle" fill="#d9a441" font-size="28" opacity=".72">✧</text>
+  <text x="186" y="364" text-anchor="middle" class="annotation muted">aigle avant fermeture</text>
+
+  <g transform="translate(88 558)">
+    <text x="0" y="0" class="annotation" font-size="15" font-weight="700">16 combinaisons · une réponse</text>
+    <text x="81" y="23" class="annotation">EST 0 · 1 · 2 · 3</text>
+    <g transform="translate(25 36)">
+      <text x="-18" y="27" class="annotation">O0</text><text x="-18" y="69" class="annotation">O1</text><text x="-18" y="111" class="annotation">O2</text><text x="-18" y="153" class="annotation">O3</text>
+      <rect x="0" y="0" width="42" height="42" class="matrix"/><rect x="42" y="0" width="42" height="42" class="matrix"/><rect x="84" y="0" width="42" height="42" class="matrix"/><rect x="126" y="0" width="42" height="42" class="matrix"/>
+      <rect x="0" y="42" width="42" height="42" class="matrix"/><rect x="42" y="42" width="42" height="42" class="matrix"/><rect x="84" y="42" width="42" height="42" class="matrix"/><rect x="126" y="42" width="42" height="42" class="win"/>
+      <rect x="0" y="84" width="42" height="42" class="matrix"/><rect x="42" y="84" width="42" height="42" class="matrix"/><rect x="84" y="84" width="42" height="42" class="matrix"/><rect x="126" y="84" width="42" height="42" class="matrix"/>
+      <rect x="0" y="126" width="42" height="42" class="matrix"/><rect x="42" y="126" width="42" height="42" class="matrix"/><rect x="84" y="126" width="42" height="42" class="matrix"/><rect x="126" y="126" width="42" height="42" class="matrix"/>
+      <text x="147" y="69" text-anchor="middle" fill="#241a16" font-family="sans-serif" font-size="20">✓</text>
+    </g>
+    <text x="42" y="225" class="annotation">Turpal avance · le rival tourne 2 → 3</text>
+  </g>
+  <text x="20" y="816" class="annotation muted">Vue mobile 390×844 · ouest 1, est 3</text>
+</svg>

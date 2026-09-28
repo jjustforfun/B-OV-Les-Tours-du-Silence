@@ -141,6 +141,25 @@ describe('NavGraph — arêtes conditionnelles (ADR-003)', () => {
     expect(graph.getMechanismState('porte')).toBe(true);
   });
 
+  it('exige toutes les conditions d’une liaison composée', () => {
+    const graph = new NavGraph();
+    graph.addNode('hôte', { x: 0, y: 0, z: 0 });
+    graph.addNode('route', { x: 1, y: 0, z: 0 });
+    graph.connect('hôte', 'route', {
+      conditions: [
+        { mechanism: 'roue', equals: 270 },
+        { mechanism: 'voyageur-servi', equals: true },
+      ],
+    });
+
+    graph.setMechanismState('roue', 270);
+    expect(graph.areConnected('hôte', 'route')).toBe(false);
+    graph.setMechanismState('voyageur-servi', true);
+    expect(graph.areConnected('hôte', 'route')).toBe(true);
+    graph.setMechanismState('roue', 180);
+    expect(graph.areConnected('hôte', 'route')).toBe(false);
+  });
+
   it('ne touche pas aux arêtes des autres mécanismes', () => {
     const graph = withRotator();
     graph.addNode('pont', { x: 0, y: 0, z: 3 });
