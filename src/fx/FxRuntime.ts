@@ -65,6 +65,7 @@ export class FxRuntime {
   private moteAccumulator = 0;
   private currentChapter = -1;
   private quality: QualitySettings;
+  private disposed = false;
 
   /** Options d'émission réutilisées pour la poussière des rais. */
   private readonly moteOptions: WritableEmitOptions = {
@@ -125,6 +126,7 @@ export class FxRuntime {
    * enneigé, lucioles aux chapitres 4 et 7 (docs/tasks Phase 7).
    */
   attachLevel(level: Level): void {
+    if (this.disposed) return;
     this.detachLevel();
     this.currentChapter = level.definition.chapter;
 
@@ -181,6 +183,7 @@ export class FxRuntime {
   }
 
   update(elapsed: number, delta: number): void {
+    if (this.disposed) return;
     this.pool.update(delta);
     this.mist.update(elapsed);
     this.shafts.update(delta, elapsed);
@@ -207,6 +210,8 @@ export class FxRuntime {
   }
 
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     for (const off of this.unsubscribe) off();
     this.unsubscribe.length = 0;
     this.detachLevel();

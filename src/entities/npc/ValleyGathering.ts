@@ -20,7 +20,8 @@ import { Elder } from '@entities/npc/Elder';
 import { Rival } from '@entities/npc/Rival';
 import { Traveler } from '@entities/npc/Traveler';
 import { Eagle } from '@entities/wildlife/Eagle';
-import { EMBER } from '@render/Palettes';
+import { ambientDriftEnabled } from '@core/motion';
+import { EMBER, INK } from '@render/Palettes';
 import type { LevelFinaleDef } from '@world/Level';
 import type { NavGraph, NodeId } from '@world/NavGraph';
 
@@ -41,8 +42,17 @@ export class ValleyGathering {
   private readonly elder: Elder;
   private readonly rival = new Rival();
   private readonly beaconGeometry = new SphereGeometry(0.13, 10, 7);
+  private readonly beaconOutlineGeometry = new SphereGeometry(0.18, 10, 7);
+  private readonly beaconOutlineMaterial = new MeshBasicMaterial({
+    color: INK,
+    transparent: true,
+    opacity: 0.62,
+    wireframe: true,
+    depthWrite: false,
+  });
   private readonly beaconMaterials: MeshBasicMaterial[] = [];
   private readonly beacons: Mesh[] = [];
+  private readonly beaconOutlines: Mesh[] = [];
   private readonly lit = new Set<number>();
   private readonly finalEagle: Eagle | null;
   private elapsed = 0;
@@ -115,14 +125,18 @@ export class ValleyGathering {
     this.rival.update(delta);
     this.finalEagle?.update(delta);
 
-    const pulse = 0.5 + Math.sin(this.elapsed * (this.thresholdAwake ? 2.4 : 1.25)) * 0.5;
+    const pulse = ambientDriftEnabled()
+      ? 0.5 + Math.sin(this.elapsed * (this.thresholdAwake ? 2.4 : 1.25)) * 0.5
+      : 0.5;
     for (let index = 0; index < this.beacons.length; index += 1) {
       const beacon = this.beacons[index];
+      const outline = this.beaconOutlines[index];
       const material = this.beaconMaterials[index];
-      if (beacon === undefined || material === undefined) continue;
+      if (beacon === undefined || outline === undefined || material === undefined) continue;
       const active = this.lit.has(index);
       material.opacity = active ? 0.72 + pulse * 0.24 : 0.05;
       beacon.scale.setScalar(active ? 0.9 + pulse * 0.22 : 0.68);
+      outline.visible = active;
     }
   }
 
@@ -135,7 +149,10 @@ export class ValleyGathering {
     for (const beacon of this.beacons) beacon.removeFromParent();
     for (const material of this.beaconMaterials) material.dispose();
     this.beaconGeometry.dispose();
+    this.beaconOutlineGeometry.dispose();
+    this.beaconOutlineMaterial.dispose();
     this.beacons.length = 0;
+    this.beaconOutlines.length = 0;
     this.beaconMaterials.length = 0;
     this.root.removeFromParent();
     this.root.clear();
@@ -186,9 +203,14 @@ export class ValleyGathering {
       const beacon = new Mesh(this.beaconGeometry, material);
       beacon.name = `FinaleTowerLight:${index}`;
       beacon.position.copy(beaconWorld);
+      const outline = new Mesh(this.beaconOutlineGeometry, this.beaconOutlineMaterial);
+      outline.name = `FinaleTowerLightOutline:${index}`;
+      outline.visible = false;
+      beacon.add(outline);
       tower.add(beacon);
       this.beaconMaterials.push(material);
       this.beacons.push(beacon);
+      this.beaconOutlines.push(outline);
     }
   }
 

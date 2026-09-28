@@ -7,10 +7,10 @@ docs/ART_DIRECTION.md § 7).
 
 Pour activer les vraies typographies, déposer ici les woff2 :
 
-| Usage                | Famille               | Graisses | Sous-ensembles        |
-| -------------------- | --------------------- | -------- | --------------------- |
-| Titres, proverbes    | Cormorant Garamond    | 300, 400 | `latin`, `cyrillic`   |
-| Interface, réglages  | Inter                 | 400, 500 | `latin`, `cyrillic`   |
+| Usage               | Famille            | Graisses | Sous-ensembles      |
+| ------------------- | ------------------ | -------- | ------------------- |
+| Titres, proverbes   | Cormorant Garamond | 300, 400 | `latin`, `cyrillic` |
+| Interface, réglages | Inter              | 400, 500 | `latin`, `cyrillic` |
 
 Contraintes :
 

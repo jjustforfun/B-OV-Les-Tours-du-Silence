@@ -35,8 +35,11 @@ export class GoldenTrail {
   private travelled = 0;
   private running = false;
   private fadeRemaining = 0;
-  private readonly speed: number;
-  private readonly fadeSeconds: number;
+  private speed: number = FX.trail.speed;
+  private fadeSeconds = FX.trail.fadeMs / 1000;
+  private pointX = 0;
+  private pointY = 0;
+  private pointZ = 0;
 
   /** Options d'émission réutilisées : zéro allocation par image. */
   private readonly emitOptions = {
@@ -57,10 +60,7 @@ export class GoldenTrail {
     upBias: 0.25,
   };
 
-  constructor(private readonly pool: ParticlePool) {
-    this.speed = FX.trail.speed * (motionDurationScale() < 1 ? 2 : 1);
-    this.fadeSeconds = (FX.trail.fadeMs / 1000) * motionDurationScale();
-  }
+  constructor(private readonly pool: ParticlePool) {}
 
   get isRunning(): boolean {
     return this.running || this.fadeRemaining > 0;
@@ -70,6 +70,9 @@ export class GoldenTrail {
   run(trail: TrailPoints): void {
     const points = trail.points;
     if (points.length === 0) return;
+    const durationScale = motionDurationScale();
+    this.speed = FX.trail.speed * (durationScale < 1 ? 2 : 1);
+    this.fadeSeconds = (FX.trail.fadeMs / 1000) * durationScale;
 
     this.segments = [];
     this.totalLength = 0;
@@ -99,11 +102,10 @@ export class GoldenTrail {
         // (la durée de vie des particules fait le fondu de 900 ms).
         this.running = false;
         this.fadeRemaining = this.fadeSeconds;
-        const head = this.pointAt(this.totalLength);
-        if (head !== null) {
-          this.emitOptions.x = head[0];
-          this.emitOptions.y = head[1];
-          this.emitOptions.z = head[2];
+        if (this.writePointAt(this.totalLength)) {
+          this.emitOptions.x = this.pointX;
+          this.emitOptions.y = this.pointY;
+          this.emitOptions.z = this.pointZ;
           this.emitOptions.count = 10;
           this.emitOptions.size = 0.11;
           this.pool.emit(this.emitOptions);
@@ -126,24 +128,23 @@ export class GoldenTrail {
   /** Sème les étincelles sous la tête de course. */
   private seedAlongTrail(delta: number): void {
     if (this.segments.length === 0) return;
-    const head = this.pointAt(this.travelled);
-    if (head === null) return;
+    if (!this.writePointAt(this.travelled)) return;
 
     // Densité en particules par unité de distance, pas par image : la
     // traînée est continue même à framerate variable.
     const distance = this.speed * delta;
     const count = Math.max(1, Math.round(distance * FX.trail.particlesPerUnit));
 
-    this.emitOptions.x = head[0];
-    this.emitOptions.y = head[1] + 0.06;
-    this.emitOptions.z = head[2];
+    this.emitOptions.x = this.pointX;
+    this.emitOptions.y = this.pointY + 0.06;
+    this.emitOptions.z = this.pointZ;
     this.emitOptions.count = count;
     this.emitOptions.size = 0.09;
     this.pool.emit(this.emitOptions);
   }
 
-  /** Position à `distance` du départ, ou null si hors polyline. */
-  private pointAt(distance: number): [number, number, number] | null {
+  /** Écrit la position à `distance` dans trois scalaires réutilisés. */
+  private writePointAt(distance: number): boolean {
     let remaining = distance;
     for (const segment of this.segments) {
       if (remaining > segment.length) {
@@ -151,13 +152,16 @@ export class GoldenTrail {
         continue;
       }
       const t = segment.length <= 0 ? 0 : remaining / segment.length;
-      return [
-        segment.ax + (segment.bx - segment.ax) * t,
-        segment.ay + (segment.by - segment.ay) * t,
-        segment.az + (segment.bz - segment.az) * t,
-      ];
+      this.pointX = segment.ax + (segment.bx - segment.ax) * t;
+      this.pointY = segment.ay + (segment.by - segment.ay) * t;
+      this.pointZ = segment.az + (segment.bz - segment.az) * t;
+      return true;
     }
     const last = this.segments[this.segments.length - 1];
-    return last === undefined ? null : [last.bx, last.by, last.bz];
+    if (last === undefined) return false;
+    this.pointX = last.bx;
+    this.pointY = last.by;
+    this.pointZ = last.bz;
+    return true;
   }
 }

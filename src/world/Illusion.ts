@@ -107,6 +107,12 @@ export class IllusionResolver {
   isActive(index: number): boolean {
     return this.active[index] === 1;
   }
+
+  clear(): void {
+    this.candidates = [];
+    this.active = new Uint8Array(0);
+    this.activeCount = 0;
+  }
 }
 
 /**

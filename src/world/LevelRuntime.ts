@@ -128,6 +128,7 @@ export class LevelRuntime {
   private finaleSeatReached = false;
   private readonly hints: Hints;
   private readonly unsubscribe: (() => void)[] = [];
+  private disposed = false;
 
   private moves = 0;
   private solved = false;
@@ -190,7 +191,7 @@ export class LevelRuntime {
     // Turpal se tient sur le nœud d'apparition, Borz sur son premier nœud.
     this.turpal = new Turpal(new TurpalModel());
     this.turpal.placeAt(this.level.graph, this.level.definition.spawn);
-    this.level.root.add(this.turpal.root);
+    this.level.root.add(this.turpal.root, this.turpal.destinationMarker.root);
     const borzNode = this.level.graph.findNodesByTag('borz')[0];
     this.borz = borzNode === undefined ? null : new Borz();
     if (this.borz !== null && borzNode !== undefined) {
@@ -243,7 +244,7 @@ export class LevelRuntime {
   update(elapsed: number, delta: number): void {
     // Pause : la simulation gèle, jamais le rendu — le monde reste visible,
     // simplement immobile derrière le voile du menu (docs/GDD.md).
-    if (this.paused) return;
+    if (this.disposed || this.paused) return;
     this.updateCameraRoll(delta);
     const { width, height } = this.viewport();
     const camera = this.camera;
@@ -280,6 +281,8 @@ export class LevelRuntime {
   }
 
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     for (const off of this.unsubscribe) off();
     this.unsubscribe.length = 0;
     this.finale?.dispose();
@@ -481,6 +484,9 @@ export class LevelRuntime {
   /** Gèle la simulation (menu pause). Idempotent. */
   pause(): void {
     if (this.paused) return;
+    // Une pause pendant un glissement doit laisser le mécanisme sur un cran
+    // valide ; le `dragEnd` ultérieur peut être filtré par l'état suspendu.
+    this.onDragEnd();
     this.paused = true;
     bus.emit('game:pause', { paused: true });
   }

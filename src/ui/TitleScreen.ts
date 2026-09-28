@@ -28,6 +28,8 @@ export class TitleScreen implements UIPanel {
   readonly element: HTMLElement;
 
   private readonly options: TitleScreenOptions;
+  private readonly nameNode: HTMLElement;
+  private readonly subtitleNode: HTMLElement;
   private readonly startButton: HTMLButtonElement;
   private readonly menuButtons: HTMLButtonElement[] = [];
   private readonly menu: HTMLElement;
@@ -35,7 +37,7 @@ export class TitleScreen implements UIPanel {
   constructor(options: TitleScreenOptions) {
     this.options = options;
     this.element = el('section', 'ui-panel ui-title');
-    this.element.setAttribute('aria-label', 'BӀOV : Les Tours du Silence');
+    this.element.setAttribute('aria-labelledby', 'ui-title-heading ui-title-subtitle');
 
     // Voile doux : le texte ne flotte jamais directement sur la scène
     // (docs/ART_DIRECTION.md § 7) — mais la vallée reste la vedette.
@@ -43,9 +45,11 @@ export class TitleScreen implements UIPanel {
     scrim.setAttribute('aria-hidden', 'true');
 
     const core = el('div', 'ui-title__core');
-    const name = el('h1', 'ui-title__name', i18n.t('game.title'));
-    const subtitle = el('p', 'ui-title__subtitle', i18n.t('game.subtitle'));
-    core.append(name, subtitle);
+    this.nameNode = el('h1', 'ui-title__name', i18n.t('game.title'));
+    this.nameNode.id = 'ui-title-heading';
+    this.subtitleNode = el('p', 'ui-title__subtitle', i18n.t('game.subtitle'));
+    this.subtitleNode.id = 'ui-title-subtitle';
+    core.append(this.nameNode, this.subtitleNode);
 
     // Toute la surface est un bouton : « Toucher pour commencer ».
     this.startButton = el('button', 'ui-title__touch');
@@ -74,8 +78,9 @@ export class TitleScreen implements UIPanel {
 
   /** Réétiquette après un changement de langue (i18n.onChange). */
   refresh(): void {
+    this.nameNode.textContent = i18n.t('game.title');
+    this.subtitleNode.textContent = i18n.t('game.subtitle');
     this.startButton.textContent = i18n.t('ui.touchStart');
-    this.element.setAttribute('aria-label', `${i18n.t('game.title')} — ${i18n.t('game.subtitle')}`);
     this.menu.setAttribute('aria-label', i18n.t('game.title'));
     const labels = [i18n.t('ui.chapters'), i18n.t('ui.settings'), i18n.t('ui.proverbs')];
     for (let i = 0; i < this.menuButtons.length; i += 1) {
@@ -86,7 +91,9 @@ export class TitleScreen implements UIPanel {
     // « Chapitres » n'a de sens qu'avec une progression.
     const chaptersItem = this.menuButtons[0];
     if (chaptersItem !== undefined) {
-      chaptersItem.classList.toggle('is-hidden', !this.options.hasProgress());
+      const hidden = !this.options.hasProgress();
+      chaptersItem.classList.toggle('is-hidden', hidden);
+      chaptersItem.hidden = hidden;
     }
   }
 

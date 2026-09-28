@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
+  <title id="title">Phase 10.3 — navigation au lecteur d’écran</title>
+  <desc id="desc">Preuve technique du montage des panneaux, des annonces polies et de la restauration du focus dans deux dialogues imbriqués.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#141a2a"/>
+      <stop offset="1" stop-color="#2c3444"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0l10 5-10 5z" fill="#d9a441"/>
+    </marker>
+  </defs>
+  <style>
+    .title{font:36px serif;fill:#f7f0dd}.sub{font:18px sans-serif;fill:#bac2cf}.head{font:bold 20px sans-serif;fill:#f7f0dd}.text{font:17px sans-serif;fill:#f7f0dd}.small{font:14px sans-serif;fill:#bac2cf}.code{font:14px monospace;fill:#d8e6dc}.card{fill:#1a2030;stroke:#697386;stroke-width:2}.active{fill:#232c3d;stroke:#d9a441;stroke-width:3}.inactive{fill:#161c29;stroke:#697386;stroke-width:2;opacity:.72}.button{fill:#111722;stroke:#91c7a5;stroke-width:2}.focus{fill:none;stroke:#f7f0dd;stroke-width:3;stroke-dasharray:7 5}.arrow{fill:none;stroke:#d9a441;stroke-width:3;marker-end:url(#arrow)}.ok{fill:#91c7a5}.gold{fill:#d9a441}
+  </style>
+  <rect width="1400" height="860" fill="url(#bg)"/>
+  <text x="60" y="68" class="title">Phase 10.3 — Navigation au lecteur d’écran</text>
+  <text x="60" y="100" class="sub">Un écran actif, une annonce polie, une cible de focus exacte par niveau.</text>
+
+  <g transform="translate(60 145)">
+    <rect width="370" height="430" rx="18" class="card"/>
+    <text x="24" y="42" class="head">1 · Écran de base</text>
+    <text x="24" y="70" class="small">#ui-root contient réellement le panneau</text>
+    <g transform="translate(35 100)">
+      <rect width="300" height="225" rx="14" class="active"/>
+      <text x="20" y="34" class="text">Titre</text>
+      <text x="20" y="58" class="code">aria-labelledby</text>
+      <rect x="52" y="92" width="196" height="54" rx="8" class="button"/>
+      <rect x="46" y="86" width="208" height="66" rx="11" class="focus"/>
+      <text x="79" y="126" class="text">Commencer</text>
+      <text x="20" y="190" class="code">inert = false</text>
+      <text x="164" y="190" class="code">aria-hidden = ∅</text>
+    </g>
+    <circle cx="42" cy="377" r="8" class="ok"/>
+    <text x="62" y="383" class="small">focus initial du panneau conservé</text>
+    <text x="24" y="411" class="code">annonce : « Écran : Les Tours du Silence »</text>
+  </g>
+
+  <path d="M448 360h55" class="arrow"/>
+
+  <g transform="translate(515 145)">
+    <rect width="370" height="430" rx="18" class="card"/>
+    <text x="24" y="42" class="head">2 · Pause ouverte</text>
+    <text x="24" y="70" class="small">La base reste visible, mais devient inerte</text>
+    <g transform="translate(45 105)">
+      <rect x="0" y="0" width="280" height="170" rx="12" class="inactive"/>
+      <text x="18" y="32" class="text">Titre</text>
+      <text x="18" y="58" class="code">inert · aria-hidden="true"</text>
+      <rect x="25" y="45" width="280" height="190" rx="12" class="active"/>
+      <text x="43" y="79" class="text">Pause · role="dialog"</text>
+      <text x="43" y="105" class="code">aria-labelledby="ui-pause-title"</text>
+      <rect x="78" y="132" width="174" height="48" rx="8" class="button"/>
+      <rect x="72" y="126" width="186" height="60" rx="10" class="focus"/>
+      <text x="118" y="163" class="text">Réglages</text>
+    </g>
+    <circle cx="42" cy="377" r="8" class="ok"/>
+    <text x="62" y="383" class="small">Tab et Shift+Tab restent dans Pause</text>
+    <text x="24" y="411" class="code">mémoire LIFO : focus = bouton Réglages</text>
+  </g>
+
+  <path d="M903 360h55" class="arrow"/>
+
+  <g transform="translate(970 145)">
+    <rect width="370" height="430" rx="18" class="card"/>
+    <text x="24" y="42" class="head">3 · Dialogue imbriqué</text>
+    <text x="24" y="70" class="small">Seul le sommet existe dans l’arbre accessible</text>
+    <g transform="translate(45 100)">
+      <rect x="0" y="0" width="280" height="165" rx="12" class="inactive"/>
+      <text x="18" y="32" class="text">Titre · inert</text>
+      <rect x="15" y="35" width="280" height="165" rx="12" class="inactive"/>
+      <text x="33" y="68" class="text">Pause · inert</text>
+      <rect x="30" y="70" width="280" height="185" rx="12" class="active"/>
+      <text x="48" y="104" class="text">Réglages · role="dialog"</text>
+      <text x="48" y="130" class="code">aria-modal="true"</text>
+      <rect x="94" y="165" width="156" height="48" rx="8" class="button"/>
+      <rect x="88" y="159" width="168" height="60" rx="10" class="focus"/>
+      <text x="141" y="196" class="text">Fermer</text>
+    </g>
+    <circle cx="42" cy="377" r="8" class="ok"/>
+    <text x="62" y="383" class="small">fermeture → focus exact sur « Réglages »</text>
+    <text x="24" y="411" class="code">annonce : « Écran : Réglages »</text>
+  </g>
+
+  <g transform="translate(60 615)">
+    <rect width="1280" height="170" rx="18" class="card"/>
+    <text x="24" y="38" class="head">Invariants automatisés</text>
+    <circle cx="34" cy="72" r="7" class="ok"/><text x="52" y="78" class="text">6 panneaux nommés explicitement</text>
+    <circle cx="34" cy="108" r="7" class="ok"/><text x="52" y="114" class="text">montage DOM + inert + aria-hidden</text>
+    <circle cx="445" cy="72" r="7" class="ok"/><text x="463" y="78" class="text">annonceur role=status poli et atomique</text>
+    <circle cx="445" cy="108" r="7" class="ok"/><text x="463" y="114" class="text">aucun déplacement de focus pour annoncer</text>
+    <circle cx="905" cy="72" r="7" class="ok"/><text x="923" y="78" class="text">piège Tab avec ou sans contrôle</text>
+    <circle cx="905" cy="108" r="7" class="ok"/><text x="923" y="114" class="text">restauration LIFO et repli sûr</text>
+    <text x="24" y="148" class="small">Preuve technique DOM — ce document n’est pas une capture de lecteur d’écran sur appareil réel.</text>
+    <text x="1167" y="148" class="text">7/7 ✓</text>
+  </g>
+</svg>

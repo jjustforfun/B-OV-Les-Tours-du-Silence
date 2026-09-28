@@ -112,11 +112,9 @@ export class ParticlePool {
   private readonly alphaAttribute: Float32BufferAttribute;
   private readonly colorAttribute: Float32BufferAttribute;
   private readonly material: ShaderMaterial;
-  private readonly durationScale: number;
 
   constructor(options: ParticlePoolOptions) {
     this.capacity = Math.max(8, Math.floor(options.budget * (options.particleScale ?? 1)));
-    this.durationScale = motionDurationScale();
 
     this.positions = new Float32Array(this.capacity * 3);
     this.velocities = new Float32Array(this.capacity * 3);
@@ -177,6 +175,7 @@ export class ParticlePool {
     const upBias = options.upBias ?? 0;
     const gravity = options.gravity ?? 0;
     const drag = options.drag ?? 0;
+    const durationScale = motionDurationScale();
 
     START_COLOR.setHex(options.color);
     END_COLOR.setHex(options.colorEnd ?? options.color);
@@ -202,7 +201,7 @@ export class ParticlePool {
 
       const lifetime = Math.max(
         0.05,
-        (options.lifetime + (Math.random() * 2 - 1) * lifetimeVariance) * this.durationScale,
+        (options.lifetime + (Math.random() * 2 - 1) * lifetimeVariance) * durationScale,
       );
       this.life[i] = 0;
       this.maxLife[i] = lifetime;
@@ -221,11 +220,6 @@ export class ParticlePool {
 
   /** Avance la simulation. Aucune allocation. */
   update(delta: number): void {
-    const damping = (index: number): number => {
-      const d = this.drag[index] ?? 0;
-      return d <= 0 ? 1 : Math.max(0, 1 - d * delta);
-    };
-
     for (let i = 0; i < this.alive; i += 1) {
       const i3 = i * 3;
       const life = (this.life[i] ?? 0) + delta;
@@ -238,7 +232,8 @@ export class ParticlePool {
       }
       this.life[i] = life;
 
-      const damp = damping(i);
+      const drag = this.drag[i] ?? 0;
+      const damp = drag <= 0 ? 1 : Math.max(0, 1 - drag * delta);
       this.velocities[i3] = (this.velocities[i3] ?? 0) * damp;
       this.velocities[i3 + 1] =
         (this.velocities[i3 + 1] ?? 0) * damp + (this.gravity[i] ?? 0) * delta;

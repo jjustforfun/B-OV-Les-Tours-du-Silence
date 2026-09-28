@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="860" viewBox="0 0 1400 860" role="img" aria-labelledby="title desc">
+  <title id="title">Phase 10.4 — matrice de validation des entrées</title>
+  <desc id="desc">Preuve technique des scénarios automatiques du pointeur, du clavier, de la manette, de l’haptique, du remappage et du verrouillage des gestes.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#141a2a"/>
+      <stop offset="1" stop-color="#2c3444"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .title{font:36px serif;fill:#f7f0dd}.sub{font:18px sans-serif;fill:#bac2cf}.head{font:bold 19px sans-serif;fill:#f7f0dd}.text{font:16px sans-serif;fill:#f7f0dd}.small{font:14px sans-serif;fill:#bac2cf}.code{font:14px monospace;fill:#d8e6dc}.card{fill:#1a2030;stroke:#697386;stroke-width:2}.ok{fill:#91c7a5}.warn{fill:#e5b768}.line{stroke:#697386;stroke-width:1}.pill{fill:#202a3a;stroke:#91c7a5;stroke-width:1.5}.pillwarn{fill:#30291d;stroke:#e5b768;stroke-width:1.5}
+  </style>
+  <rect width="1400" height="860" fill="url(#bg)"/>
+  <text x="60" y="68" class="title">Phase 10.4 — Cohérence et validation des entrées</text>
+  <text x="60" y="100" class="sub">Chaque périphérique produit des intentions ; le gameplay ne connaît jamais l’événement natif.</text>
+
+  <g transform="translate(60 140)">
+    <rect width="1280" height="600" rx="18" class="card"/>
+    <text x="28" y="42" class="head">Canal</text>
+    <text x="250" y="42" class="head">Invariants verrouillés</text>
+    <text x="1070" y="42" class="head">Validation</text>
+    <path d="M24 60h1232" class="line"/>
+
+    <g transform="translate(0 75)">
+      <circle cx="40" cy="28" r="8" class="ok"/><text x="62" y="34" class="head">Pointeur</text>
+      <text x="250" y="24" class="text">Tap sous 8 px · cinq rayons tolérants · tap → nœud projeté</text>
+      <text x="250" y="50" class="code">tap XOR drag · cible du pointerdown conservée</text>
+      <rect x="1070" y="5" width="150" height="44" rx="22" class="pill"/><text x="1105" y="33" class="text">12 tests ✓</text>
+    </g>
+    <path d="M24 145h1232" class="line"/>
+
+    <g transform="translate(0 160)">
+      <circle cx="40" cy="28" r="8" class="ok"/><text x="62" y="34" class="head">Glissement</text>
+      <text x="250" y="24" class="text">Capture · relâchement · annulation · blur · perte de capture</text>
+      <text x="250" y="50" class="code">pause → endDrag() → aimantation avant gel</text>
+      <rect x="1070" y="5" width="150" height="44" rx="22" class="pill"/><text x="1103" y="33" class="text">couvert ✓</text>
+    </g>
+    <path d="M24 230h1232" class="line"/>
+
+    <g transform="translate(0 245)">
+      <circle cx="40" cy="28" r="8" class="ok"/><text x="62" y="34" class="head">Clavier</text>
+      <text x="250" y="24" class="text">Codes physiques · cône écran &lt; 60° · Tab / Shift+Tab</text>
+      <text x="250" y="50" class="code">QWERTY = AZERTY · champs éditables ignorés</text>
+      <rect x="1070" y="5" width="150" height="44" rx="22" class="pill"/><text x="1104" y="33" class="text">18 tests ✓</text>
+    </g>
+    <path d="M24 315h1232" class="line"/>
+
+    <g transform="translate(0 330)">
+      <circle cx="40" cy="28" r="8" class="ok"/><text x="62" y="34" class="head">Manette</text>
+      <text x="250" y="24" class="text">Zone morte 0,35 · répétition 220 ms · fronts de boutons</text>
+      <text x="250" y="50" class="code">A/B/Y/Start · L1/R1 · L2/R2 · croix</text>
+      <rect x="1070" y="5" width="150" height="44" rx="22" class="pill"/><text x="1106" y="33" class="text">3 tests ✓</text>
+    </g>
+    <path d="M24 400h1232" class="line"/>
+
+    <g transform="translate(0 415)">
+      <circle cx="40" cy="28" r="8" class="ok"/><text x="62" y="34" class="head">Haptique</text>
+      <text x="250" y="24" class="text">tick · snap · celebrate via Platform · désactivation globale</text>
+      <text x="250" y="50" class="code">dual-rumble : délais exprimés en millisecondes</text>
+      <rect x="1070" y="5" width="150" height="44" rx="22" class="pill"/><text x="1106" y="33" class="text">3 tests ✓</text>
+    </g>
+    <path d="M24 485h1232" class="line"/>
+
+    <g transform="translate(0 500)">
+      <circle cx="40" cy="28" r="8" class="ok"/><text x="62" y="34" class="head">Réglages</text>
+      <text x="250" y="24" class="text">Capture · conflit · persistance · défauts · libellé local</text>
+      <text x="250" y="50" class="code">getLayoutMap → observation → code physique</text>
+      <rect x="1070" y="5" width="150" height="44" rx="22" class="pill"/><text x="1105" y="33" class="text">13 tests ✓</text>
+    </g>
+  </g>
+
+  <g transform="translate(60 765)">
+    <rect width="1280" height="62" rx="14" class="pillwarn"/>
+    <circle cx="32" cy="31" r="8" class="warn"/>
+    <text x="52" y="27" class="text">Verrou navigateur automatisé : touch-action, overscroll, pinch iOS, molette et double-clic.</text>
+    <text x="52" y="49" class="small">Réserve honnête : le test final sur Android et iOS réels reste requis.</text>
+    <text x="1110" y="37" class="text">28 nouveaux tests</text>
+  </g>
+</svg>

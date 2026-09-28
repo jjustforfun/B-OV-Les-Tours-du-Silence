@@ -71,7 +71,8 @@ function rumbleGamepad(pattern: HapticPattern): void {
       // Les motifs alternent par paires (forte, faible) espacées de pauses.
       void actuator
         .playEffect('dual-rumble', {
-          startDelay: startAt / 1000,
+          // GamepadEffectParameters exprime délai et durée en millisecondes.
+          startDelay: startAt,
           duration: strong,
           strongMagnitude: i % 4 === 0 ? 0.6 : 0,
           weakMagnitude: i % 4 === 0 ? 0 : 0.6,

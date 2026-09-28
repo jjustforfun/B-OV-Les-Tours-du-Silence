@@ -69,9 +69,15 @@ export class GamepadInput {
     this.pollButtons(pad);
   }
 
-  dispose(): void {
+  /** Oublie les fronts mémorisés (pause, perte de focus, déconnexion). */
+  reset(): void {
     this.pressed.clear();
     this.lastDirection = null;
+    this.lastMoveAt = 0;
+  }
+
+  dispose(): void {
+    this.reset();
   }
 
   private pollStick(pad: PolledGamepad, now: number): void {

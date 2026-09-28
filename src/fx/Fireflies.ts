@@ -54,10 +54,6 @@ export class Fireflies {
   private readonly positions: Float32Array;
   private readonly phases: Float32Array;
   private readonly sizes: Float32Array;
-  private readonly wanderSpeed: number;
-  /** Ralentit la pulsation de moitié en mouvement réduit. */
-  private readonly pulseScale: number;
-  private readonly drift: boolean;
   private readonly material: ShaderMaterial;
 
   constructor(options: FirefliesOptions = {}, particleScale = 1) {
@@ -65,10 +61,6 @@ export class Fireflies {
     const boundsX = options.bounds?.[0] ?? 10;
     const boundsY = options.bounds?.[1] ?? 4;
     const boundsZ = options.bounds?.[2] ?? 10;
-    this.wanderSpeed = FX.fireflies.wanderSpeed * motionDurationScale();
-    this.pulseScale = motionDurationScale();
-    this.drift = ambientDriftEnabled();
-
     this.anchors = new Float32Array(this.count * 3);
     this.positions = new Float32Array(this.count * 3);
     this.phases = new Float32Array(this.count);
@@ -123,25 +115,28 @@ export class Fireflies {
   }
 
   update(_delta: number, elapsed: number): void {
+    const motionScale = motionDurationScale();
     const timeUniform = this.material.uniforms.uTime;
-    if (timeUniform) timeUniform.value = elapsed * this.pulseScale;
+    if (timeUniform) timeUniform.value = elapsed * motionScale;
 
-    if (this.drift) {
-      // Errance lente autour de l'ancre : trois sinus à fréquences
-      // incommensurables, jamais de boucle repérable.
-      for (let i = 0; i < this.count; i += 1) {
-        const i3 = i * 3;
-        const phase = this.phases[i] ?? 0;
-        this.positions[i3] =
-          (this.anchors[i3] ?? 0) + Math.sin(elapsed * this.wanderSpeed + phase) * 0.8;
-        this.positions[i3 + 1] =
-          (this.anchors[i3 + 1] ?? 0) +
-          Math.sin(elapsed * this.wanderSpeed * 1.7 + phase * 2.3) * 0.35;
-        this.positions[i3 + 2] =
-          (this.anchors[i3 + 2] ?? 0) + Math.cos(elapsed * this.wanderSpeed * 0.9 + phase) * 0.8;
-      }
-      (this.points.geometry.getAttribute('position') as Float32BufferAttribute).needsUpdate = true;
+    const drift = ambientDriftEnabled();
+    const wanderSpeed = FX.fireflies.wanderSpeed * motionScale;
+    // Errance lente autour de l'ancre : trois sinus à fréquences
+    // incommensurables, jamais de boucle repérable. Quand le réglage change
+    // en cours de partie, les lucioles reviennent immédiatement à leur ancre.
+    for (let i = 0; i < this.count; i += 1) {
+      const i3 = i * 3;
+      const phase = this.phases[i] ?? 0;
+      this.positions[i3] =
+        (this.anchors[i3] ?? 0) + (drift ? Math.sin(elapsed * wanderSpeed + phase) * 0.8 : 0);
+      this.positions[i3 + 1] =
+        (this.anchors[i3 + 1] ?? 0) +
+        (drift ? Math.sin(elapsed * wanderSpeed * 1.7 + phase * 2.3) * 0.35 : 0);
+      this.positions[i3 + 2] =
+        (this.anchors[i3 + 2] ?? 0) +
+        (drift ? Math.cos(elapsed * wanderSpeed * 0.9 + phase) * 0.8 : 0);
     }
+    (this.points.geometry.getAttribute('position') as Float32BufferAttribute).needsUpdate = true;
   }
 
   dispose(): void {

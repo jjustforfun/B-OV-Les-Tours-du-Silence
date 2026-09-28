@@ -330,6 +330,7 @@ export class Level {
   private readonly illusionCandidates: IllusionCandidate[] = [];
   private readonly secretActors = new Map<string, Eagle>();
   private readonly geometryRuntime: LevelGeometry;
+  private disposed = false;
 
   constructor(readonly definition: LevelDefinition) {
     this.root.name = `Level:${definition.id}`;
@@ -478,14 +479,19 @@ export class Level {
   }
 
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     this.geometryRuntime.disposeParented();
     for (const mechanism of this.mechanisms.values()) mechanism.dispose();
     this.mechanisms.clear();
     for (const actor of this.secretActors.values()) actor.dispose();
     this.secretActors.clear();
     this.nodeProjection.clear();
+    this.illusions.clear();
+    this.illusionCandidates.length = 0;
     this.graph.clear();
     disposeObject(this.root);
+    this.geometryRuntime.towerRoots.length = 0;
   }
 
   private buildSecrets(): void {

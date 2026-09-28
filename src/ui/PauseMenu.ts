@@ -33,9 +33,11 @@ export class PauseMenu implements UIPanel {
     this.element = el('section', 'ui-panel ui-pause is-hidden');
     this.element.setAttribute('role', 'dialog');
     this.element.setAttribute('aria-modal', 'true');
+    this.element.setAttribute('aria-labelledby', 'ui-pause-title');
 
     const card = el('div', 'ui-card ui-pause__card');
     this.titleNode = el('h2', 'ui-pause__title', i18n.t('ui.paused'));
+    this.titleNode.id = 'ui-pause-title';
     const list = el('div', 'ui-pause__list');
 
     const definitions: readonly (readonly [string, () => void])[] = [

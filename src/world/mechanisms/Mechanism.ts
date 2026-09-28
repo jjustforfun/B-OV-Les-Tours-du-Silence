@@ -18,6 +18,7 @@ import {
   type Object3D,
 } from 'three';
 import { EMBER } from '@render/Palettes';
+import { ambientDriftEnabled } from '@core/motion';
 import type { NavGraph } from '../NavGraph';
 
 export interface MechanismContext {
@@ -146,6 +147,19 @@ export abstract class BaseMechanism implements Mechanism {
 
   protected attachAffordance(radius = 0.22, y = 0.04): void {
     this.affordance.name = `MechanismAffordance:${this.id}`;
+    const outlineGeometry = this.trackGeometry(new TorusGeometry(radius, 0.032, 5, 32));
+    const outlineMaterial = this.trackMaterial(
+      new MeshBasicMaterial({
+        color: 0x10161f,
+        transparent: true,
+        opacity: 0.76,
+        depthWrite: false,
+      }),
+    );
+    const outline = new Mesh(outlineGeometry, outlineMaterial);
+    outline.name = `MechanismAffordanceOutline:${this.id}`;
+    outline.rotation.x = Math.PI / 2;
+
     const geometry = this.trackGeometry(new TorusGeometry(radius, 0.012, 5, 32));
     const material = this.trackMaterial(
       new MeshBasicMaterial({
@@ -160,7 +174,7 @@ export abstract class BaseMechanism implements Mechanism {
     ring.name = `MechanismHandle:${this.id}`;
     ring.rotation.x = Math.PI / 2;
     this.affordance.position.y = y;
-    this.affordance.add(ring);
+    this.affordance.add(outline, ring);
     this.root.add(this.affordance);
   }
 
@@ -187,7 +201,9 @@ export abstract class BaseMechanism implements Mechanism {
     this.affordanceTime += delta;
     // Pulsation à 0,5 Hz, plus ample quand le mécanisme porte un indice.
     const glow = this.hintGlowValue;
-    const pulse = 1 + Math.sin(this.affordanceTime * Math.PI) * (0.045 + glow * 0.16);
+    const pulse = ambientDriftEnabled()
+      ? 1 + Math.sin(this.affordanceTime * Math.PI) * (0.045 + glow * 0.16)
+      : 1 + glow * 0.08;
     this.affordance.scale.setScalar(pulse);
     if (this.affordanceMaterial !== null) {
       this.affordanceMaterial.opacity = 0.82 + glow * 0.18;

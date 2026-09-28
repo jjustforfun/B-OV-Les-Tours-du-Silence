@@ -23,7 +23,7 @@ Le jeu n'est « terminé » que lorsque ces cinq lignes sont vertes :
 | 1   | 8 chapitres jouables du début à la fin                        | 🟢 8/8      |
 | 2   | 60 fps stables sur la cible mobile (Android 2021 / iPhone 11) | ⬜ phase 10 |
 | 3   | Lighthouse PWA ≥ 90, Performance ≥ 85                         | ⬜ phase 10 |
-| 4   | Zéro erreur console, zéro fuite mémoire entre niveaux         | ⬜ phase 10 |
+| 4   | Zéro erreur console, zéro fuite mémoire entre niveaux         | 🟠 partiel  |
 | 5   | `qa-report.md` complet et vert                                | ⬜          |
 
 ---
@@ -150,6 +150,405 @@ Actions correctives (avec responsable et échéance) :
 ```
 
 <!-- prettier-ignore-end -->
+
+---
+
+# Rapport QA — Phase 10.5 : cycle de vie, `dispose()` et allocations
+
+**Date** : 2026-09-28 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert pour le périmètre automatisable · 🟠 mesures WebGL non exécutées**
+
+Les propriétaires de ressources et d'abonnements ont été cartographiés puis
+éprouvés sans renderer : 16 chargements successifs couvrent deux fois les huit
+définitions et 10 runtimes complets reviennent chaque fois à leur ligne de
+base. Les ressources Three.js observables n'émettent qu'un seul `dispose`, les
+FX de niveau annulent leurs callbacks différés, et quatre allocations
+récurrentes ont été retirées des chemins chauds. Ce résultat ne permet pas de
+mettre au vert les compteurs internes de WebGL, la courbe mémoire sur cinq
+minutes ni dix changements de chapitre réellement rendus.
+
+## Checks automatiques
+
+| Étape             | Commande                                           | Résultat | Valeur                              |
+| ----------------- | -------------------------------------------------- | -------- | ----------------------------------- |
+| Formatage         | `prettier --check`                                 | 🟢       | fichiers modifiés conformes         |
+| Lint              | `pnpm lint`                                        | 🟢       | 0 erreur, 0 avertissement           |
+| Typecheck         | `pnpm typecheck`                                   | 🟢       | 0 erreur                            |
+| Tests lifecycle   | `vitest run tests/unit/lifecycle.test.ts`          | 🟢       | 6 scénarios                         |
+| Tests unitaires   | `pnpm test`                                        | 🟢       | 329 tests / 51 fichiers             |
+| Build             | `pnpm build`                                       | 🟢       | 1 054 modules transformés           |
+| Budget de bundle  | `pnpm check-bundle`                                | 🟢       | 359,8 ko gzip / 1 464,8 ko (24,6 %) |
+| Validation preuve | `xml.etree.ElementTree.parse(lifecycle-audit.svg)` | 🟢       | XML valide                          |
+
+## Propriétaires et ordre de destruction
+
+| Propriétaire    | Possède                                                     | Destruction auditée                                              | Statut   |
+| --------------- | ----------------------------------------------------------- | ---------------------------------------------------------------- | -------- |
+| `GameFlow`      | runtime courant, FX persistants, loader, UI, input, audio   | runtime → FX de niveau → `Level` ; garde globale à l'arrêt       | 🟢       |
+| `LevelLoader`   | une instance `Level`, définitions seules en cache           | met la référence active à `null`, puis libère l'instance         | 🟢       |
+| `Level`         | décor, mécanismes, aigles, graphe, projection et illusions  | garde idempotente, collections vidées, racine détachée           | 🟢       |
+| `LevelRuntime`  | Turpal, marqueur, Borz, acteurs, indices et abonnements     | garde idempotente, 2 bus + 11 input retirés à chaque cycle       | 🟢       |
+| `FxRuntime`     | pool, brume, rais, fragments, neige/lucioles et célébration | FX de niveau détachés ; timers de pétales annulés ; arrêt unique | 🟢       |
+| `Engine`        | scène, renderer, post-FX, ciel, lumière et caches toon/LUT  | caches globaux détruits uniquement à l'arrêt moteur              | 🟢 revue |
+| `disposeObject` | ressources du sous-arbre transmis                           | déduplique géométries, matériaux et textures de maps/uniforms    | 🟢       |
+
+Le marqueur de destination, auparavant construit mais absent du graphe de
+scène, est maintenant un enfant direct du niveau : il est visible pendant le
+jeu et reste libéré par `Turpal.dispose()` avant la racine de niveau.
+
+## Cycles et invariants automatisés
+
+| Invariant                                        | Exécution                         | Résultat mesuré                         | Statut |
+| ------------------------------------------------ | --------------------------------- | --------------------------------------- | ------ |
+| Instance neuve et libération du niveau précédent | 16 loads, 8 IDs × 2               | 16 instances ; racines et graphes vidés | 🟢     |
+| Ressource partagée libérée une fois              | géométrie + matériau + 2 textures | 1 événement `dispose` par ressource     | 🟢     |
+| Texture de uniform libérée                       | `ShaderMaterial.uniforms.uMap`    | 1 événement `dispose`                   | 🟢     |
+| Abonnements runtime globaux                      | 10 constructions/destructions     | ligne de base `0 → 2 → 0`, stable       | 🟢     |
+| Abonnements input runtime                        | 10 constructions/destructions     | ligne de base `0 → 11 → 0`, stable      | 🟢     |
+| Double appel `dispose()`                         | runtime, niveau, FX et loader     | aucune seconde notification             | 🟢     |
+| FX neige et callbacks différés                   | attach → solve → detach ×2        | ressources ×1 ; timers `> 0 → 0`        | 🟢     |
+| Cache système `prefers-reduced-motion`           | 3 lectures successives            | 1 seul appel à `matchMedia`             | 🟢     |
+
+## Audit des allocations par image
+
+| Chemin chaud                   | Avant                                       | Après                                                  | Statut   |
+| ------------------------------ | ------------------------------------------- | ------------------------------------------------------ | -------- |
+| `EventBus.emit()`              | spread `[...set]` à chaque événement        | buffers de snapshot réutilisés par profondeur          | 🟢       |
+| `ParticlePool.update()`        | closure `damping` recréée à chaque image    | calcul scalaire dans la boucle                         | 🟢       |
+| `GoldenTrail.update()`         | tuple `[x,y,z]` pour chaque tête de traînée | trois scalaires réutilisés                             | 🟢       |
+| Préférence de mouvement        | `matchMedia()` à chaque lecture             | `MediaQueryList` vivante mise en cache                 | 🟢       |
+| Projection/navigation/runtime  | tableaux typés, vecteurs et points privés   | aucune nouvelle allocation récurrente repérée en revue | 🟢 revue |
+| Courbe du tas sur cinq minutes | Chrome DevTools requis                      | non mesurée                                            | 🟠       |
+
+Une revue statique borne ce qui est visible dans TypeScript ; elle ne remplace
+pas un profil d'allocations du moteur JavaScript en production.
+
+## Contrôles WebGL non exécutés
+
+| Critère de `tasks.md`                                 | Pourquoi il reste ouvert                         | Statut |
+| ----------------------------------------------------- | ------------------------------------------------ | ------ |
+| `renderer.info.memory` initial après 5 allers-retours | aucun navigateur WebGL disponible                | 🟠     |
+| Aucun objet WebGL après 10 changements de chapitre    | caches/pilote observables seulement par renderer | 🟠     |
+| Courbe mémoire plate pendant 5 minutes                | Chrome DevTools et jeu réel requis               | 🟠     |
+
+Le protocole reproductible est documenté dans `docs/PERFORMANCE.md` § 4.5. La
+preuve `docs/qa/phase-10/lifecycle-audit.svg` sépare volontairement les
+invariants Node verts des trois mesures navigateur orange.
+
+## Bugs trouvés
+
+| ID       | Gravité | Description                                                        | Statut  |
+| -------- | ------- | ------------------------------------------------------------------ | ------- |
+| LIFE-001 | majeur  | Une ressource partagée pouvait recevoir plusieurs `dispose`.       | corrigé |
+| LIFE-002 | majeur  | Les pétales différés survivaient au détachement du chapitre.       | corrigé |
+| LIFE-003 | mineur  | Quatre allocations évitables subsistaient dans les chemins chauds. | corrigé |
+| LIFE-004 | majeur  | Le marqueur de destination était construit mais jamais attaché.    | corrigé |
+
+## Décision
+
+**Volet automatisable validé : oui. Passe lifecycle complète validée : non.**
+
+Aucun défaut rouge ne subsiste dans le périmètre Node. Les trois contrôles
+WebGL restent orange et empêchent de cocher `LevelLoader`, « zéro allocation »
+et « passe dispose » dans `tasks.md`. Ils devront être exécutés dans un nouveau
+environnement disposant d'un navigateur de production avant la Definition of
+Done.
+
+---
+
+# Rapport QA — Phase 10.4 : cohérence du suivi et validation des entrées
+
+**Date** : 2026-09-28 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · jsdom 30.1.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert pour l'implémentation automatisable · 🟠 gestes non mesurés sur mobiles réels**
+
+La feuille de route reflète maintenant les tâches effectivement livrées : les
+phases Audio et FX sont complètes, et Input atteint 10 critères sur 11. Le
+pointeur, le clavier, la manette, l'haptique et le remappage disposent de 28
+nouveaux scénarios, complétés par les audits déjà présents. Plusieurs défauts
+de fin de geste ont été corrigés. Le blocage des gestes est prouvé en jsdom et
+par audit CSS, mais ne peut pas être déclaré conforme sur Safari iOS et Chrome
+Android sans appareils réels.
+
+## Checks automatiques
+
+| Étape                        | Commande                               | Résultat | Valeur                         |
+| ---------------------------- | -------------------------------------- | -------- | ------------------------------ |
+| Formatage                    | `prettier --check`                     | 🟢       | fichiers modifiés conformes    |
+| Lint                         | `pnpm lint`                            | 🟢       | 0 erreur, 0 avertissement      |
+| Typecheck                    | `pnpm typecheck`                       | 🟢       | 0 erreur                       |
+| Tests unitaires              | `pnpm test`                            | 🟢       | 322 tests / 50 fichiers        |
+| Nouveaux scénarios d'entrées | huit fichiers + extension `key-layout` | 🟢       | 28/28                          |
+| Build                        | `pnpm build`                           | 🟢       | 1 054 modules transformés      |
+| Budget de bundle             | `pnpm check-bundle`                    | 🟢       | 359,4 ko / 1 464,8 ko — 24,5 % |
+| Validation XML de la preuve  | `xml.etree.ElementTree.parse`          | 🟢       | SVG valide                     |
+| Android / iOS réels          | appareils indisponibles                | 🟠       | non exécuté                    |
+
+## Matrice fonctionnelle
+
+| Canal / invariant                         | Preuve automatique                                                         | État |
+| ----------------------------------------- | -------------------------------------------------------------------------- | ---- |
+| Tap sous le seuil de 8 px                 | exclusivité tap/drag et intégration jusqu'au déplacement runtime           | 🟢   |
+| Picking tactile tolérant                  | rayon central puis quatre secours à 12 px, snap au nœud                    | 🟢   |
+| Drag sur la cible pressée                 | `dragStart` reprend les coordonnées du `pointerdown`                       | 🟢   |
+| Fin de drag unique                        | relâchement, `pointercancel`, perte de capture, blur et suspension         | 🟢   |
+| Pause pendant un drag                     | `endDrag()` et aimantation exécutés avant le gel                           | 🟢   |
+| Gestes navigateur                         | touch/pinch iOS/molette/double-clic + CSS touch-action/overscroll          | 🟢   |
+| Gestes sur appareils réels                | Safari iOS et Chrome Android                                               | 🟠   |
+| Déplacement clavier                       | codes physiques, voisin projeté dans le cône de 60°, repli sans mouvement  | 🟢   |
+| Cycle de mécanismes                       | Shift inverse le sens ; proximité écran et `FocusRing` intégrés            | 🟢   |
+| Manette                                   | zone morte 0,35, répétition 220 ms, croix, A/B/Y/Start, épaules, gâchettes | 🟢   |
+| Haptique                                  | trois motifs Platform, désactivation et dual-rumble en millisecondes       | 🟢   |
+| Remappage                                 | capture, conflit, persistance, relecture et retour aux défauts             | 🟢   |
+| Libellés de disposition                   | `getLayoutMap`, observation AZERTY, repli Firefox/Safari                   | 🟢   |
+| Défilement vertical des panneaux tactiles | `touch-action: pan-y` et `overscroll-behavior: contain`                    | 🟢   |
+
+## Cohérence de la feuille de route
+
+| Phase          | Ancien résumé                  | Résumé recalculé depuis les cases    |
+| -------------- | ------------------------------ | ------------------------------------ |
+| 2 — Navigation | 13/13 sans validation visuelle | 13/13 ✅                             |
+| 5 — Input      | 2/11                           | 10/11, une validation mobile bloquée |
+| 6 — Audio      | 0/13                           | 13/13 ✅                             |
+| 7 — FX         | 0/11                           | 11/11 ✅                             |
+| 8 — UI         | 1/16                           | 15/16                                |
+| 9 — Niveaux    | 10/19                          | 13/19                                |
+| 10 — Polish    | 3/17                           | 5/17                                 |
+
+## Bugs trouvés
+
+| ID        | Gravité | Description                                                                  | Statut  |
+| --------- | ------- | ---------------------------------------------------------------------------- | ------- |
+| P10-IN-01 | majeur  | Le drag choisissait la cible sous le pointeur après 8 px, pas celle pressée. | corrigé |
+| P10-IN-02 | majeur  | Un `pointercancel` sans drag pouvait produire un tap.                        | corrigé |
+| P10-IN-03 | moyen   | `lostpointercapture` pouvait doubler la fin après un relâchement normal.     | corrigé |
+| P10-IN-04 | majeur  | Une pause pendant un drag pouvait laisser le mécanisme hors cran.            | corrigé |
+| P10-IN-05 | moyen   | Les délais Gamepad `dual-rumble` étaient convertis à tort en secondes.       | corrigé |
+| P10-IN-06 | mineur  | Le gestionnaire de menu contextuel était retiré sans avoir été attaché.      | corrigé |
+| P10-IN-07 | suivi   | Les compteurs des phases 5 à 10 ne correspondaient plus aux cases cochées.   | corrigé |
+
+## Décision
+
+**Les dix critères Input vérifiables dans cet environnement sont validés.** Le
+onzième reste orange : la prévention effective du pinch, du double-tap, du
+pull-to-refresh et de l'overscroll doit être essayée sur Android et iOS réels.
+La preuve `docs/qa/phase-10/input-validation-matrix.svg` ne remplace pas cette
+validation matérielle.
+
+---
+
+# Rapport QA — Phase 10.3 : navigation au lecteur d'écran
+
+**Date** : 2026-09-28 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · jsdom 30.1.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert pour les invariants automatisables · 🟠 non mesuré sur lecteur d'écran réel**
+
+Les panneaux sont désormais réellement montés dans une racine DOM unique,
+nommés par leur titre et annoncés sans déplacement de focus. Une seule couche
+de la pile reste exposée : les autres sont `inert` et `aria-hidden`. Le focus
+initial choisi par le panneau est respecté, piégé dans l'écran actif et
+restauré exactement à chaque fermeture imbriquée. La preuve technique est
+archivée dans `docs/qa/phase-10/`. Aucun navigateur système, NVDA, VoiceOver ou
+TalkBack n'étant disponible dans le bac à sable, le rendu vocal réel n'est pas
+déclaré conforme.
+
+## Checks automatiques
+
+| Étape                        | Commande                                     | Résultat | Valeur                         |
+| ---------------------------- | -------------------------------------------- | -------- | ------------------------------ |
+| Formatage                    | `prettier --check`                           | 🟢       | fichiers modifiés conformes    |
+| Lint                         | `pnpm lint`                                  | 🟢       | 0 erreur, 0 avertissement      |
+| Typecheck                    | `pnpm typecheck`                             | 🟢       | 0 erreur                       |
+| Tests unitaires              | `pnpm test`                                  | 🟢       | 294 tests / 42 fichiers        |
+| Tests lecteur d'écran ciblés | `vitest run ui-root ui-panels-accessibility` | 🟢       | 7/7                            |
+| Build                        | `pnpm build`                                 | 🟢       | 1 054 modules transformés      |
+| Budget de bundle             | `pnpm check-bundle`                          | 🟢       | 359,3 ko / 1 464,8 ko — 24,5 % |
+| Validation XML de la preuve  | `xml.etree.ElementTree.parse`                | 🟢       | SVG valide                     |
+| NVDA / VoiceOver / TalkBack  | outils et appareils indisponibles            | 🟠       | non exécuté                    |
+
+## Matrice fonctionnelle
+
+| Invariant                                   | Implémentation / preuve                                                  | État |
+| ------------------------------------------- | ------------------------------------------------------------------------ | ---- |
+| Chaque panneau existe sous `#ui-root`       | `setBase()` et `push()` appellent le montage avant affichage             | 🟢   |
+| Chaque écran a un nom explicite             | six panneaux liés à un ou plusieurs titres par `aria-labelledby`         | 🟢   |
+| Chaque ouverture est annoncée               | annonceur central `role=status`, `aria-live=polite`, `aria-atomic=true`  | 🟢   |
+| Le contenu dynamique est annoncé sans focus | introduction de chapitre polie ; toasts polis ; conflits en `role=alert` | 🟢   |
+| Un seul écran est exposé                    | couches inférieures `inert` et `aria-hidden=true`                        | 🟢   |
+| Le focus initial du panneau est conservé    | `focusPanel()` n'intervient que si le focus n'est pas déjà dans l'écran  | 🟢   |
+| `Tab` ne sort jamais de l'écran actif       | bouclage avant/arrière ; racine `tabindex=-1` si aucun contrôle          | 🟢   |
+| Une fermeture restaure la cible exacte      | une cible mémorisée par niveau, dépilée en LIFO                          | 🟢   |
+| Une cible supprimée ne perd pas le focus    | repli vers le premier contrôle, puis vers la racine du panneau           | 🟢   |
+| Les réglages sont nommés individuellement   | chaque `input` et `select` relié à un `<label for>`                      | 🟢   |
+
+## Scénarios dédiés
+
+1. montage de la base et d'une modale, avec bascule symétrique de `inert` et
+   `aria-hidden` ;
+2. conservation du focus initial demandé par le panneau ;
+3. restauration exacte après deux niveaux modaux puis retour au déclencheur
+   extérieur ;
+4. repli sûr lorsque le contrôle mémorisé a été supprimé ;
+5. piège `Tab` / `Shift+Tab`, y compris dans un panneau sans contrôle ;
+6. annonces successives fondées sur le nom accessible, sans focus sur la
+   région live ;
+7. audit des six panneaux de production, des dialogues, des libellés de
+   réglages et de l'introduction dynamique.
+
+## Bugs trouvés
+
+| ID        | Gravité | Description                                                                  | Statut  |
+| --------- | ------- | ---------------------------------------------------------------------------- | ------- |
+| P10-SR-01 | majeur  | `UIRoot` affichait les objets panneaux sans monter leur élément dans le DOM. | corrigé |
+| P10-SR-02 | majeur  | La cible de focus n'était dépilée qu'à la fermeture de toute la pile.        | corrigé |
+| P10-SR-03 | majeur  | Un panneau masqué restait présent dans l'arbre d'accessibilité.              | corrigé |
+| P10-SR-04 | moyen   | Le focus initial choisi par `show()` pouvait être écrasé.                    | corrigé |
+| P10-SR-05 | moyen   | Les listes déroulantes et cases des réglages n'avaient pas de label lié.     | corrigé |
+
+## Décision
+
+**Tâche « Navigation au lecteur d'écran » validée pour son implémentation et
+ses invariants automatisables.** Les 7 tests dédiés couvrent la structure DOM,
+les annonces et le cycle du focus. Une passe manuelle avec NVDA + Firefox,
+VoiceOver + Safari et TalkBack + Chrome reste ouverte avant la QA finale ; elle
+ne peut pas être remplacée par jsdom ni par la preuve SVG.
+
+---
+
+# Rapport QA — Phase 10.2 : indices indépendants de la couleur
+
+**Date** : 2026-09-28 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert pour l'implémentation automatisable**
+
+Le jeu applique désormais une conception daltonienne universelle plutôt qu'un
+filtre optionnel : aucune information utile portée par la braise ne dépend de
+sa teinte. Les indices 3D ont une silhouette ou un contour neutre permanent ;
+les états d'interface associent bordure, symbole et texte. Cette redondance
+reste présente lorsque le mouvement réduit supprime les pulsations. La matrice
+technique est archivée dans `docs/qa/phase-10/` ; une validation perceptive
+humaine sous plusieurs déficiences chromatiques reste recommandée.
+
+## Checks automatiques
+
+| Étape            | Commande                        | Résultat | Valeur                         |
+| ---------------- | ------------------------------- | -------- | ------------------------------ |
+| Formatage        | `prettier --write`              | 🟢       | fichiers modifiés conformes    |
+| Lint             | `pnpm lint`                     | 🟢       | 0 erreur, 0 avertissement      |
+| Typecheck        | `pnpm typecheck`                | 🟢       | 0 erreur                       |
+| Tests unitaires  | `pnpm test`                     | 🟢       | 287 tests / 40 fichiers        |
+| Audit ciblé      | `vitest run color-cues.test.ts` | 🟢       | 2/2                            |
+| Build            | `pnpm build`                    | 🟢       | 1 054 modules transformés      |
+| Budget de bundle | `pnpm check-bundle`             | 🟢       | 358,3 ko / 1 464,8 ko — 24,5 % |
+| Capture WebGL    | navigateur système indisponible | 🟠       | contrôle humain non exécuté    |
+
+## Matrice des indices
+
+| Information utile           | Canal braise      | Canal indépendant de la couleur            | Mouvement réduit | État |
+| --------------------------- | ----------------- | ------------------------------------------ | ---------------- | ---- |
+| Destination de Turpal       | anneau lumineux   | anneau extérieur sombre plus large         | conservé         | 🟢   |
+| Mécanisme actionnable       | tore fin          | tore sombre épais et silhouette circulaire | conservé         | 🟢   |
+| Tour éveillée de l'épilogue | sphère lumineuse  | coque filaire couleur encre                | conservée        | 🟢   |
+| Mécanisme sélectionné       | liseré braise     | contour circulaire de 2 px                 | conservé         | 🟢   |
+| Chapitre courant            | texte braise      | bordure gauche, symbole `◆` et libellé     | conservés        | 🟢   |
+| Chapitre terminé            | teinte secondaire | symbole `✓` et libellé                     | conservés        | 🟢   |
+| Conflit de remappage        | texte braise doux | bordure gauche, message et `role=alert`    | conservés        | 🟢   |
+| Page de proverbe offerte    | vertu en braise   | proverbe réel opposé au texte verrouillé   | conservé         | 🟢   |
+
+Les usages purement décoratifs — toit de tour, bec d'aigle, rim light de
+Turpal, yeux de Borz et célébrations — ne codent aucune condition de jeu. Ils
+restent donc hors de la matrice sémantique.
+
+## Tests dédiés
+
+1. le marqueur de destination expose simultanément son anneau braise et son
+   contour neutre ;
+2. chaque affordance de mécanisme testée expose son tore braise et son contour
+   permanent ;
+3. l'audit CSS verrouille bordure de conflit, bordure du chapitre courant et
+   contour du focus ;
+4. le sélecteur conserve les symboles `◆`/`✓` ainsi que les libellés traduits ;
+5. la simulation complète de l'épilogue vérifie les huit coques filaires
+   visibles après allumage.
+
+## Décision
+
+**Tâche « Mode daltonien » validée.** L'information est redondante par défaut,
+sans réglage à découvrir ni filtre susceptible d'altérer la direction
+artistique. Une revue humaine sous simulation protanopie, deutéranopie et
+tritanopie reste une recommandation QA non bloquante.
+
+---
+
+# Rapport QA — Phase 10.1 : mouvement réduit
+
+**Date** : 2026-09-28 · **Commit** : `HEAD` · **Auteur du rapport** : agent Arena
+**Environnement** : Node 22.22.3 · pnpm 12.6.0 · Linux x64 · three 0.186.1 · Vite 8.3.1
+
+## Résumé
+
+**Statut global : 🟢 vert pour l'implémentation automatisable**
+
+La préférence système et le choix manuel réduit/plein pilotent désormais les
+animations déjà actives, sans reconstruire le runtime. Les transitions et FX
+non essentiels durent deux fois moins longtemps ; toutes les dérives continues
+sont figées, tandis que la marche, les mécanismes et les conditions des puzzles
+restent inchangés. La matrice technique est archivée dans
+`docs/qa/phase-10/`; une validation vestibulaire humaine reste recommandée.
+
+## Checks automatiques
+
+| Étape            | Commande                    | Résultat | Valeur                         |
+| ---------------- | --------------------------- | -------- | ------------------------------ |
+| Formatage        | `prettier --write`          | 🟢       | fichiers modifiés conformes    |
+| Lint             | `pnpm lint`                 | 🟢       | 0 erreur, 0 avertissement      |
+| Typecheck        | `pnpm typecheck`            | 🟢       | 0 erreur                       |
+| Tests unitaires  | `pnpm test`                 | 🟢       | 285 tests / 39 fichiers        |
+| Test ciblé       | `vitest run motion.test.ts` | 🟢       | 4/4                            |
+| Build            | `pnpm build`                | 🟢       | 1 054 modules transformés      |
+| Budget de bundle | `pnpm check-bundle`         | 🟢       | 358,0 ko / 1 464,8 ko — 24,4 % |
+| Validation WebGL | navigateur indisponible     | 🟠       | contrôle humain non exécuté    |
+
+## Matrice fonctionnelle
+
+| Élément                              | Mouvement normal | Mouvement réduit                     | État |
+| ------------------------------------ | ---------------- | ------------------------------------ | ---- |
+| Durées UI 180/420/900/1 800 ms       | nominales        | 90/210/450/900 ms                    | 🟢   |
+| Voile et attente de célébration      | 1 200/nominale   | durée × 0,5                          | 🟢   |
+| Particules et reconstruction         | nominales        | durée de vie × 0,5                   | 🟢   |
+| Traînée dorée                        | 8 unités/s       | 16 unités/s, fondu × 0,5             | 🟢   |
+| Brume et respiration du ciel         | dérive lente     | immobiles                            | 🟢   |
+| Neige et lucioles                    | dérive           | dérive supprimée                     | 🟢   |
+| Rais et poussière volumétrique       | scintillent      | scintillement et poussière supprimés | 🟢   |
+| Anneaux et affordances               | pulsent          | liseré fixe                          | 🟢   |
+| Marche, graphe et résolution         | nominales        | strictement identiques               | 🟢   |
+| Choix manuel « plein » sur OS réduit | sans objet       | reprend explicitement la main        | 🟢   |
+
+## Tests dédiés
+
+1. le forçage réduit et plein modifie le facteur de durée et la dérive ;
+2. une brume construite en mode normal s'arrête puis reprend immédiatement ;
+3. un pool déjà construit applique la demi-durée aux nouvelles particules ;
+4. le ciel conserve son dégradé mais ne respire plus en mouvement réduit.
+
+## Décision
+
+**Tâche `prefers-reduced-motion` validée.** Le critère automatisable est rempli
+et la suite complète reste verte. La validation subjective sur une personne
+sensible au mouvement est une recommandation QA, pas un blocage fonctionnel.
 
 ---
 

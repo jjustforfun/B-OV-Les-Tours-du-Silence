@@ -52,8 +52,11 @@ export class ChapterCard implements UIPanel {
   constructor(options: ChapterCardOptions) {
     this.options = options;
     this.element = el('section', 'ui-panel ui-chapter is-hidden');
-    this.element.setAttribute('role', 'status');
-    this.element.setAttribute('aria-live', 'polite');
+    this.element.setAttribute('role', 'region');
+    this.element.setAttribute(
+      'aria-labelledby',
+      'ui-chapter-number ui-chapter-virtue ui-chapter-title ui-chapter-subtitle',
+    );
 
     // Le noir d'entrée : il s'ouvre sur le chapitre (fondu au noir élégant).
     this.black = el('div', 'ui-chapter__black');
@@ -61,17 +64,19 @@ export class ChapterCard implements UIPanel {
 
     this.texts = el('div', 'ui-chapter__texts');
     this.numberNode = el('p', 'ui-chapter__number');
+    this.numberNode.id = 'ui-chapter-number';
     this.virtueNode = el('h2', 'ui-chapter__virtue');
+    this.virtueNode.id = 'ui-chapter-virtue';
     this.titleNode = el('p', 'ui-chapter__title');
+    this.titleNode.id = 'ui-chapter-title';
     this.subtitleNode = el('p', 'ui-chapter__subtitle');
-    this.texts.append(
-      this.numberNode,
-      this.virtueNode,
-      this.titleNode,
-      this.subtitleNode,
-    );
+    this.subtitleNode.id = 'ui-chapter-subtitle';
+    this.texts.append(this.numberNode, this.virtueNode, this.titleNode, this.subtitleNode);
 
     this.introNode = el('p', 'ui-chapter__intro');
+    this.introNode.setAttribute('role', 'status');
+    this.introNode.setAttribute('aria-live', 'polite');
+    this.introNode.setAttribute('aria-atomic', 'true');
 
     this.element.append(this.black, this.texts, this.introNode);
     this.element.addEventListener('pointerdown', () => this.advance());
@@ -82,11 +87,15 @@ export class ChapterCard implements UIPanel {
     this.data = data;
     this.step = 'card';
     this.numberNode.textContent =
-      data.chapter === 0 ? i18n.t('virtues.prologue') : i18n.t('ui.chapter', { number: data.chapter });
+      data.chapter === 0
+        ? i18n.t('virtues.prologue')
+        : i18n.t('ui.chapter', { number: data.chapter });
     this.virtueNode.textContent = i18n.t(data.virtueKey);
     this.titleNode.textContent = i18n.t(data.titleKey);
     this.subtitleNode.textContent = i18n.t(data.subtitleKey);
-    this.introNode.textContent = i18n.t(data.introKey);
+    // Le texte entre dans la région live seulement au second temps : il est
+    // alors annoncé sans déplacer le focus placé sur le panneau.
+    this.introNode.textContent = '';
 
     this.show();
     // Le noir s'ouvre au rythme contemplatif ; les textes se posent ensuite.
@@ -145,6 +154,7 @@ export class ChapterCard implements UIPanel {
     this.step = 'intro';
     this.stepStartedAt = nowMs();
     this.texts.classList.add('is-faded');
+    this.introNode.textContent = i18n.t(this.data.introKey);
     this.introNode.classList.add('is-visible');
     this.schedule(UI.introHoldMs, () => this.finish());
   }
@@ -162,7 +172,5 @@ export class ChapterCard implements UIPanel {
 }
 
 function nowMs(): number {
-  return typeof performance === 'object' && performance !== null
-    ? performance.now()
-    : Date.now();
+  return typeof performance === 'object' && performance !== null ? performance.now() : Date.now();
 }

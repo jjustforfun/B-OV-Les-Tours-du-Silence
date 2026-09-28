@@ -85,6 +85,7 @@ export class Settings implements UIPanel {
   private readonly conflictNode: HTMLElement = el('p', 'ui-settings__conflict is-hidden');
   private readonly resetButton: HTMLButtonElement;
   private readonly closeButton: HTMLButtonElement;
+  private controlId = 0;
   private captureTarget: InputAction | null = null;
 
   constructor(options: SettingsPanelOptions) {
@@ -92,8 +93,12 @@ export class Settings implements UIPanel {
     this.element = el('section', 'ui-panel ui-settings is-hidden');
     this.element.setAttribute('role', 'dialog');
     this.element.setAttribute('aria-modal', 'true');
+    this.element.setAttribute('aria-labelledby', 'ui-settings-title');
 
     const card = el('div', 'ui-card ui-settings__card');
+    const titleNode = el('h2', 'ui-settings__title');
+    titleNode.id = 'ui-settings-title';
+    this.textBindings.push({ node: titleNode, key: 'settings.title' });
     const scroller = el('div', 'ui-settings__scroller');
 
     this.closeButton = el('button', 'ui-settings__close');
@@ -201,7 +206,7 @@ export class Settings implements UIPanel {
     this.attachSection(scroller, 'settings.keys', keysBody);
 
     this.textBindings.push({ node: this.closeButton, key: 'ui.close' });
-    card.append(scroller, this.closeButton);
+    card.append(titleNode, scroller, this.closeButton);
     this.element.appendChild(card);
   }
 
@@ -310,6 +315,7 @@ export class Settings implements UIPanel {
   private wrapRow(labelKey: string, control: HTMLElement): HTMLElement {
     const row = el('div', 'ui-settings__row');
     const label = el('label', 'ui-settings__label');
+    this.linkLabel(label, control);
     this.textBindings.push({ node: label, key: labelKey });
     row.append(label, control);
     return row;
@@ -322,10 +328,17 @@ export class Settings implements UIPanel {
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.className = 'ui-settings__toggle';
+    this.linkLabel(label, input);
     input.addEventListener('change', () => apply(input.checked));
     row.append(label, input);
     this.toggles.push(input);
     return row;
+  }
+
+  private linkLabel(label: HTMLLabelElement, control: HTMLElement): void {
+    this.controlId += 1;
+    control.id = `ui-settings-control-${this.controlId}`;
+    label.htmlFor = control.id;
   }
 
   // ————————————————————————————————— Synchronisation

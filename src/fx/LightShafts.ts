@@ -75,7 +75,6 @@ export class LightShafts {
   private readonly volumes: ShaftVolume[] = [];
   private readonly maxCount: number;
   private readonly intensity: number;
-  private readonly shimmer: number;
   private readonly color: Color;
   private revealElapsed = 0;
   private revealDuration = 0;
@@ -85,7 +84,6 @@ export class LightShafts {
     this.root.name = 'LightShafts';
     this.maxCount = options.maxCount ?? FX.shafts.maxCount;
     this.intensity = options.intensity ?? 0.6;
-    this.shimmer = ambientDriftEnabled() ? 1 : 0;
     this.color = new Color(options.color ?? 0xffe9c4);
   }
 
@@ -118,7 +116,7 @@ export class LightShafts {
         uColor: { value: this.color },
         uOpacity: { value: 0 },
         uTime: { value: 0 },
-        uShimmer: { value: this.shimmer },
+        uShimmer: { value: ambientDriftEnabled() ? 1 : 0 },
       },
       transparent: true,
       depthWrite: false,
@@ -166,12 +164,15 @@ export class LightShafts {
     const t = this.revealDuration <= 0 ? 1 : Math.min(1, this.revealElapsed / this.revealDuration);
     const eased = t * t * (3 - 2 * t);
     const opacity = eased * this.intensity;
+    const shimmer = ambientDriftEnabled() ? 1 : 0;
 
     for (const entry of this.entries) {
       const timeUniform = entry.mesh.material.uniforms.uTime;
       if (timeUniform) timeUniform.value = elapsed;
       const opacityUniform = entry.mesh.material.uniforms.uOpacity;
       if (opacityUniform) opacityUniform.value = opacity;
+      const shimmerUniform = entry.mesh.material.uniforms.uShimmer;
+      if (shimmerUniform) shimmerUniform.value = shimmer;
     }
   }
 
