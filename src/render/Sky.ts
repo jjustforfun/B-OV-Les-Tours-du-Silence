@@ -10,6 +10,7 @@
 import { Color, DataTexture, FogExp2, LinearFilter, RGBAFormat, SRGBColorSpace } from 'three';
 import type { Scene } from 'three';
 import { RENDER } from '@/config';
+import { ambientDriftEnabled } from '@core/motion';
 
 export interface SkyPalette {
   readonly top: number;
@@ -98,8 +99,9 @@ export class Sky {
     if (!this.texture) return;
     this.updateTransition(elapsedSeconds);
 
-    const wave =
-      Math.sin(elapsedSeconds * RENDER.sky.animationSpeed) * RENDER.sky.animationAmplitude;
+    const wave = ambientDriftEnabled()
+      ? Math.sin(elapsedSeconds * RENDER.sky.animationSpeed) * RENDER.sky.animationAmplitude
+      : 0;
     this.animatedTop.copy(this.top).offsetHSL(0, wave * 0.08, wave * 0.18);
     this.animatedBottom.copy(this.bottom).offsetHSL(0, wave * 0.06, wave * 0.11);
     fillGradientData(this.data, this.animatedTop, this.animatedBottom);

@@ -82,8 +82,9 @@ export class PointerInput {
     this.element.addEventListener('pointerdown', this.onPointerDown);
     this.element.addEventListener('pointermove', this.onPointerMove);
     this.element.addEventListener('pointerup', this.onPointerUp);
-    this.element.addEventListener('pointercancel', this.onPointerUp);
+    this.element.addEventListener('pointercancel', this.onPointerCancel);
     this.element.addEventListener('lostpointercapture', this.onLostCapture);
+    this.element.addEventListener('contextmenu', this.onContextMenu);
     if (typeof window !== 'undefined') window.addEventListener('blur', this.onWindowBlur);
   }
 
@@ -142,7 +143,7 @@ export class PointerInput {
     this.element.removeEventListener('pointerdown', this.onPointerDown);
     this.element.removeEventListener('pointermove', this.onPointerMove);
     this.element.removeEventListener('pointerup', this.onPointerUp);
-    this.element.removeEventListener('pointercancel', this.onPointerUp);
+    this.element.removeEventListener('pointercancel', this.onPointerCancel);
     this.element.removeEventListener('lostpointercapture', this.onLostCapture);
     this.element.removeEventListener('contextmenu', this.onContextMenu);
     if (typeof window !== 'undefined') window.removeEventListener('blur', this.onWindowBlur);
@@ -168,6 +169,7 @@ export class PointerInput {
   }
 
   setSuspended(suspended: boolean): void {
+    if (suspended && !this.suspended) this.cancelDrag();
     this.suspended = suspended;
   }
 
@@ -208,7 +210,9 @@ export class PointerInput {
       if (travelled < POINTER.dragThresholdPx) return;
       this.dragging = true;
       this.clearLongPress();
-      this.bus.emit('dragStart', intent);
+      // La cible du drag est celle pressée au départ, pas un mécanisme voisin
+      // éventuellement traversé au moment où les 8 px sont franchis.
+      this.bus.emit('dragStart', { ...this.lastIntent });
     }
 
     this.bus.emit('drag', {
@@ -239,10 +243,18 @@ export class PointerInput {
       this.bus.emit('tap', intent);
     }
 
-    this.releaseCapture(event.pointerId);
+    // Marquer le pointeur terminé avant `releasePointerCapture` : certains
+    // navigateurs émettent immédiatement `lostpointercapture`.
     this.activePointerId = null;
     this.dragging = false;
     this.suppressTap = false;
+    this.releaseCapture(event.pointerId);
+  };
+
+  /** Une annulation système n'est jamais interprétée comme un tap. */
+  private readonly onPointerCancel = (event: PointerEvent): void => {
+    if (event.pointerId !== this.activePointerId) return;
+    this.cancelDrag();
   };
 
   /** Perte de capture (élément détruit, onglet changé) : on solde le drag. */
@@ -266,10 +278,11 @@ export class PointerInput {
         deltaY: 0,
       });
     }
-    this.releaseCapture(this.activePointerId);
+    const pointerId = this.activePointerId;
     this.activePointerId = null;
     this.dragging = false;
     this.suppressTap = false;
+    this.releaseCapture(pointerId);
   }
 
   /**

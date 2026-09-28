@@ -28,6 +28,8 @@ describe('Rotator', () => {
     graph.addNode('b', { x: 1, y: 0, z: 0 });
     graph.connect('a', 'b', { condition: { mechanism: 'R', equals: 90 } });
     const rotator = new Rotator('R');
+    expect(rotator.root.getObjectByName('MechanismHandle:R')).toBeDefined();
+    expect(rotator.root.getObjectByName('MechanismAffordanceOutline:R')).toBeDefined();
     const snaps: number[] = [];
     bus.on('mechanism:snap', (event) => snaps.push(Number(event.value)));
 

@@ -61,10 +61,12 @@ export class ProverbBook implements UIPanel {
     this.element = el('section', 'ui-panel ui-proverb is-hidden');
     this.element.setAttribute('role', 'dialog');
     this.element.setAttribute('aria-modal', 'true');
+    this.element.setAttribute('aria-labelledby', 'ui-proverbs-title');
 
     const card = el('div', 'ui-card ui-proverb__card');
     const header = el('header', 'ui-proverb__header');
     this.titleNode = el('h2', 'ui-proverb__title', i18n.t('proverbs.title'));
+    this.titleNode.id = 'ui-proverbs-title';
     this.note = el('p', 'ui-proverb__note', i18n.t('proverbs.note'));
     this.closeButton = el('button', 'ui-settings__close', i18n.t('ui.close'));
     this.closeButton.type = 'button';

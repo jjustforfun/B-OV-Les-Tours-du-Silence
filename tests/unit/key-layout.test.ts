@@ -6,8 +6,14 @@
  * signatures concordantes suffisent à reconnaître un AZERTY — une seule ne
  * suffit pas (raccourci système, clavier exotique).
  */
-import { describe, expect, it } from 'vitest';
-import { KeyLayout, fallbackKeyLabel } from '@input/KeyLayout';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { keyLabel } from '@input/KeyboardInput';
+import { KeyLayout, fallbackKeyLabel, keyLayout } from '@input/KeyLayout';
+
+afterEach(() => {
+  keyLayout.reset();
+  vi.unstubAllGlobals();
+});
 
 describe('KeyLayout', () => {
   it('reste « unknown » avec une seule signature', () => {
@@ -51,6 +57,24 @@ describe('KeyLayout', () => {
     layout.reset();
     expect(layout.layout).toBe('unknown');
     expect(layout.labelFor('KeyA')).toBe('A');
+  });
+});
+
+describe('keyLabel', () => {
+  it('utilise getLayoutMap pour afficher « A » sur la position physique KeyQ', async () => {
+    vi.stubGlobal('navigator', {
+      keyboard: { getLayoutMap: () => Promise.resolve(new Map([['KeyQ', 'a']])) },
+    });
+    await expect(keyLabel('KeyQ')).resolves.toBe('A');
+  });
+
+  it('retombe sur l’observation puis le code si l’API navigateur échoue', async () => {
+    vi.stubGlobal('navigator', {
+      keyboard: { getLayoutMap: () => Promise.reject(new Error('permission refusée')) },
+    });
+    keyLayout.observe({ code: 'KeyQ', key: 'a' });
+    await expect(keyLabel('KeyQ')).resolves.toBe('A');
+    await expect(keyLabel('KeyP')).resolves.toBe('P');
   });
 });
 

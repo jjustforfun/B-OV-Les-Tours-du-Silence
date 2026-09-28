@@ -35,6 +35,19 @@
   visibility: hidden;
 }
 
+/* Présent pour les technologies d'assistance, hors du cadre visuel. */
+.ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ————————————————————————————————— Voile de transition */
 
 .ui-veil {
@@ -73,6 +86,16 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+}
+
+/* Les gestes restent verrouillés sur le jeu, mais les longues listes des
+   panneaux conservent leur défilement vertical tactile sans rebond global. */
+.ui-settings__scroller,
+.ui-proverb__scroller,
+.ui-chapters__scroller {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Le verre posé sous les menus et réglages (§ 7). */
@@ -395,6 +418,16 @@
   width: min(34rem, 100%);
 }
 
+.ui-settings__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  text-align: center;
+  text-transform: uppercase;
+}
+
 .ui-settings__scroller {
   display: flex;
   flex-direction: column;
@@ -490,6 +523,8 @@
 
 .ui-settings__conflict {
   margin: 0;
+  padding-left: var(--space-2);
+  border-left: 2px solid var(--color-ember);
   font-size: var(--text-sm);
   color: var(--color-ember-soft);
 }
@@ -757,10 +792,18 @@
 }
 
 .ui-chapters__status {
+  display: inline-flex;
+  gap: var(--space-1);
+  align-items: center;
   font-size: var(--text-xs);
   letter-spacing: var(--tracking-wide);
   color: var(--color-stone-300);
   text-transform: uppercase;
+}
+
+.ui-chapters__status-marker {
+  font-size: 0.8em;
+  line-height: 1;
 }
 
 /* Le chapitre courant porte la braise — liseré, jamais la couleur seule
@@ -867,21 +910,33 @@
 
 /* ————————————————————————————————— Mouvement réduit */
 
-/* Le réglage utilisateur pose html.ui-motion-reduced ; la préférence
-   système fait de même par sécurité. Aucun fondu, aucune respiration :
-   les textes se posent et se retirent. */
-html.ui-motion-reduced .ui-root,
-html.ui-motion-reduced .ui-root *,
-html.ui-motion-reduced .ui-veil {
-  transition-duration: 1ms !important;
-  animation: none !important;
+/* Le réglage utilisateur divise les transitions par deux et retire seulement
+   les respirations infinies. `ui-motion-full` peut explicitement reprendre la
+   main sur la préférence système, comme le fait la source TypeScript. */
+html.ui-motion-reduced {
+  --duration-fast: 90ms;
+  --duration-base: 210ms;
+  --duration-slow: 450ms;
+  --duration-contemplative: 900ms;
+}
+
+html.ui-motion-reduced .ui-title__touch,
+html.ui-motion-reduced .ui-settings__keybutton.is-capturing,
+html.ui-motion-reduced .ui-focus-ring--pulse {
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ui-root,
-  .ui-root *,
-  .ui-veil {
-    transition-duration: 1ms !important;
-    animation: none !important;
+  html:not(.ui-motion-full) {
+    --duration-fast: 90ms;
+    --duration-base: 210ms;
+    --duration-slow: 450ms;
+    --duration-contemplative: 900ms;
+  }
+
+  html:not(.ui-motion-full) .ui-title__touch,
+  html:not(.ui-motion-full) .ui-settings__keybutton.is-capturing,
+  html:not(.ui-motion-full) .ui-focus-ring--pulse {
+    animation: none;
   }
 }

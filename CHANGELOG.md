@@ -8,6 +8,53 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ### Ajouté
 
+- **Phase 10 — Cycle de vie, libération et allocations** : une suite Node
+  rejoue 16 transitions `LevelLoader` sur les huit chapitres, 10 cycles de
+  `LevelRuntime` et le détachement des FX. Elle vérifie la stabilité des
+  abonnements globaux/input, l'idempotence des propriétaires, l'annulation des
+  pétales différés et une seule notification `dispose` pour chaque géométrie,
+  matériau et texture observables. `disposeObject` déduplique désormais les
+  ressources partagées et inspecte aussi les textures de uniforms ; le marqueur
+  de destination de Turpal est enfin attaché au niveau puis détaché avec lui.
+  Les snapshots de l'EventBus sont réutilisés par profondeur, le damping des
+  particules ne crée plus de closure, la traînée dorée écrit sa tête dans des
+  scalaires et la requête de mouvement réduit est mise en cache. Les mesures
+  `renderer.info.memory`, courbe cinq minutes et dix coutures dans un vrai
+  contexte WebGL restent explicitement ouvertes.
+- **Phase 10 — Validation complémentaire des entrées** : la feuille de route
+  reflète désormais l'état réellement livré des phases 5 à 10. Vingt-huit
+  nouveaux scénarios couvrent le seuil tap/drag, la capture et toutes les
+  annulations du pointeur, le cône directionnel écran, le cycle de mécanismes,
+  les codes clavier physiques, la manette, les motifs haptiques, le remappage
+  persistant et les libellés AZERTY. Le drag conserve maintenant la cible du
+  `pointerdown`, une annulation système ne produit plus de tap, et une pause
+  aimante le mécanisme avant de geler le monde. Les délais Gamepad
+  `dual-rumble` utilisent correctement les millisecondes. La validation des
+  gestes navigateur sur Android et iOS réels reste explicitement ouverte.
+- **Phase 10 — Navigation au lecteur d'écran** : chaque panneau est désormais
+  réellement monté dans `UIRoot` et possède un nom explicite relié à son titre.
+  Un annonceur `role=status` poli et atomique signale les ouvertures sans voler
+  le focus ; l'introduction de chapitre conserve sa propre région dynamique.
+  Les écrans sous une modale deviennent `inert` et `aria-hidden`, `Tab` reste
+  piégé au sommet, et chaque fermeture restaure en LIFO le contrôle exact qui
+  l'avait ouverte, avec repli sûr si celui-ci a disparu. Les libellés des
+  réglages sont reliés à leurs contrôles. Sept tests jsdom couvrent montage,
+  noms, annonces, imbrication, piège et restauration du focus.
+- **Phase 10 — Indices indépendants de la couleur** : la conception daltonienne
+  est universelle et ne dépend pas d'un mode séparé. L'anneau de destination et
+  chaque mécanisme possèdent désormais un contour neutre permanent ; les huit
+  braises de l'épilogue sont doublées d'une coque filaire claire, visible même
+  lorsque leur pulsation est figée. Dans l'interface, conflits, focus et
+  chapitre courant associent couleur, bordure, symbole et texte. Deux tests
+  d'audit verrouillent les canaux secondaires 3D et UI.
+- **Phase 10 — Mouvement réduit** : la préférence système et le réglage manuel
+  réduit/plein s'appliquent désormais immédiatement, y compris aux effets déjà
+  instanciés. Les durées d'interface, du voile et des FX sont divisées par deux
+  sans accélérer la marche ni modifier les puzzles. Les dérives de brume,
+  neige, lucioles, ciel et rais, ainsi que les pulsations décoratives des
+  mécanismes, sont figées ; le mode plein peut explicitement reprendre la main
+  sur la préférence système. Quatre tests dédiés couvrent le changement à chaud
+  de la brume, des particules et du ciel.
 - **Phase 9 — Chapitre 7, « Le Chant revenu »** : épilogue linéaire sans
   mécanisme ni illusion, devant huit tours intactes reprenant les palettes des
   chapitres 0 à 7. Chaque passage allume une tour et restaure progressivement

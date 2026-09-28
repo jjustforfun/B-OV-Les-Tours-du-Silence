@@ -44,10 +44,12 @@ export class ChapterSelector implements UIPanel {
     this.element = el('section', 'ui-panel ui-chapters is-hidden');
     this.element.setAttribute('role', 'dialog');
     this.element.setAttribute('aria-modal', 'true');
+    this.element.setAttribute('aria-labelledby', 'ui-chapters-title');
 
     const card = el('div', 'ui-card ui-chapters__card');
     const header = el('header', 'ui-chapters__header');
     this.titleNode = el('h2', 'ui-chapters__title', i18n.t('chapters.title'));
+    this.titleNode.id = 'ui-chapters-title';
     this.closeButton = el('button', 'ui-settings__close', i18n.t('ui.close'));
     this.closeButton.type = 'button';
     this.closeButton.addEventListener('click', () => this.options.onClose());
@@ -84,11 +86,16 @@ export class ChapterSelector implements UIPanel {
         'ui-chapters__name',
         locked ? i18n.t('chapters.locked') : i18n.t(levelTitleKey(entry.id)),
       );
-      const status = el(
-        'span',
-        'ui-chapters__status',
-        entry.status === 'locked' ? '' : i18n.t(STATUS_KEY[entry.status]),
-      );
+      const status = el('span', 'ui-chapters__status');
+      if (entry.status !== 'locked') {
+        const marker = el(
+          'span',
+          'ui-chapters__status-marker',
+          entry.status === 'current' ? '◆' : '✓',
+        );
+        marker.setAttribute('aria-hidden', 'true');
+        status.append(marker, document.createTextNode(i18n.t(STATUS_KEY[entry.status])));
+      }
       button.append(number, title, status);
       if (!locked) {
         button.addEventListener('click', () => this.options.onSelect(entry.id));

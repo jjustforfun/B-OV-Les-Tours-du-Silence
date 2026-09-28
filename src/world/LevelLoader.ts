@@ -46,8 +46,9 @@ export class LevelLoader {
   }
 
   unload(): void {
-    this.current?.dispose();
+    const level = this.current;
     this.current = null;
+    level?.dispose();
   }
 
   clearCache(): void {

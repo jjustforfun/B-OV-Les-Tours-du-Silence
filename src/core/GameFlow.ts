@@ -20,7 +20,7 @@
 import type { Object3D } from 'three';
 import { Engine } from '@core/Engine';
 import { bus } from '@core/EventBus';
-import { isReducedMotion, setReducedMotionOverride } from '@core/motion';
+import { motionDurationScale, setReducedMotionOverride } from '@core/motion';
 import { UI } from '@/config';
 import { i18n } from '@i18n/i18n';
 import { haptic, setHapticsEnabled } from '@input/Haptics';
@@ -121,6 +121,7 @@ export class GameFlow {
   private state: FlowState = 'boot';
   private levelStartedAtMs = 0;
   private demoAttached = true;
+  private disposed = false;
   private readonly unsubscribes: (() => void)[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
@@ -263,7 +264,7 @@ export class GameFlow {
     this.caption('captions.celebration');
 
     // La célébration (cascade des tours, traînée dorée) vit ce temps-là.
-    await delay(UI.solvedHoldMs);
+    await delay(UI.solvedHoldMs * motionDurationScale());
 
     const proverbKey = levelProverbKey(this.currentId);
     this.toast.show(`${i18n.t('ui.proverbOffered')} — ${i18n.t(proverbKey)}`);
@@ -411,8 +412,8 @@ export class GameFlow {
 
   private applyMotion(choice: UiSettingsState['reducedMotion']): void {
     setReducedMotionOverride(choice === 'reduced' ? true : choice === 'full' ? false : undefined);
-    const reduced = choice === 'reduced' || (choice === 'auto' && isReducedMotion());
-    document.documentElement.classList.toggle('ui-motion-reduced', reduced);
+    document.documentElement.classList.toggle('ui-motion-reduced', choice === 'reduced');
+    document.documentElement.classList.toggle('ui-motion-full', choice === 'full');
   }
 
   private applyFontScale(choice: UiSettingsState['fontScale']): void {
@@ -605,6 +606,8 @@ export class GameFlow {
   }
 
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     for (const unsubscribe of this.unsubscribes) unsubscribe();
     this.unsubscribes.length = 0;
     this.accumulatePlaytime();

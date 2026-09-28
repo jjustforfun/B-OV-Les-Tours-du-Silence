@@ -122,9 +122,11 @@ export class InputManager extends EventBus<InputEvents> {
    */
   setSuspended(suspended: boolean): void {
     if (this.suspended === suspended) return;
-    this.suspended = suspended;
-    this.keyboard.setSuspended(suspended);
+    // Le pointeur solde d'abord un éventuel drag afin que le mécanisme puisse
+    // s'aimanter avant que les intentions de jeu soient suspendues.
     this.pointer.setSuspended(suspended);
+    this.keyboard.setSuspended(suspended);
+    this.suspended = suspended;
   }
 
   get isSuspended(): boolean {

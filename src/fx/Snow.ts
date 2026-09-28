@@ -52,10 +52,8 @@ export class Snow {
   private readonly boundsX: number;
   private readonly boundsY: number;
   private readonly boundsZ: number;
-  private readonly fallSpeed: number;
   private readonly swayAmplitude: number;
   private readonly swaySpeed: number;
-  private readonly drift: boolean;
   private readonly material: ShaderMaterial;
 
   constructor(options: SnowOptions = {}, particleScale = 1) {
@@ -66,10 +64,8 @@ export class Snow {
     this.boundsX = options.bounds?.[0] ?? 26;
     this.boundsY = options.bounds?.[1] ?? 16;
     this.boundsZ = options.bounds?.[2] ?? 26;
-    this.fallSpeed = FX.snow.fallSpeed * motionDurationScale();
     this.swayAmplitude = FX.snow.swayAmplitude;
     this.swaySpeed = FX.snow.swaySpeed;
-    this.drift = ambientDriftEnabled();
 
     this.positions = new Float32Array(this.count * 3);
     this.phases = new Float32Array(this.count);
@@ -108,14 +104,16 @@ export class Snow {
   update(delta: number, elapsed: number): void {
     const halfX = this.boundsX * 0.5;
     const halfZ = this.boundsZ * 0.5;
+    const fallSpeed = FX.snow.fallSpeed * motionDurationScale();
+    const drift = ambientDriftEnabled();
 
     for (let i = 0; i < this.count; i += 1) {
       const i3 = i * 3;
-      let y = (this.positions[i3 + 1] ?? 0) - this.fallSpeed * delta;
+      let y = (this.positions[i3 + 1] ?? 0) - fallSpeed * delta;
       let x = this.positions[i3] ?? 0;
 
       // Dérive : la neige hésite — sauf en mouvement réduit.
-      if (this.drift) {
+      if (drift) {
         const phase = this.phases[i] ?? 0;
         x += Math.sin(elapsed * this.swaySpeed + phase) * this.swayAmplitude * delta * 2;
       }

@@ -93,6 +93,8 @@ describe('Turpal — path following', () => {
 
     expect(turpal.goTo(graph, 'c')).toBe(true);
     expect(turpal.destinationMarker.isVisible).toBe(true);
+    expect(turpal.destinationMarker.root.getObjectByName('DestinationMarkerRing')).toBeDefined();
+    expect(turpal.destinationMarker.root.getObjectByName('DestinationMarkerOutline')).toBeDefined();
     for (let i = 0; i < 30; i += 1) turpal.update(graph, 1 / 60);
     expect(turpal.destinationMarker.isVisible).toBe(false);
     turpal.dispose();

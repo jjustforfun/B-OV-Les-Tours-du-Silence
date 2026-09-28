@@ -25,7 +25,14 @@ GamepadInput ─┘
 | **Pincer, double-tap, molette**          | **Rien du tout**                                  | Pas de zoom, pas de caméra libre : le cadrage est composé par le designer (ADR-002). La molette et le pincement sont explicitement avalés |
 
 Le curseur souris change de forme au survol d'un élément manipulable
-(`cursor: grab` → `grabbing`), seule concession au desktop.
+(`cursor: grab` → `grabbing`), seule concession au desktop. La cible d'un
+glissement est figée au `pointerdown` : franchir le seuil de 8 px au-dessus
+d'un autre mécanisme ne change jamais la pierre manipulée. `pointercancel`,
+perte de capture, sortie de fenêtre, suspension et pause soldent le geste une
+seule fois ; une pause appelle l'aimantation avant de geler la simulation.
+
+Ces invariants sont couverts automatiquement. Le blocage effectif du zoom et
+du rebond doit encore être confirmé sur Safari iOS et Chrome Android réels.
 
 ---
 
@@ -125,9 +132,16 @@ via `gamepad.vibrationActuator` quand il existe.
 | Besoin                   | Réponse                                                                         |
 | ------------------------ | ------------------------------------------------------------------------------- |
 | Sans souris              | Table clavier complète (§ 2), focus visible partout                             |
-| Lecteur d'écran          | Interface en DOM, rôles ARIA et `aria-live` sur les panneaux (ADR-012)          |
+| Lecteur d'écran          | Panneaux DOM nommés, annonces polies, écrans inactifs `inert` + `aria-hidden`   |
 | Motricité fine           | Aucune action chronométrée, aucun geste précis requis, tolérance de tap élargie |
 | `prefers-reduced-motion` | Durées divisées par 2, dérive de brume et parallaxe supprimées                  |
 | Daltonisme               | La braise est toujours doublée d'un liseré ou d'une pulsation                   |
 | Audition                 | Sous-titres des événements sonores signifiants ; aucun puzzle ne dépend du son  |
 | Confort de lecture       | Taille du texte réglable (0,875 / 1 / 1,25)                                     |
+
+`UIRoot` monte chaque panneau dans une racine unique. Son annonceur
+`role="status"` poli et atomique signale le nom de l'écran sans recevoir le
+focus. Une modale rend tous les écrans inférieurs inertes et absents de l'arbre
+d'accessibilité ; `Tab` reste dans l'écran actif. À la fermeture, le focus
+revient à la cible exacte mémorisée pour ce niveau, ou au premier contrôle
+encore disponible si cette cible a été reconstruite ou supprimée.

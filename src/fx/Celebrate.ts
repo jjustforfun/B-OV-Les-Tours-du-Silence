@@ -44,10 +44,10 @@ export class Celebrate {
   private readonly geometry: SphereGeometry;
   private readonly baseMaterial: MeshBasicMaterial;
   private readonly orbs: GlowOrb[] = [];
-  private readonly durationScale = motionDurationScale();
   private readonly tmp = new Vector3();
   private readonly sortTmpA = new Vector3();
   private readonly sortTmpB = new Vector3();
+  private readonly pendingPetals = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(
     private readonly pool: ParticlePool,
@@ -104,7 +104,7 @@ export class Celebrate {
     }
     const ordered = [...towers].sort((a, b) => (distances.get(b) ?? 0) - (distances.get(a) ?? 0));
 
-    const stagger = (FX.illumination.staggerMs / 1000) * this.durationScale;
+    const stagger = (FX.illumination.staggerMs / 1000) * motionDurationScale();
     ordered.forEach((tower, index) => {
       tower.getWorldPosition(this.sortTmpB);
       const position = this.sortTmpB.clone();
@@ -115,6 +115,8 @@ export class Celebrate {
 
   /** Libère les orbes résiduels (changement de niveau). */
   reset(): void {
+    for (const timeout of this.pendingPetals) clearTimeout(timeout);
+    this.pendingPetals.clear();
     for (const orb of this.orbs) {
       orb.mesh.removeFromParent();
       orb.material.dispose();
@@ -124,7 +126,7 @@ export class Celebrate {
 
   update(delta: number): void {
     if (this.orbs.length === 0) return;
-    const fade = (FX.illumination.glowFadeMs / 1000) * this.durationScale;
+    const fade = (FX.illumination.glowFadeMs / 1000) * motionDurationScale();
 
     for (let i = this.orbs.length - 1; i >= 0; i -= 1) {
       const orb = this.orbs[i];
@@ -169,7 +171,7 @@ export class Celebrate {
       speedVariance: 0.25,
       size: 0.085,
       sizeEnd: 0.02,
-      lifetime: (FX.rotationDust.lifetimeMs / 1000) * this.durationScale,
+      lifetime: FX.rotationDust.lifetimeMs / 1000,
       lifetimeVariance: 0.15,
       gravity: -0.25,
       drag: 1.1,
@@ -189,7 +191,7 @@ export class Celebrate {
       speedVariance: 0.35,
       size: 0.1,
       sizeEnd: 0.02,
-      lifetime: (PACING.celebrationMs / 1000) * this.durationScale,
+      lifetime: PACING.celebrationMs / 1000,
       lifetimeVariance: 0.3,
       gravity: -0.35,
       drag: 0.8,
@@ -200,7 +202,8 @@ export class Celebrate {
   /** Pétales : retombée lente, rose doré — jamais des confettis de fête. */
   private spawnPetals(position: Vector3, delay: number): void {
     if (typeof setTimeout !== 'function') return;
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
+      this.pendingPetals.delete(timeout);
       this.pool.emit({
         x: position.x,
         y: position.y + 0.5,
@@ -212,13 +215,14 @@ export class Celebrate {
         speedVariance: 0.2,
         size: 0.07,
         sizeEnd: 0.03,
-        lifetime: 1.6 * this.durationScale,
+        lifetime: 1.6,
         lifetimeVariance: 0.4,
         gravity: -0.12,
         drag: 0.5,
         upBias: 0.6,
       });
     }, delay * 1000);
+    this.pendingPetals.add(timeout);
   }
 
   /** Orbe de lumière posé sur une tour, né après `delay` secondes. */

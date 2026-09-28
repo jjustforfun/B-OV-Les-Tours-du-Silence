@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#141a2a"/><stop offset="1" stop-color="#2c3444"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <style>
+    .title{font:36px serif;fill:#f7f0dd}.sub{font:18px sans-serif;fill:#bac2cf}.head{font:bold 20px sans-serif;fill:#f7f0dd}.text{font:17px sans-serif;fill:#f7f0dd}.small{font:14px sans-serif;fill:#bac2cf}.card{fill:#1a2030;stroke:#697386;stroke-width:2}.ember{stroke:#d9a441;fill:none}.ink{stroke:#e8e0d2;fill:none}.dark{stroke:#10161f;fill:none}.ok{fill:#91c7a5}.gold{fill:#d9a441}
+  </style>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <text x="60" y="68" class="title">Phase 10.2 — Indices indépendants de la couleur</text>
+  <text x="60" y="100" class="sub">La braise accompagne l’information ; elle ne la porte jamais seule.</text>
+
+  <g transform="translate(60 145)">
+    <rect width="250" height="390" rx="18" class="card"/>
+    <text x="22" y="42" class="head">Destination</text>
+    <g transform="translate(125 145)"><circle r="65" class="dark" stroke-width="18"/><circle r="58" class="ember" stroke-width="7" filter="url(#glow)"/></g>
+    <text x="22" y="245" class="text">Anneau braise</text><text x="22" y="275" class="text">+ contour sombre</text><text x="22" y="305" class="text">+ expansion</text>
+    <circle cx="220" cy="355" r="8" class="ok"/><text x="22" y="362" class="small">lisible sans teinte</text>
+  </g>
+
+  <g transform="translate(335 145)">
+    <rect width="250" height="390" rx="18" class="card"/>
+    <text x="22" y="42" class="head">Mécanisme</text>
+    <g transform="translate(125 145)"><circle r="67" class="dark" stroke-width="20"/><circle r="67" class="ember" stroke-width="6"/></g>
+    <path d="M95 145h60M125 115v60" class="ink" stroke-width="3"/>
+    <text x="22" y="245" class="text">Tore braise</text><text x="22" y="275" class="text">+ tore neutre épais</text><text x="22" y="305" class="text">+ forme actionnable</text>
+    <circle cx="220" cy="355" r="8" class="ok"/><text x="22" y="362" class="small">fixe si mouvement réduit</text>
+  </g>
+
+  <g transform="translate(610 145)">
+    <rect width="250" height="390" rx="18" class="card"/>
+    <text x="22" y="42" class="head">Tour éveillée</text>
+    <g transform="translate(125 145)" filter="url(#glow)"><circle r="48" fill="#d9a441" opacity=".85"/><circle r="64" class="ink" stroke-width="3" stroke-dasharray="8 7"/><ellipse rx="64" ry="22" class="ink" stroke-width="2"/><ellipse rx="22" ry="64" class="ink" stroke-width="2"/></g>
+    <text x="22" y="245" class="text">Braise lumineuse</text><text x="22" y="275" class="text">+ coque filaire</text><text x="22" y="305" class="text">+ état persistant</text>
+    <circle cx="220" cy="355" r="8" class="ok"/><text x="22" y="362" class="small">8/8 coques testées</text>
+  </g>
+
+  <g transform="translate(885 145)">
+    <rect width="250" height="390" rx="18" class="card"/>
+    <text x="22" y="42" class="head">Interface</text>
+    <rect x="25" y="82" width="200" height="58" rx="8" fill="none" stroke="#d9a441" stroke-width="3"/><text x="43" y="118" class="text">◆ Chapitre courant</text>
+    <rect x="25" y="160" width="200" height="58" rx="8" fill="none" stroke="#697386" stroke-width="2"/><text x="43" y="196" class="text">✓ Terminé</text>
+    <path d="M25 244h200" stroke="#d9a441" stroke-width="3"/><text x="43" y="276" class="text">! Conflit explicite</text>
+    <text x="22" y="320" class="small">bordure + symbole</text><text x="22" y="344" class="small">+ libellé traduit</text>
+    <circle cx="220" cy="355" r="8" class="ok"/>
+  </g>
+
+  <g transform="translate(60 595)"><rect width="1075" height="62" rx="14" fill="#1a2030" stroke="#d9a441"/><text x="24" y="28" class="text">Invariant testé : couleur + canal statique parmi contour, forme, symbole ou texte.</text><text x="24" y="50" class="small">Les usages décoratifs ne codent aucune condition de jeu.</text><text x="945" y="38" class="text">287/287 ✓</text></g>
+</svg>

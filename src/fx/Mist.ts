@@ -80,7 +80,6 @@ export class Mist {
   readonly root = new Group();
   readonly layers: readonly MistLayer[];
 
-  private readonly enabledDrift = ambientDriftEnabled();
   private readonly materials: ShaderMaterial[] = [];
   private readonly geometries: PlaneGeometry[] = [];
 
@@ -144,7 +143,7 @@ export class Mist {
       if (timeUniform) timeUniform.value = elapsed;
       // Dérive de 0,05 u/s, alternative gauche-droite : la brume respire.
       // Mouvement réduit : pas de dérive du tout (docs/CONTROLS.md § 5).
-      layer.mesh.position.x = this.enabledDrift
+      layer.mesh.position.x = ambientDriftEnabled()
         ? Math.sin(elapsed * 0.05 + layer.basePhase) * (FX.mist.drift * 10)
         : 0;
     }

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#141a2a"/><stop offset="1" stop-color="#2c3444"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <style>
+    .title{font:36px serif;fill:#f7f0dd}.sub{font:18px sans-serif;fill:#bac2cf}.head{font:bold 24px sans-serif;fill:#f7f0dd}.text{font:18px sans-serif;fill:#f7f0dd}.small{font:15px sans-serif;fill:#bac2cf}.card{fill:#1a2030;stroke:#697386;stroke-width:2}.reduced{stroke:#d9a441}.line{stroke:#697386;stroke-width:2}.gold{fill:#d9a441}.ok{fill:#91c7a5}
+  </style>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <text x="60" y="68" class="title">Phase 10.1 — Mouvement réduit</text>
+  <text x="60" y="100" class="sub">Matrice technique · préférence appliquée à chaud · gameplay identique</text>
+
+  <g transform="translate(60 140)">
+    <rect width="500" height="470" rx="20" class="card"/>
+    <text x="28" y="48" class="head">Mouvement normal</text>
+    <circle cx="448" cy="40" r="10" class="ok"/>
+    <text x="28" y="91" class="text">Durées UI</text><text x="280" y="91" class="text">180 · 420 · 900 · 1 800 ms</text>
+    <line x1="28" y1="112" x2="472" y2="112" class="line"/>
+    <text x="28" y="151" class="text">Brume</text><path d="M280 148 C315 120 350 176 386 148 S450 176 472 148" fill="none" stroke="#bac2cf" stroke-width="5"/>
+    <text x="28" y="200" class="text">Neige et lucioles</text><g class="gold" filter="url(#glow)"><circle cx="300" cy="195" r="4"/><circle cx="340" cy="180" r="3"/><circle cx="380" cy="207" r="5"/><circle cx="430" cy="187" r="3"/></g>
+    <text x="28" y="249" class="text">Ciel et rais</text><path d="M287 235 L335 275 L370 235" fill="#d9a441" opacity=".4"/><path d="M390 235 L420 270 L448 235" fill="#f7f0dd" opacity=".25"/>
+    <text x="28" y="308" class="text">Affordance</text><circle cx="330" cy="300" r="30" fill="none" stroke="#d9a441" stroke-width="4"/><circle cx="330" cy="300" r="41" fill="none" stroke="#d9a441" stroke-width="2" opacity=".35"/>
+    <text x="28" y="367" class="text">Traînée</text><path d="M280 362 H455" stroke="#d9a441" stroke-width="5" filter="url(#glow)"/><text x="280" y="391" class="small">8 unités/s</text>
+    <text x="28" y="438" class="small">Respirations lentes et feedbacks contemplatifs</text>
+  </g>
+
+  <g transform="translate(640 140)">
+    <rect width="500" height="470" rx="20" class="card reduced"/>
+    <text x="28" y="48" class="head">Mouvement réduit</text>
+    <circle cx="448" cy="40" r="10" class="gold" filter="url(#glow)"/>
+    <text x="28" y="91" class="text">Durées UI</text><text x="280" y="91" class="text">90 · 210 · 450 · 900 ms</text>
+    <line x1="28" y1="112" x2="472" y2="112" class="line"/>
+    <text x="28" y="151" class="text">Brume</text><path d="M280 148 H472" fill="none" stroke="#bac2cf" stroke-width="5"/>
+    <text x="28" y="200" class="text">Neige et lucioles</text><g class="gold"><circle cx="300" cy="195" r="4"/><circle cx="340" cy="195" r="3"/><circle cx="380" cy="195" r="5"/><circle cx="430" cy="195" r="3"/></g>
+    <text x="28" y="249" class="text">Ciel et rais</text><path d="M287 235 L335 275 L370 235" fill="#d9a441" opacity=".4"/><path d="M390 235 L420 270 L448 235" fill="#f7f0dd" opacity=".25"/>
+    <text x="28" y="308" class="text">Affordance</text><circle cx="330" cy="300" r="34" fill="none" stroke="#d9a441" stroke-width="4"/>
+    <text x="28" y="367" class="text">Traînée</text><path d="M280 362 H455" stroke="#d9a441" stroke-width="5"/><text x="280" y="391" class="small">16 unités/s · fondu × 0,5</text>
+    <text x="28" y="438" class="small">Dérives figées, informations visuelles conservées</text>
+  </g>
+
+  <g transform="translate(60 650)"><circle cx="10" cy="0" r="8" class="ok"/><text x="30" y="6" class="text">Marche · NavGraph · mécanismes · solution : strictement identiques</text><text x="900" y="6" class="small">4/4 tests dédiés</text></g>
+</svg>

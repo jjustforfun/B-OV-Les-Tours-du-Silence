@@ -131,9 +131,9 @@ describe('SettingsStore', () => {
 
     // La section se remplace entière : revenir à « auto » efface la clé.
     await store.saveUi({ quality: undefined, fontScale: 'large', highContrast: true });
-    const raw = JSON.parse(
-      storage.dump().get(STORAGE_KEYS.settings) ?? '{}',
-    ) as { ui?: Record<string, unknown> };
+    const raw = JSON.parse(storage.dump().get(STORAGE_KEYS.settings) ?? '{}') as {
+      ui?: Record<string, unknown>;
+    };
     expect(raw.ui).toEqual({ fontScale: 'large', highContrast: true });
     expect(Object.hasOwn(raw.ui ?? {}, 'quality')).toBe(false);
   });

@@ -27,20 +27,20 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 
 ## État
 
-| Phase | Sujet                 | Avancement        |
-| ----- | --------------------- | ----------------- |
-| 0     | Fondations            | **15 / 15** ✅    |
-| 1     | Rendu et caméra       | **14 / 14** ✅    |
-| 2     | Navigation            | 13 / 13           |
-| 3     | Turpal                | **10 / 10** ✅    |
-| 4     | Mécanismes            | **16 / 16** ✅    |
-| 5     | Input complet         | 2 / 11            |
-| 6     | Audio                 | 0 / 13            |
-| 7     | FX et « juice »       | 0 / 11            |
-| 8     | UI et narration       | 1 / 16            |
-| 9     | Niveaux               | **10 / 19**       |
-| 10    | Polish, a11y, PWA, QA | 2 / 17            |
-| 11    | Android               | 0 / 9 (plus tard) |
+| Phase | Sujet                 | Avancement         |
+| ----- | --------------------- | ------------------ |
+| 0     | Fondations            | **15 / 15** ✅     |
+| 1     | Rendu et caméra       | **14 / 14** ✅     |
+| 2     | Navigation            | **13 / 13** ✅     |
+| 3     | Turpal                | **10 / 10** ✅     |
+| 4     | Mécanismes            | **16 / 16** ✅     |
+| 5     | Input complet         | **10 / 11** · 1 🟠 |
+| 6     | Audio                 | **13 / 13** ✅     |
+| 7     | FX et « juice »       | **11 / 11** ✅     |
+| 8     | UI et narration       | **15 / 16**        |
+| 9     | Niveaux               | **13 / 19**        |
+| 10    | Polish, a11y, PWA, QA | **5 / 17**         |
+| 11    | Android               | 0 / 9 (plus tard)  |
 
 ---
 
@@ -141,15 +141,15 @@ Roadmap de **BӀOV : Les Tours du Silence**, en tâches atomiques.
 
 - [x] **`InputManager` : intentions typées** — _Critère : le gameplay ne voit ni souris, ni doigt, ni touche._
 - [x] **Table clavier par touches physiques** (ADR-023) — _Critère : WASD et ZQSD, Q/E et A/E fonctionnent sans détection ni réglage._
-- [ ] **`PointerInput` : tap → nœud** — _Critère : seuil de drag à 8 px ; un tap ne fait jamais tourner un mécanisme par erreur._
-- [ ] **`PointerInput` : glisser sur un mécanisme** — _Critère : capture du pointeur, aimantation au relâchement, sortie de fenêtre gérée._
-- [ ] **Blocage des gestes navigateur** — _Critère : ni zoom par pincement, ni double-tap, ni pull-to-refresh, ni overscroll (testé sur Android et iOS)._
-- [ ] **Déplacement directionnel clavier** — _Critère : choisit le voisin dont la direction **écran** est la plus proche (< 60°) ; rien ne se passe sinon._
-- [ ] **Cycle `Tab` / `Shift+Tab` entre mécanismes** — _Critère : ordre par proximité écran, contour braise 2 px sur le sélectionné._
-- [ ] **`GamepadInput`** — _Critère : stick (zone morte 0,35, répétition 220 ms), gâchettes, A/B/Y/Start._
-- [ ] **Haptique** — _Critère : `tick`, `snap`, `celebrate` passent par `Platform.vibrate`, désactivables._
-- [ ] **Remappage complet + persistance** — _Critère : table modifiable dans les réglages, sauvegardée, bouton « touches par défaut »._
-- [ ] **Affichage des libellés selon la disposition** — _Critère : `keyLabel()` affiche « A » sur AZERTY, repli propre sur Firefox/Safari._
+- [x] **`PointerInput` : tap → nœud** — _Critère : seuil de drag à 8 px ; un tap ne fait jamais tourner un mécanisme par erreur._ — seuil et exclusivité tap/drag testés ; intégration du tap jusqu'au déplacement de `LevelRuntime` validée.
+- [x] **`PointerInput` : glisser sur un mécanisme** — _Critère : capture du pointeur, aimantation au relâchement, sortie de fenêtre gérée._ — cible figée au `pointerdown`, capture libérée sans double fin, `pointercancel`/perte de capture/blur/suspension couverts ; la pause force `endDrag()` avant gel.
+- [!] **Blocage des gestes navigateur** — _Critère : ni zoom par pincement, ni double-tap, ni pull-to-refresh, ni overscroll (testé sur Android et iOS)._ — verrou JS et CSS couvert automatiquement (`touch-action`, gestes iOS, molette, double-clic, overscroll) ; validation sur appareils Android/iOS encore requise.
+- [x] **Déplacement directionnel clavier** — _Critère : choisit le voisin dont la direction **écran** est la plus proche (< 60°) ; rien ne se passe sinon._ — sélection pure testée dans/hors cône, égalités départagées par coût et branchement runtime vérifié.
+- [x] **Cycle `Tab` / `Shift+Tab` entre mécanismes** — _Critère : ordre par proximité écran, contour braise 2 px sur le sélectionné._ — inversion Shift testée ; intégration runtime sélectionne réellement le mécanisme projeté le plus proche et affiche `FocusRing`.
+- [x] **`GamepadInput`** — _Critère : stick (zone morte 0,35, répétition 220 ms), gâchettes, A/B/Y/Start._ — zone morte, répétition, directions, seuil analogique, fronts de boutons et reconnexion couverts.
+- [x] **Haptique** — _Critère : `tick`, `snap`, `celebrate` passent par `Platform.vibrate`, désactivables._ — trois motifs et désactivation testés ; délais `dual-rumble` corrigés et vérifiés en millisecondes.
+- [x] **Remappage complet + persistance** — _Critère : table modifiable dans les réglages, sauvegardée, bouton « touches par défaut »._ — capture physique, conflit, modificateurs refusés, remplacement, relecture, persistance et réinitialisation couverts.
+- [x] **Affichage des libellés selon la disposition** — _Critère : `keyLabel()` affiche « A » sur AZERTY, repli propre sur Firefox/Safari._ — `getLayoutMap`, observation AZERTY et repli au code testés.
 
 ---
 
@@ -214,7 +214,7 @@ _Pour chaque chapitre, la grille de `docs/LEVEL_DESIGN.md` § 10 fait foi._
 
 - [x] **Constructeur de géométrie depuis `LevelBlockDef`** — _Critère : blocs, escaliers, passerelles instanciés ; ≤ 120 draw calls._ — `LevelGeometry` regroupe les volumes par surface ; ch.0 : 10 draw calls de décor.
 - [x] **Générateur de tour vainakh** — _Critère : respecte le canon (fruit 8 %/niveau, gradins, entrée au 1er étage)._ — `VainakhTower` : 5 niveaux, fruit 8 %, entrée haute, ouvertures, encorbellements et 5 gradins.
-- [ ] **`LevelLoader` : charger → construire → jouer → libérer** — _Critère : `renderer.info.memory` revient à sa valeur initiale après 5 allers-retours._
+- [!] **`LevelLoader` : charger → construire → jouer → libérer** — _Critère : `renderer.info.memory` revient à sa valeur initiale après 5 allers-retours._ — 16 transitions séquentielles automatisées sur les 8 définitions : instance neuve, graphe/racine vidés et chaque ressource CPU observable libérée une seule fois ; le retour réel de `renderer.info.memory` reste à mesurer dans un navigateur WebGL.
 - [ ] **Transition de fin de niveau** — _Critère : fondu 1200 ms, sauvegarde, préchargement du suivant déjà terminé._
 - [x] **Ch.0 — « Le Retour » : graphe et illusion** — _Critère : l'escalier rejoint le seuil, écart ≤ 6 px mesuré par `auditIllusions`._ — 0 px aux deux viewports de référence ; solution simulée par test.
 - [x] **Ch.0 : géométrie, palette, son, éveil de Borz** — _Critère : jouable de bout en bout en 5 min, aucune façon d'échouer._ — cible 5 min déclarée ; palette, musique, ambiance, paume sur pierre, Borz et aigle secret branchés.
@@ -239,12 +239,12 @@ _Pour chaque chapitre, la grille de `docs/LEVEL_DESIGN.md` § 10 fait foi._
 - [x] **PWA : manifest, icônes, service worker** — _Critère : installable, jouable hors ligne (25 entrées précachées)._
 - [x] **Budget de bundle vérifié en CI** — _Critère : `check-bundle` bloquant ; actuel 144 ko / 1 464 ko._
 - [ ] **Icônes et splash définitifs** — _Critère : remplacer les placeholders générés par script, 4 tailles + maskable._
-- [ ] **`prefers-reduced-motion`** — _Critère : durées ÷ 2, dérive de brume et parallaxe supprimées, jeu toujours jouable._
-- [ ] **Mode daltonien** — _Critère : la braise est toujours doublée d'un liseré ou d'une pulsation._
-- [ ] **Navigation au lecteur d'écran** — _Critère : chaque écran annoncé, `aria-live` sur les panneaux, focus jamais perdu._
+- [x] **`prefers-reduced-motion`** — _Critère : durées ÷ 2, dérive de brume et parallaxe supprimées, jeu toujours jouable._ — préférence système ou forçage réduit/plein appliqués à chaud ; durées UI/FX divisées par deux, brume, neige, lucioles, ciel, rais et affordances continus figés ; 5 tests dédiés, dont la réutilisation de la `MediaQueryList`.
+- [x] **Mode daltonien** — _Critère : la braise est toujours doublée d'un liseré ou d'une pulsation._ — conception universelle toujours active : destination et mécanismes ont un contour neutre, les huit balises finales une coque filaire, et les états UI combinent bordure, symbole et texte ; 2 tests d'audit dédiés, y compris en mouvement réduit.
+- [x] **Navigation au lecteur d'écran** — _Critère : chaque écran annoncé, `aria-live` sur les panneaux, focus jamais perdu._ — tous les panneaux sont montés dans `UIRoot`, nommés par `aria-labelledby`, annoncés par une région polie et atomique ; les écrans inactifs sont `inert` + `aria-hidden`, le focus est piégé puis restauré exactement en pile LIFO (repli sûr si sa cible disparaît). 7 tests jsdom dédiés.
 - [ ] **Audit de contraste** — _Critère : texte ≥ 7:1 sur les 8 palettes._
-- [ ] **Passe « zéro allocation »** — _Critère : courbe mémoire plate sur 5 min de jeu._
-- [ ] **Passe `dispose()`** — _Critère : aucun objet WebGL résiduel après 10 changements de chapitre._
+- [!] **Passe « zéro allocation »** — _Critère : courbe mémoire plate sur 5 min de jeu._ — allocations récurrentes retirées des snapshots `EventBus`, du damping des particules, de la tête de traînée dorée et de `matchMedia` ; projection, vecteurs et options restent préalloués. La courbe cinq minutes requiert encore Chrome DevTools.
+- [!] **Passe `dispose()`** — _Critère : aucun objet WebGL résiduel après 10 changements de chapitre._ — 10 cycles runtime prouvent la stabilité des 2 abonnements globaux et 11 abonnements input, l'idempotence des propriétaires et une seule notification `dispose` par ressource ; FX temporaires et timers différés sont annulés. Le compteur WebGL après 10 changements reste à mesurer.
 - [ ] **Profilage mobile réel, 10 min** — _Critère : 60 fps tenus malgré la chauffe, ou descente de tier invisible._
 - [ ] **Lighthouse** — _Critère : PWA ≥ 90, Performance ≥ 85, TTI < 3 s en Slow 4G._
 - [ ] **Playwright : parcours complet** — _Critère : les 8 chapitres traversés en e2e sur les 3 profils de viewport._

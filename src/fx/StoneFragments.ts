@@ -50,17 +50,14 @@ export class StoneFragments {
   private readonly capacity: number;
   private readonly geometry: BufferGeometry;
   private readonly fragments: ActiveFragment[] = [];
-  private readonly assembleSeconds: number;
-  private readonly holdSeconds: number;
-  private readonly fadeSeconds: number;
+  private assembleSeconds = FX.fragments.assembleMs / 1000;
+  private holdSeconds = FX.fragments.holdMs / 1000;
+  private fadeSeconds = FX.fragments.fadeMs / 1000;
   private elapsed = -1; // -1 : inactif.
   private playing = false;
 
   constructor(material: Material, particleScale = 1) {
     this.capacity = Math.max(8, Math.floor(FX.fragments.count * Math.min(1, particleScale)));
-    this.assembleSeconds = (FX.fragments.assembleMs / 1000) * motionDurationScale();
-    this.holdSeconds = (FX.fragments.holdMs / 1000) * motionDurationScale();
-    this.fadeSeconds = (FX.fragments.fadeMs / 1000) * motionDurationScale();
 
     // Éclat : un petit prisme irrégulier, lisible en silhouette (AGENTS § 7).
     this.geometry = new BoxGeometry(0.16, 0.12, 0.2);
@@ -82,6 +79,10 @@ export class StoneFragments {
   assemble(options: FragmentOptions): void {
     const points = options.points;
     if (points.length === 0) return;
+    const durationScale = motionDurationScale();
+    this.assembleSeconds = (FX.fragments.assembleMs / 1000) * durationScale;
+    this.holdSeconds = (FX.fragments.holdMs / 1000) * durationScale;
+    this.fadeSeconds = (FX.fragments.fadeMs / 1000) * durationScale;
     this.fragments.length = 0;
 
     for (let i = 0; i < this.capacity; i += 1) {

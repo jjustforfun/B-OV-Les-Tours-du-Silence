@@ -10,6 +10,7 @@
  * Le voile ne capture jamais le pointeur : c'est un décor, pas un écran.
  */
 import { PACING } from '@/config';
+import { motionDurationScale } from '@core/motion';
 
 export class UiVeil {
   readonly element: HTMLDivElement;
@@ -50,11 +51,12 @@ export class UiVeil {
   }
 
   private transition(black: boolean, durationMs: number): Promise<void> {
-    if (durationMs <= 0) {
+    const effectiveDurationMs = durationMs * motionDurationScale();
+    if (effectiveDurationMs <= 0) {
       this.setInstant(black);
       return Promise.resolve();
     }
-    this.element.style.transitionDuration = `${durationMs}ms`;
+    this.element.style.transitionDuration = `${effectiveDurationMs}ms`;
     this.element.classList.toggle('ui-veil--black', black);
     return new Promise((resolve) => {
       let settled = false;
@@ -69,7 +71,7 @@ export class UiVeil {
       // Filet de sécurité : si `transitionend` ne vient pas (onglet caché,
       // préférence de mouvement réduite qui tuerait la transition), on rend
       // la main au bout du temps prévu, jamais avant.
-      const fallback = setTimeout(done, durationMs + 60);
+      const fallback = setTimeout(done, effectiveDurationMs + 60);
       this.element.addEventListener('transitionend', done, { once: true });
     });
   }

@@ -41,7 +41,7 @@ export interface UIRootOptions {
 function isFocusable(element: Element): element is HTMLElement {
   if (!(element instanceof HTMLElement)) return false;
   if (element.hasAttribute('disabled')) return false;
-  if (element.getAttribute('aria-hidden') === 'true') return false;
+  if (element.closest('[inert], [aria-hidden="true"], .is-hidden') !== null) return false;
   const tag = element.tagName;
   return (
     tag === 'BUTTON' ||
@@ -57,14 +57,31 @@ function focusablesOf(root: HTMLElement): HTMLElement[] {
   return [...root.querySelectorAll('*')].filter(isFocusable);
 }
 
+/** Nom annoncé lors de l'ouverture d'un écran. */
+function accessibleNameOf(root: HTMLElement): string {
+  const labelledBy = root.getAttribute('aria-labelledby');
+  if (labelledBy !== null) {
+    const label = labelledBy
+      .split(/\s+/)
+      .map((id) => document.getElementById(id)?.textContent?.trim() ?? '')
+      .filter(Boolean)
+      .join(' ');
+    if (label.length > 0) return label;
+  }
+  return root.getAttribute('aria-label')?.trim() ?? '';
+}
+
 export class UIRoot {
   readonly element: HTMLDivElement;
 
   private readonly options: UIRootOptions;
   private readonly modalStack: UIPanel[] = [];
+  private readonly announcer: HTMLDivElement;
   private base: UIPanel | null = null;
   private baseWasFocused: HTMLElement | null = null;
   private stackWasFocused: (HTMLElement | null)[] = [];
+  private visibleWasFocused: HTMLElement | null = null;
+  private announceTimer: ReturnType<typeof setTimeout> | null = null;
   private disposed = false;
 
   constructor(parent: HTMLElement = document.body, options: UIRootOptions = {}) {
@@ -72,6 +89,12 @@ export class UIRoot {
     this.element = document.createElement('div');
     this.element.id = 'ui-root';
     this.element.className = 'ui-root';
+    this.announcer = document.createElement('div');
+    this.announcer.className = 'ui-sr-only';
+    this.announcer.setAttribute('role', 'status');
+    this.announcer.setAttribute('aria-live', 'polite');
+    this.announcer.setAttribute('aria-atomic', 'true');
+    this.element.appendChild(this.announcer);
     parent.appendChild(this.element);
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', this.onKeydown, true);
@@ -82,16 +105,34 @@ export class UIRoot {
   setBase(panel: UIPanel | null): void {
     if (this.base === panel) return;
     if (this.base !== null) {
-      this.base.hide();
+      const previous = this.base;
+      if (
+        this.modalStack.length === 0 &&
+        !this.restoreFocus(this.baseWasFocused) &&
+        document.activeElement instanceof HTMLElement &&
+        previous.element.contains(document.activeElement)
+      ) {
+        document.activeElement.blur();
+      }
+      previous.hide();
+      this.setPanelActive(previous, false);
       this.base = null;
-      this.restoreFocus(this.baseWasFocused);
       this.baseWasFocused = null;
     }
     if (panel !== null) {
       this.baseWasFocused = this.captureFocus();
       this.base = panel;
+      this.mount(panel);
+      const active = this.modalStack.length === 0;
+      this.setPanelActive(panel, active);
+      const currentFocus = this.captureFocus();
       panel.show();
-      this.focusFirst(panel);
+      if (active) {
+        this.focusPanel(panel);
+        this.announce(panel);
+      } else {
+        this.restoreFocus(currentFocus);
+      }
     }
     this.notifySuspension();
   }
@@ -100,11 +141,24 @@ export class UIRoot {
   push(panel: UIPanel): void {
     const top = this.modalStack[this.modalStack.length - 1];
     if (top === panel) return;
-    if (top !== undefined) top.hide();
     this.stackWasFocused.push(this.captureFocus());
     this.modalStack.push(panel);
+    this.mount(panel);
+    this.setPanelActive(panel, true);
     panel.show();
-    this.focusFirst(panel);
+    this.focusPanel(panel);
+
+    // Le focus quitte l'ancien écran avant que celui-ci sorte de l'arbre
+    // d'accessibilité : aucun aria-hidden n'englobe ainsi le focus courant.
+    if (top !== undefined) {
+      top.hide();
+      this.setPanelActive(top, false);
+    } else if (this.base !== null) {
+      // Le titre reste visible derrière une modale, mais sort de l'arbre
+      // d'accessibilité et de l'ordre de tabulation.
+      this.setPanelActive(this.base, false);
+    }
+    this.announce(panel);
     this.notifySuspension();
   }
 
@@ -112,14 +166,25 @@ export class UIRoot {
   pop(): UIPanel | null {
     const panel = this.modalStack.pop();
     if (panel === undefined) return null;
-    panel.hide();
+    const restoreTarget = this.stackWasFocused.pop() ?? null;
     const top = this.modalStack[this.modalStack.length - 1];
     if (top !== undefined) {
+      this.setPanelActive(top, true);
       top.show();
-      this.focusFirst(top);
-    } else {
-      this.restoreFocus(this.stackWasFocused.pop() ?? null);
+      if (!this.restoreFocus(restoreTarget, top.element)) this.focusPanel(top);
+      this.announce(top);
+    } else if (this.base !== null) {
+      this.setPanelActive(this.base, true);
+      if (!this.restoreFocus(restoreTarget, this.base.element)) this.focusPanel(this.base);
+      this.announce(this.base);
+    } else if (!this.restoreFocus(restoreTarget)) {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && panel.element.contains(active)) active.blur();
     }
+
+    // Même ordre qu'à l'ouverture : déplacer d'abord le focus, puis masquer.
+    panel.hide();
+    this.setPanelActive(panel, false);
     this.notifySuspension();
     return panel;
   }
@@ -149,7 +214,26 @@ export class UIRoot {
 
   /** Masque toute l'interface (moments purement contemplatifs). */
   setVisible(visible: boolean): void {
+    if (this.element.classList.contains('ui-root--hidden') === !visible) return;
     this.element.classList.toggle('ui-root--hidden', !visible);
+    if (visible) {
+      this.element.inert = false;
+      this.element.removeAttribute('inert');
+      this.element.removeAttribute('aria-hidden');
+      const panel = this.top ?? this.base;
+      if (panel !== null && !this.restoreFocus(this.visibleWasFocused, panel.element)) {
+        this.focusPanel(panel);
+      }
+      this.visibleWasFocused = null;
+    } else {
+      const active = document.activeElement;
+      this.visibleWasFocused =
+        active instanceof HTMLElement && this.element.contains(active) ? active : null;
+      this.visibleWasFocused?.blur();
+      this.element.inert = true;
+      this.element.setAttribute('inert', '');
+      this.element.setAttribute('aria-hidden', 'true');
+    }
   }
 
   dispose(): void {
@@ -157,6 +241,10 @@ export class UIRoot {
     this.disposed = true;
     if (typeof window !== 'undefined') {
       window.removeEventListener('keydown', this.onKeydown, true);
+    }
+    if (this.announceTimer !== null) {
+      clearTimeout(this.announceTimer);
+      this.announceTimer = null;
     }
     this.popAll();
     if (this.base !== null) {
@@ -193,7 +281,11 @@ export class UIRoot {
   /** Le focus ne sort jamais du panneau ouvert (WCAG 2.4.3). */
   private trapFocus(event: KeyboardEvent, panel: UIPanel): void {
     const focusables = focusablesOf(panel.element);
-    if (focusables.length === 0) return;
+    if (focusables.length === 0) {
+      event.preventDefault();
+      panel.element.focus();
+      return;
+    }
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
     if (first === undefined || last === undefined) return;
@@ -213,25 +305,73 @@ export class UIRoot {
     this.trapFocus(event, panel);
   }
 
-  // ————————————————————————————————— Focus
+  // ————————————————————————————————— DOM, focus et annonces
+
+  private mount(panel: UIPanel): void {
+    if (panel.element.parentElement !== this.element) {
+      this.element.appendChild(panel.element);
+    }
+  }
+
+  private setPanelActive(panel: UIPanel, active: boolean): void {
+    panel.element.inert = !active;
+    if (active) {
+      panel.element.removeAttribute('inert');
+      panel.element.removeAttribute('aria-hidden');
+    } else {
+      panel.element.setAttribute('inert', '');
+      panel.element.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  private focusPanel(panel: UIPanel): void {
+    const active = document.activeElement;
+    if (
+      active instanceof HTMLElement &&
+      active !== document.body &&
+      panel.element.contains(active) &&
+      (active === panel.element || isFocusable(active))
+    ) {
+      return;
+    }
+
+    const first = focusablesOf(panel.element)[0];
+    if (first !== undefined) {
+      first.focus();
+      return;
+    }
+
+    if (!panel.element.hasAttribute('tabindex')) panel.element.tabIndex = -1;
+    panel.element.focus();
+  }
+
+  private announce(panel: UIPanel): void {
+    if (this.disposed) return;
+    const name = accessibleNameOf(panel.element);
+    if (name === '') return;
+    if (this.announceTimer !== null) clearTimeout(this.announceTimer);
+    this.announcer.textContent = '';
+    this.announceTimer = setTimeout(() => {
+      this.announcer.textContent = `Écran : ${name}`;
+      this.announceTimer = null;
+    }, 0);
+  }
 
   private captureFocus(): HTMLElement | null {
     const active = document.activeElement;
     return active instanceof HTMLElement ? active : null;
   }
 
-  private restoreFocus(target: HTMLElement | null): void {
-    if (target?.isConnected) target.focus();
-  }
-
-  private focusFirst(panel: UIPanel): void {
-    const focusables = focusablesOf(panel.element);
-    const first = focusables[0];
-    if (first !== undefined) {
-      first.focus();
-      return;
+  private restoreFocus(target: HTMLElement | null, scope?: HTMLElement): boolean {
+    if (
+      target === null ||
+      !target.isConnected ||
+      (scope !== undefined && !scope.contains(target))
+    ) {
+      return false;
     }
-    if (panel.element instanceof HTMLElement) panel.element.focus();
+    target.focus();
+    return document.activeElement === target;
   }
 
   private notifySuspension(): void {

@@ -63,13 +63,13 @@ techniques à coût d'exécution nul.
 
 ### Mémoire et allocations
 
-| Technique                     | Détail                                                                                                                      |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **Pools**                     | `utils/pool.ts` pour vecteurs, quaternions, particules, requêtes de chemin. Aucun `new Vector3()` dans une boucle de rendu. |
-| **Zéro allocation par image** | Les tableaux de résultats sont réutilisés ; `findPath` écrit dans un buffer préalloué.                                      |
-| **`dispose()` systématique**  | `utils/dispose.ts` parcourt géométries, matériaux, textures, cibles de rendu. Vérifié entre deux chapitres.                 |
-| **Textures**                  | Aucune pour l'architecture (vertex colors). Les rares textures (UI, LUT) sont en **KTX2** (repli WebP), ≤ 48 Mo au total.   |
-| **Audio**                     | 100 % synthétisé (ADR-007) : 0 octet d'échantillon dans le bundle initial.                                                  |
+| Technique                      | Détail                                                                                                                                                                              |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pools et buffers**           | Projections en tableaux typés, pool de particules, matrices, vecteurs, options d'émission et snapshots d'événements réutilisés ; aucune création d'objet dans les boucles auditées. |
+| **Zéro allocation récurrente** | `ParticlePool.update()` calcule le damping en scalaires, `GoldenTrail` écrit sa tête dans trois champs, et la `MediaQueryList` système est mise en cache.                           |
+| **`dispose()` systématique**   | Les propriétaires sont idempotents ; `utils/dispose.ts` déduplique géométries, matériaux et textures, y compris les textures de uniforms, tout en préservant le cache toon partagé. |
+| **Textures**                   | Aucune pour l'architecture (vertex colors). Les rares textures (UI, LUT) sont en **KTX2** (repli WebP), ≤ 48 Mo au total.                                                           |
+| **Audio**                      | 100 % synthétisé (ADR-007) : 0 octet d'échantillon dans le bundle initial.                                                                                                          |
 
 ### Chargement
 
@@ -135,10 +135,25 @@ techniques à coût d'exécution nul.
 
 ### 4.5 Fuites mémoire
 
-1. Charger le chapitre 1, noter `renderer.info.memory` (géométries, textures).
-2. Enchaîner 5 chapitres, revenir au 1.
-3. Les compteurs doivent **revenir à leur valeur initiale**. Sinon, un
-   `dispose()` manque — c'est bloquant (Definition of Done).
+Préflight automatisable, sans WebGL :
+
+1. `pnpm vitest run tests/unit/lifecycle.test.ts` doit valider 16 transitions
+   `LevelLoader`, 10 cycles `LevelRuntime`, l'unicité des événements `dispose`,
+   la stabilité des abonnements et l'annulation des timers FX.
+2. Ce test ne prouve pas l'état des caches internes du pilote et ne remplace
+   donc jamais la suite navigateur.
+
+Validation WebGL obligatoire :
+
+1. Charger le chapitre 1, forcer un rendu, puis noter
+   `renderer.info.memory.geometries` et `renderer.info.memory.textures`.
+2. Effectuer 5 allers-retours et au moins 10 changements de chapitre, en
+   forçant un rendu après chaque couture, puis revenir au chapitre 1.
+3. Lancer ensuite cinq minutes de jeu et enregistrer la courbe du tas dans
+   Chrome DevTools.
+4. Les compteurs doivent **revenir à leur valeur initiale** et la courbe ne
+   doit présenter aucune croissance de fond. Sinon, un `dispose()` manque —
+   c'est bloquant (Definition of Done).
 
 ---
 

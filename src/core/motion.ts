@@ -12,14 +12,22 @@
 
 /** État forcé par les réglages : `undefined` = suivre le système. */
 let override: boolean | undefined;
+/** La MediaQueryList est vivante : sa propriété `matches` suit le système sans réallocation. */
+let reduceMotionQuery: MediaQueryList | null | undefined;
 
 function matchesSystemReduce(): boolean {
-  if (typeof matchMedia !== 'function') return false;
-  try {
-    return matchMedia('(prefers-reduced-motion: reduce)').matches;
-  } catch {
-    return false;
+  if (reduceMotionQuery === undefined) {
+    if (typeof matchMedia !== 'function') {
+      reduceMotionQuery = null;
+      return false;
+    }
+    try {
+      reduceMotionQuery = matchMedia('(prefers-reduced-motion: reduce)');
+    } catch {
+      reduceMotionQuery = null;
+    }
   }
+  return reduceMotionQuery?.matches ?? false;
 }
 
 /** Le joueur a-t-il demandé un mouvement réduit (système ou réglage) ? */

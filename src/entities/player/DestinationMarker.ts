@@ -29,6 +29,12 @@ export class DestinationMarker {
     32,
     1,
   );
+  private readonly outlineGeometry = new RingGeometry(
+    TURPAL.destinationMarkerRadius * 0.62,
+    TURPAL.destinationMarkerRadius * 1.1,
+    32,
+    1,
+  );
   private readonly material = new MeshBasicMaterial({
     color: EMBER as ColorRepresentation,
     transparent: true,
@@ -36,7 +42,15 @@ export class DestinationMarker {
     depthWrite: false,
     side: DoubleSide,
   });
+  private readonly outlineMaterial = new MeshBasicMaterial({
+    color: 0x10161f,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    side: DoubleSide,
+  });
   private readonly mesh = new Mesh(this.geometry, this.material);
+  private readonly outline = new Mesh(this.outlineGeometry, this.outlineMaterial);
   private readonly normalizedUp = new Vector3(0, 1, 0);
   private elapsed = 0;
   private visible = false;
@@ -44,8 +58,10 @@ export class DestinationMarker {
   constructor() {
     this.root.name = 'DestinationMarker';
     this.root.visible = false;
+    this.outline.name = 'DestinationMarkerOutline';
     this.mesh.name = 'DestinationMarkerRing';
-    this.root.add(this.mesh);
+    // Le contour neutre reste lisible quand la teinte braise est indiscernable.
+    this.root.add(this.outline, this.mesh);
   }
 
   get isVisible(): boolean {
@@ -57,7 +73,8 @@ export class DestinationMarker {
     this.normalizedUp.copy(up).normalize();
     this.root.quaternion.setFromUnitVectors(RING_NORMAL, this.normalizedUp);
     this.root.scale.setScalar(0.2);
-    this.material.opacity = 0.72;
+    this.material.opacity = 0.82;
+    this.outlineMaterial.opacity = 0.68;
     this.elapsed = 0;
     this.visible = true;
     this.root.visible = true;
@@ -67,6 +84,7 @@ export class DestinationMarker {
     this.visible = false;
     this.root.visible = false;
     this.material.opacity = 0;
+    this.outlineMaterial.opacity = 0;
   }
 
   update(delta: number): void {
@@ -76,13 +94,16 @@ export class DestinationMarker {
     const t = Math.min(1, this.elapsed / duration);
     const eased = 1 - Math.pow(1 - t, 3);
     this.root.scale.setScalar(0.2 + eased * 0.8);
-    this.material.opacity = (1 - t) * 0.72;
+    this.material.opacity = (1 - t) * 0.82;
+    this.outlineMaterial.opacity = (1 - t) * 0.68;
     if (t >= 1) this.hide();
   }
 
   dispose(): void {
     this.geometry.dispose();
+    this.outlineGeometry.dispose();
     this.material.dispose();
+    this.outlineMaterial.dispose();
     this.root.removeFromParent();
     this.root.clear();
   }

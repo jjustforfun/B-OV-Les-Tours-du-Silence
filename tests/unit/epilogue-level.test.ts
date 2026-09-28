@@ -206,8 +206,11 @@ describe('Chapitre 7 — Le Chant revenu', () => {
     expect(level.root.getObjectByName('Borz')?.scale.y).toBeCloseTo(0.72, 6);
     for (let index = 0; index < 8; index += 1) {
       const beacon = level.root.getObjectByName(`FinaleTowerLight:${index}`);
+      const outline = level.root.getObjectByName(`FinaleTowerLightOutline:${index}`);
       expect(beacon).toBeDefined();
       expect(beacon?.visible).toBe(true);
+      expect(outline).toBeDefined();
+      expect(outline?.visible).toBe(true);
     }
 
     for (const unsubscribe of off) unsubscribe();

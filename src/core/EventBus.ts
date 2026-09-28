@@ -2,63 +2,21 @@
  * EventBus.ts — bus d'événements typé, sans dépendance.
  *
  * Tout le jeu communique par messages : l'UI ne connaît pas le moteur,
- * l'audio ne connaît pas le gameplay. C'est ce découplage qui rendra le
- * portage Capacitor (et les tests) indolores.
+ * l'audio ne connaît pas le gameplay. Le bus conserve un snapshot stable
+ * pendant chaque émission sans allouer un nouveau tableau à chaque image.
  */
 
 export type EventMap = Record<string, unknown>;
-
 export type Listener<T> = (payload: T) => void;
-
-export class EventBus<E extends EventMap> {
-  private readonly listeners = new Map<keyof E, Set<Listener<unknown>>>();
-
-  /** Abonne un écouteur. Retourne la fonction de désabonnement. */
-  on<K extends keyof E>(event: K, listener: Listener<E[K]>): () => void {
-    let set = this.listeners.get(event);
-    if (!set) {
-      set = new Set();
-      this.listeners.set(event, set);
-    }
-    set.add(listener as Listener<unknown>);
-    return () => this.off(event, listener);
-  }
-
-  /** Abonne un écouteur qui se retire après le premier message. */
-  once<K extends keyof E>(event: K, listener: Listener<E[K]>): () => void {
-    const off = this.on(event, (payload) => {
-      off();
-      listener(payload);
-    });
-    return off;
-  }
-
-  off<K extends keyof E>(event: K, listener: Listener<E[K]>): void {
-    const set = this.listeners.get(event);
-    if (!set) return;
-    set.delete(listener as Listener<unknown>);
-    if (set.size === 0) this.listeners.delete(event);
-  }
-
-  emit<K extends keyof E>(event: K, payload: E[K]): void {
-    const set = this.listeners.get(event);
-    if (!set) return;
-    // Copie défensive : un écouteur peut se désabonner pendant l'émission.
-    for (const listener of [...set]) {
-      (listener as Listener<E[K]>)(payload);
-    }
-  }
-
-  listenerCount<K extends keyof E>(event: K): number {
-    return this.listeners.get(event)?.size ?? 0;
-  }
-
-  clear(): void {
-    this.listeners.clear();
-  }
+type UnknownListener = Listener<unknown>;
+interface WorldPoint {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
 }
+type MechanismValue = number | string | boolean;
 
-/** Événements globaux du jeu. Cette carte grandira chapitre après chapitre. */
+/** Événements globaux du jeu. */
 export interface GameEvents extends EventMap {
   'engine:ready': { readonly renderer: string };
   'engine:resize': { readonly width: number; readonly height: number };
@@ -72,7 +30,7 @@ export interface GameEvents extends EventMap {
   'level:solved': {
     readonly id: string;
     readonly moves: number;
-    readonly at?: { readonly x: number; readonly y: number; readonly z: number };
+    readonly at?: WorldPoint;
   };
   'player:moved': {
     readonly nodeId: string;
@@ -81,76 +39,122 @@ export interface GameEvents extends EventMap {
   'mechanism:snap': {
     readonly id: string;
     readonly kind: string;
-    readonly value: number | string | boolean;
+    readonly value: MechanismValue;
     readonly notch: number;
     readonly sound: string;
-    /** Position monde du mécanisme, pour FX et audio. */
-    readonly at: { readonly x: number; readonly y: number; readonly z: number };
-    /** Nombre de crans du cycle, pour calculer le sens de rotation. */
+    readonly at: WorldPoint;
     readonly steps?: number;
   };
   'mechanism:stateChanged': {
     readonly id: string;
     readonly kind: string;
-    readonly value: number | string | boolean;
-    readonly at: { readonly x: number; readonly y: number; readonly z: number };
+    readonly value: MechanismValue;
+    readonly at: WorldPoint;
   };
   'mechanism:drag': {
     readonly id: string;
     readonly kind: string;
     readonly active: boolean;
-    readonly at: { readonly x: number; readonly y: number; readonly z: number };
+    readonly at: WorldPoint;
   };
   /** Vitesse de manipulation pendant un drag, normalisée 0..1. */
   'mechanism:dragMove': { readonly id: string; readonly speed: number };
   /** Un chemin vient de se refermer : polyline monde, départ → arrivée. */
-  'path:connected': {
-    readonly points: readonly { readonly x: number; readonly y: number; readonly z: number }[];
-  };
+  'path:connected': { readonly points: readonly WorldPoint[] };
+  /** Une liaison impossible vient d'être franchie. */
+  'illusion:crossed': { readonly from: WorldPoint; readonly to: WorldPoint };
   /** Nombre de couches musicales méritées par la progression (1..4). */
   'music:progress': { readonly layers: number };
+  'borz:awakened': { readonly nodeId: string | null };
   'borz:called': { readonly from: string | null; readonly to: string };
   'borz:hint': { readonly active: boolean };
-  'borz:awakened': { readonly nodeId: string | null };
-  'illusion:crossed': {
-    readonly from: { readonly x: number; readonly y: number; readonly z: number };
-    readonly to: { readonly x: number; readonly y: number; readonly z: number };
+  'moon:phase': {
+    readonly id: string;
+    readonly phase: string;
+    readonly elapsedSeconds: number;
+    readonly progress: number;
   };
-  'secret:eagleFound': { readonly levelId: string; readonly secretId: string };
-  /** Une tour de l'épilogue reconnaît le passage de Turpal. */
-  'finale:towerLit': {
-    readonly index: number;
-    readonly at: { readonly x: number; readonly y: number; readonly z: number };
-  };
-  /** Au seuil familial, les huit tours répondent ensemble. */
-  'finale:threshold': {
-    readonly at: { readonly x: number; readonly y: number; readonly z: number };
-  };
-  /** Transition diégétique du ciel, demandée par un trigger de niveau. */
+  'ui:toast': { readonly message: string; readonly duration?: number };
+  /** L'interface parle (carton de chapitre) : la musique s'efface derrière. */
+  'ui:speaking': { readonly speaking: boolean };
+  'secret:eagleFound': { readonly secretId: string; readonly levelId: string };
+  'narrative:text': { readonly key: string };
   'sky:transition': {
     readonly palette: 'dawn' | 'mist' | 'dusk' | 'snow' | 'gold';
     readonly durationSeconds: number;
   };
-  'traveler:welcomed': {
-    readonly actorId: string;
-    readonly at: { readonly x: number; readonly y: number; readonly z: number };
-  };
   'child:bridgeReady': { readonly id: string };
-  'elder:arrived': {
-    readonly actorId: string;
-    readonly at: { readonly x: number; readonly y: number; readonly z: number };
-  };
-  /** Étapes du cycle lunaire du lac : fenêtre du secret, puis ouverture définitive. */
-  'moon:phase': {
-    readonly id: string;
-    readonly phase: 'waiting' | 'zenith' | 'open';
-    readonly elapsedSeconds: number;
-    readonly progress: number;
-  };
-  'narrative:text': { readonly key: string };
-  'ui:toast': { readonly message: string; readonly duration?: number };
-  /** L'interface parle (carton de chapitre) : la musique s'efface derrière. */
-  'ui:speaking': { readonly speaking: boolean };
+  'elder:arrived': { readonly actorId: string; readonly at: WorldPoint };
+  'traveler:welcomed': { readonly actorId: string; readonly at: WorldPoint };
+  'finale:towerLit': { readonly index: number; readonly at: WorldPoint };
+  'finale:threshold': { readonly at: WorldPoint };
+}
+
+export class EventBus<Events extends EventMap> {
+  private readonly listeners = new Map<keyof Events, Set<UnknownListener>>();
+  /** Un buffer par profondeur garde les émissions imbriquées indépendantes. */
+  private readonly dispatchBuffers: UnknownListener[][] = [];
+  private dispatchDepth = 0;
+
+  /** Abonne un écouteur. Retourne la fonction de désabonnement. */
+  on<K extends keyof Events>(type: K, listener: Listener<Events[K]>): () => void {
+    let set = this.listeners.get(type);
+    if (!set) {
+      set = new Set();
+      this.listeners.set(type, set);
+    }
+    set.add(listener as UnknownListener);
+    return () => this.off(type, listener);
+  }
+
+  /** Abonne un écouteur qui se retire après le premier message. */
+  once<K extends keyof Events>(type: K, listener: Listener<Events[K]>): () => void {
+    const off = this.on(type, (payload) => {
+      off();
+      listener(payload);
+    });
+    return off;
+  }
+
+  off<K extends keyof Events>(type: K, listener: Listener<Events[K]>): void {
+    const set = this.listeners.get(type);
+    if (!set) return;
+    set.delete(listener as UnknownListener);
+    if (set.size === 0) this.listeners.delete(type);
+  }
+
+  emit<K extends keyof Events>(type: K, payload: Events[K]): void {
+    const set = this.listeners.get(type);
+    if (!set) return;
+
+    const depth = this.dispatchDepth;
+    let snapshot = this.dispatchBuffers[depth];
+    if (snapshot === undefined) {
+      snapshot = [];
+      this.dispatchBuffers.push(snapshot);
+    }
+    for (const listener of set) snapshot.push(listener);
+
+    this.dispatchDepth += 1;
+    try {
+      for (const listener of snapshot) listener(payload);
+    } finally {
+      snapshot.length = 0;
+      this.dispatchDepth -= 1;
+    }
+  }
+
+  /** Nombre d'abonnements actifs, global ou pour un événement. */
+  listenerCount(type?: keyof Events): number {
+    if (type !== undefined) return this.listeners.get(type)?.size ?? 0;
+    let count = 0;
+    for (const set of this.listeners.values()) count += set.size;
+    return count;
+  }
+
+  clear(): void {
+    this.listeners.clear();
+  }
 }
 
 /** Bus partagé par l'application. */
