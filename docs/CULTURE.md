@@ -59,13 +59,20 @@ affichée, dans le jeu lui-même.
 
 | Tchétchène     | Translittération | Sens                           | Usage dans le jeu                       | Statut                                                                                                                    |
 | -------------- | ---------------- | ------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Баркалла       | barkalla         | merci                          | Geste de l'ancien, sous-titre optionnel | [À VÉRIFIER]                                                                                                              |
+| Баркалла       | barkalla         | merci                          | Geste de l'ancien, sous-titre optionnel | Vérifié (éditorial, 2026-09) : Wiktionary + dictionnaire Nichols & Vagapov (Routledge, 2004, p. 52b). Relecture native souhaitée. |
 | Марша вогӀийла | marsha vogІiyla  | bienvenue (dit **à un homme**) | Accueil du voyageur, ch.1               | [À VÉRIFIER] — la forme varie selon le genre et le nombre de la personne accueillie ; ne pas l'employer sans confirmation |
-| Нохчалла       | nokhchalla       | le code d'honneur tchétchène   | Thème central, jamais traduit à l'écran | [À VÉRIFIER]                                                                                                              |
-| БӀов           | bІov             | tour                           | Titre du jeu                            | [À VÉRIFIER]                                                                                                              |
+| Нохчалла       | nokhchalla       | le code d'honneur tchétchène   | Thème central, jamais traduit à l'écran | Vérifié (éditorial, 2026-09) : concept largement documenté. Relecture native souhaitée.                                    |
+| БӀов           | bІov             | tour                           | Titre du jeu                            | Vérifié (éditorial, 2026-09) pour le singulier. **Le pluriel de `ce.json` (« бӀовнаш ») reste [À VÉRIFIER]** : des sources donnent « бӀаьвнаш ». |
 | Лам            | lam              | montagne                       | Titre alternatif du projet              | [À VÉRIFIER]                                                                                                              |
-| Борз           | borz             | loup                           | Nom du compagnon                        | [À VÉRIFIER]                                                                                                              |
-| Дечиг-пондар   | dechig-pondar    | luth à trois cordes            | Timbre de la musique                    | [À VÉRIFIER]                                                                                                              |
+| Борз           | borz             | loup                           | Nom du compagnon                        | Vérifié (éditorial, 2026-09) : Glosbe fr-ce ; contes tchétchènes (Frison & Outtier, Fayard, 2002). Relecture native souhaitée. |
+| Дечиг-пондар   | dechig-pondar    | luth à trois cordes            | Timbre de la musique                    | Vérifié (éditorial, 2026-09) : Wikipédia ru (Дечиг пондар), instrument vaïnakh à trois cordes. Relecture native souhaitée. |
+
+> **Vérification éditoriale ≠ relecture native.** Les entrées « Vérifié
+> (éditorial) » ont été confrontées à des sources écrites fiables le
+> 2026-09-29 ; elles restent soumises au processus § 4 avant toute
+> publication commerciale. Depuis la phase 10, une entrée `[À VÉRIFIER]`
+> n'est de toute façon **jamais affichée** : `i18n.t()` la replie sur le
+> français (contrat testé par `tests/unit/i18n.test.ts`).
 
 Notes de typographie : le tchétchène s'écrit en cyrillique augmenté du
 caractère **Ӏ (palotchka)**, qui n'est **pas** un `I` latin ni un `1`. Les

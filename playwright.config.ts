@@ -5,6 +5,19 @@
  */
 import { defineConfig, devices } from '@playwright/test';
 
+/**
+ * Chromium de secours pour les environnements où le CDN Playwright est
+ * inaccessible (bac à sable CI restreint) : `BOV_CHROMIUM=/chemin/chromium`
+ * pointe un binaire compatible (ex. @sparticuz/chromium). `BOV_CHROMIUM_ARGS`
+ * transmet ses drapeaux (séparés par des espaces). Sans ces variables, la
+ * configuration reste strictement celle de Playwright.
+ */
+const externalChromium = process.env.BOV_CHROMIUM;
+const externalArgs = process.env.BOV_CHROMIUM_ARGS?.split(' ').filter(Boolean) ?? [];
+const launchOptions = externalChromium
+  ? { executablePath: externalChromium, args: externalArgs }
+  : {};
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -17,7 +30,10 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4173',
     trace: 'on-first-retry',
-    video: 'retain-on-failure',
+    // La vidéo requiert le ffmpeg de Playwright — indisponible quand on
+    // fournit un Chromium externe (CDN inaccessible) : on la coupe alors.
+    video: externalChromium ? 'off' : 'retain-on-failure',
+    launchOptions,
   },
   projects: [
     {
@@ -38,6 +54,19 @@ export default defineConfig({
     {
       name: 'mobile-landscape',
       use: { ...devices['Pixel 7 landscape'] },
+    },
+    {
+      // Émulation Android de référence de la QA phase 10 (brief).
+      name: 'pixel-5',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      // Émulation iOS de référence de la QA phase 10 (brief). WebKit réel
+      // n'étant pas toujours installable, l'émulation (viewport 390×844,
+      // UA iOS, tactile, DPR 3) tourne sur Chromium : elle couvre la mise en
+      // page et l'input, pas le moteur WebKit lui-même.
+      name: 'iphone-12',
+      use: { ...devices['iPhone 12'], browserName: 'chromium' },
     },
   ],
   webServer: {

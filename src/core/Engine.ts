@@ -81,8 +81,11 @@ export class Engine {
       this.renderer.applyQuality(next);
       this.lighting.applyQuality(next);
       this.postFx.applyQuality(next);
+      document.documentElement.dataset.qualityTier = tier;
       bus.emit('engine:quality', { tier, reason });
     });
+    // Le tier initial est observable dès le boot (QA, e2e, CSS éventuel).
+    document.documentElement.dataset.qualityTier = this.quality.current;
 
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => this.handleResize());

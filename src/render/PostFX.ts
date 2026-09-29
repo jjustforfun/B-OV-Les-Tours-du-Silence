@@ -21,13 +21,28 @@ import {
   VignetteTechnique,
   type Effect,
 } from 'postprocessing';
-import { Color, SRGBColorSpace, type Camera, type Scene, type WebGLRenderer } from 'three';
+import {
+  Color,
+  SRGBColorSpace,
+  Vector2,
+  type Camera,
+  type Scene,
+  type Texture,
+  type WebGLRenderer,
+} from 'three';
 import { RENDER, type QualitySettings } from '@/config';
 import { getChapterLut } from '@render/ChapterLut';
 import type { ChapterPaletteName } from '@render/Palettes';
 
 export class PostFX {
   private composer: EffectComposer | null = null;
+  /**
+   * Texture de bruit interne du SSAO. `SSAOEffect` la crée mais ne la range
+   * que dans un uniform de son matériau : le `dispose()` superficiel de
+   * postprocessing ne la voit jamais (+1 texture GPU par reconstruction,
+   * mesuré par ?memcheck). On la suit donc explicitement pour la libérer.
+   */
+  private ssaoNoiseTexture: Texture | null = null;
   private signature = 'off';
   private width = 1;
   private height = 1;
@@ -41,6 +56,12 @@ export class PostFX {
     chapterPalette: ChapterPaletteName = 'prologue',
   ) {
     this.chapterPalette = chapterPalette;
+    // Dimensions réelles du renderer dès la construction : un composer bâti
+    // en 1×1 écraserait le style CSS du canvas (voir setSize ci-dessous) et
+    // le jeu resterait un pixel noir — attrapé par le premier vrai navigateur.
+    const size = renderer.getSize(new Vector2());
+    this.width = Math.max(1, Math.floor(size.x));
+    this.height = Math.max(1, Math.floor(size.y));
     this.applyQuality(quality);
   }
 
@@ -70,7 +91,7 @@ export class PostFX {
   setSize(width: number, height: number): void {
     this.width = Math.max(1, Math.floor(width));
     this.height = Math.max(1, Math.floor(height));
-    this.composer?.setSize(this.width, this.height);
+    this.composer?.setSize(this.width, this.height, false);
   }
 
   /** Retourne true si le rendu a été effectué par la chaîne de post-traitement. */
@@ -96,18 +117,20 @@ export class PostFX {
         resolutionScale: RENDER.postFx.ssaoResolutionScale,
       });
       composer.addPass(normalPass);
-      effects.push(
-        new SSAOEffect(this.camera, normalPass.texture, {
-          blendFunction: BlendFunction.MULTIPLY,
-          samples: 7,
-          rings: 5,
-          radius: RENDER.postFx.ssaoRadius,
-          intensity: RENDER.postFx.ssaoIntensity,
-          luminanceInfluence: 0.78,
-          resolutionScale: RENDER.postFx.ssaoResolutionScale,
-          color: new Color(0x526070),
-        }),
-      );
+      const ssao = new SSAOEffect(this.camera, normalPass.texture, {
+        blendFunction: BlendFunction.MULTIPLY,
+        samples: 7,
+        rings: 5,
+        radius: RENDER.postFx.ssaoRadius,
+        intensity: RENDER.postFx.ssaoIntensity,
+        luminanceInfluence: 0.78,
+        resolutionScale: RENDER.postFx.ssaoResolutionScale,
+        color: new Color(0x526070),
+      });
+      // `noiseTexture` est un accesseur en écriture seule : on lit l'uniform.
+      const noiseUniform = ssao.ssaoMaterial.uniforms.noiseTexture as { value: Texture | null };
+      this.ssaoNoiseTexture = noiseUniform?.value ?? null;
+      effects.push(ssao);
     }
 
     composer.addPass(new RenderPass(this.scene, this.camera));
@@ -150,13 +173,17 @@ export class PostFX {
     }
 
     if (effects.length > 0) composer.addPass(new EffectPass(this.camera, ...effects));
-    composer.setSize(this.width, this.height);
+    // `false` : ne JAMAIS laisser le composer écrire le style CSS du canvas.
+    composer.setSize(this.width, this.height, false);
     this.composer = composer;
   }
 
   private disposeComposer(): void {
     this.composer?.dispose();
     this.composer = null;
+    // Voir le commentaire de `ssaoNoiseTexture` : postprocessing l'oublie.
+    this.ssaoNoiseTexture?.dispose();
+    this.ssaoNoiseTexture = null;
   }
 
   private createSignature(quality: QualitySettings): string {

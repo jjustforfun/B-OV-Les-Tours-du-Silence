@@ -32,6 +32,21 @@ describe('i18n', () => {
     expect(i18n.t(missing)).toBe((fr as Record<string, string>)[missing]);
   });
 
+  it('ne montre jamais une entrée [À VÉRIFIER] : repli sur le français', async () => {
+    await i18n.init('ce');
+    const unverified = Object.entries(ce as Record<string, string>).filter(
+      ([key, value]) => key !== '__status' && value.includes('[À VÉRIFIER]'),
+    );
+    expect(unverified.length).toBeGreaterThan(0);
+    for (const [key] of unverified) {
+      const shown = i18n.t(key);
+      expect(shown).not.toContain('[À VÉRIFIER]');
+      expect(shown).toBe((fr as Record<string, string>)[key]);
+      expect(i18n.has(key)).toBe(false);
+    }
+    await i18n.setLocale('fr');
+  });
+
   it('interpole les paramètres', async () => {
     await i18n.init('fr');
     expect(i18n.t('ui.chapter', { number: 3 })).toBe('Chapitre 3');

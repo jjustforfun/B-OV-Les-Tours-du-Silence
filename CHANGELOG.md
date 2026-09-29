@@ -6,7 +6,66 @@ versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
 
+_Rien — tout est publié en 1.0.0._
+
+## [1.0.0] — 2026-09-29
+
+Première version complète : 8 chapitres jouables, PWA hors ligne, QA finale
+(rapport « Phase 10 — finale » dans `qa-report.md`).
+
+### Corrigé
+
+- **Canvas de rendu figé à 1 × 1 pixel dans tout navigateur réel (bloquant)** :
+  `PostFX` s'initialisait en 1 × 1 avant la première `resize()`, et
+  `EffectComposer.setSize()` (3ᵉ argument par défaut `updateStyle: true`)
+  écrivait alors `width: 1px` dans le style inline du canvas ; `Renderer.resize()`
+  relisait ensuite `clientWidth = 1` (valeur truthy, le repli `innerWidth` ne
+  jouait jamais) et le jeu restait à un pixel pour toujours. `PostFX` lit
+  désormais la taille réelle du renderer à la construction et ne touche plus
+  jamais au style CSS du canvas (ADR-031). Test de régression durci dans
+  `boot.spec.ts` : le tampon de dessin doit couvrir le viewport, plus
+  seulement « exister ».
+- **Fuite mémoire du SSAO entre niveaux** : la texture de bruit de
+  `SSAOEffect` n'était jamais libérée (`noiseTexture` est un setter seul dans
+  postprocessing 6.39 ; on passe par `ssaoMaterial.uniforms.noiseTexture.value`).
+  Preuve e2e : `renderer.info` strictement stable après 8 niveaux × 3 cycles
+  (34/34/34, avant : 41 → 49 → 57 → 65).
+- **Écran titre : « TOUCH TO BEGIN » superposé à « SETTINGS / COLLECTION »** —
+  le padding bas de la zone tactile réserve désormais la hauteur du menu
+  (`--touch-min` + safe-area).
+- **Carton du prologue : « PROLOGUE » affiché deux fois** (kicker + vertu) —
+  le prologue n'affiche plus de kicker, la vertu suffit.
+- **fr.json** : accord de `proverbs.locked` (« offert »).
+
 ### Ajouté
+
+- **Audit Lighthouse final (11.7.1, émulation mobile, Slow 4G, CPU ×4)** :
+  Performance **91**, PWA **100**, Accessibilité **100**, Bonnes pratiques
+  **100**, SEO **100** ; TTI 2 757 ms (< 3 s budget), CLS 0. Corrections au
+  passage : meta viewport (`viewport-fit=cover` seul, plus de
+  `maximum-scale`), `robots.txt` public.
+- **PWA hors ligne complète** : precache du shell + premier niveau
+  (26 entrées, 1 338,9 KiB) et mise en cache à la volée des chunks de
+  chapitres déjà joués (`runtimeCaching` Workbox).
+- **Harnais e2e/Lighthouse sans CDN Playwright** (ADR-030) :
+  `BOV_CHROMIUM`/`BOV_CHROMIUM_ARGS` pointent un Chromium externe
+  (@sparticuz/chromium + SwiftShader) — 29 scénarios verts sur 4 profils
+  (desktop 1920, Pixel 7 paysage, Pixel 5, iPhone 12 émulé).
+- **Test de fuite mémoire e2e** (`?memcheck` + `memory.spec.ts`) : charge et
+  décharge les 8 chapitres × 3 cycles et compare `renderer.info` au point de
+  référence.
+- **Qualité adaptative observable** : le tier actif est exposé sur
+  `<html data-quality-tier>` ; `quality.spec.ts` vérifie un tier valide au
+  boot et jamais `high` sur mobile.
+- **Filtre i18n `[À VÉRIFIER]`** : une entrée tchétchène non validée replie
+  sur le français au lieu d'afficher le marqueur.
+- **Relecture culturelle et éditoriale** : 5 termes vaïnakhs vérifiés sur
+  sources dictionnairiques (borz, dechig-pondar, barkalla…) ; les 125 clés
+  fr/en/ru alignées. La relecture par locuteurs natifs reste requise avant
+  toute distribution commerciale (`docs/CULTURE.md` § 3).
+- **9 fonds d'écran QA 1920 × 1080** (titre + 8 chapitres) dans
+  `docs/qa/phase-10-final/wallpapers/` — critère « chaque écran digne d'un
+  fond d'écran » validé visuellement.
 
 - **Phase 10 — Cycle de vie, libération et allocations** : une suite Node
   rejoue 16 transitions `LevelLoader` sur les huit chapitres, 10 cycles de
