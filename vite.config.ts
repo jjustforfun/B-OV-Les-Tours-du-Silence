@@ -85,9 +85,32 @@ export default defineConfig({
       manifest: false, // fourni tel quel par public/manifest.webmanifest
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,glb,ktx2,webp,mp3,ogg,json}'],
+        // Hors ligne raisonné (phase 10) : la coquille du jeu et le PREMIER
+        // chapitre sont précachés — l'installation reste légère. Les autres
+        // chapitres entrent dans le cache à la première visite (stratégie
+        // ci-dessous) : un niveau déjà joué est rejouable hors ligne.
+        globIgnores: [
+          '**/assets/level-0[1-7]-*.js',
+          '**/assets/level-penrose-*.js',
+          // Harnais QA (?memcheck) : jamais dans le cache d'un joueur.
+          '**/assets/MemoryCheck-*.js',
+        ],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
+        runtimeCaching: [
+          {
+            // Chunks de chapitre : contenu immuable (hash dans le nom) —
+            // CacheFirst est sûr, et « déjà joué » devient « jouable hors ligne ».
+            urlPattern: /\/assets\/level-[^/]+\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'bov-levels',
+              expiration: { maxEntries: 16 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       devOptions: {
         enabled: false,

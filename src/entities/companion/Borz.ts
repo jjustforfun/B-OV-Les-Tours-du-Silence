@@ -1,5 +1,7 @@
 /**
- * Borz.ts — le loup de pierre. [À VÉRIFIER : « borz » = loup en tchétchène]
+ * Borz.ts — le loup de pierre. « Борз » = loup en tchétchène (vérifié 2026-09 :
+ * dictionnaire Glosbe fr-ce ; Contes tchétchènes, Frison & Outtier, Fayard 2002 —
+ * voir docs/CULTURE.md § 3).
  *
  * Borz possède son propre graphe, composé uniquement de nœuds tagués `borz`.
  * Appelé par un tap, il rejoint Turpal par ce graphe. Il peut aussi porter

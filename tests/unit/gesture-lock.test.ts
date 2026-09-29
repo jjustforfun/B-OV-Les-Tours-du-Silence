@@ -41,7 +41,12 @@ describe('GestureLock', () => {
     const html = source('index.html');
     const css = source('src/ui/styles/main.css');
 
-    expect(html).toContain('maximum-scale=1, user-scalable=no');
+    // Phase 10 (a11y) : plus de `user-scalable=no` ni `maximum-scale` — la
+    // WCAG 1.4.4 exige le zoom utilisateur, iOS l'ignore de toute façon, et
+    // le zoom accidentel en jeu reste bloqué par touch-action + GestureLock.
+    expect(html).not.toContain('user-scalable=no');
+    expect(html).not.toContain('maximum-scale');
+    expect(html).toContain('viewport-fit=cover');
     expect(html).toMatch(/html,\s*body\s*\{[^}]*overscroll-behavior: none;/s);
     expect(html).toMatch(/#game-canvas\s*\{[^}]*touch-action: none;/s);
     expect(html).toContain('-webkit-text-size-adjust: 100%');

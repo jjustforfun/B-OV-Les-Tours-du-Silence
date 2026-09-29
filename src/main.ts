@@ -173,9 +173,23 @@ async function bootShowcaseMode(): Promise<void> {
   });
 }
 
+/**
+ * `?memcheck` : harnais de mesure `renderer.info.memory` (QA phase 10).
+ * Chunk séparé, chargé uniquement à la demande — jamais dans le jeu normal.
+ */
+async function bootMemoryCheckMode(): Promise<void> {
+  const { runMemoryCheck } = await import('@debug/MemoryCheck');
+  markBooted();
+  await runMemoryCheck(requireCanvas());
+}
+
 async function boot(): Promise<void> {
-  const showcase = new URLSearchParams(window.location.search).get('showcase');
-  if (showcase !== null) {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('memcheck')) {
+    await bootMemoryCheckMode();
+    return;
+  }
+  if (params.get('showcase') !== null) {
     await bootShowcaseMode();
     return;
   }

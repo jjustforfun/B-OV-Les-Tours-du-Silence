@@ -1,7 +1,7 @@
 /**
- * PondarSynth.ts — évocation du dechig-pondar. [À VÉRIFIER : dechig-pondar,
- * luth tchétchène à trois cordes, orthographe et description à confirmer
- * auprès d'une source tchétchène — voir docs/CULTURE.md]
+ * PondarSynth.ts — évocation du dechig-pondar (дечиг-пондар), luth vaïnakh à
+ * trois cordes pincées (vérifié 2026-09 : Wikipédia ru « Дечиг пондар » ;
+ * checheninfo.ru — voir docs/CULTURE.md § 3).
  *
  * Trois cordes de Karplus-Strong (`Tone.PluckSynth` : excitation bruitée +
  * ligne à retard amortie — le modèle physique exact d'une corde pincée).

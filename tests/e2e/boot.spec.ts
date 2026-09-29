@@ -22,7 +22,9 @@ test.describe('Démarrage', () => {
 
     // main.ts pose data-ready après la première image rendue.
     await expect(page.locator('body')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
-    await expect(page.locator('#boot')).toBeHidden();
+    // Le fondu de 900 ms peut s'étirer à ~20 s en rendu logiciel (SwiftShader
+    // en CI sans GPU) : la chronologie d'animation avance par frame committée.
+    await expect(page.locator('#boot')).toBeHidden({ timeout: 30_000 });
     expect(errors).toEqual([]);
   });
 
@@ -30,11 +32,26 @@ test.describe('Démarrage', () => {
     await page.goto('/');
     await expect(page.locator('body')).toHaveAttribute('data-ready', 'true', { timeout: 20_000 });
 
-    const isPainted = await page.evaluate(() => {
+    // Régression v1.0.0 : le composer écrasait le style CSS du canvas et le
+    // jeu rendait UN pixel (canvas.width === 1 passait « > 0 »). Le tampon
+    // de dessin doit couvrir le viewport, pas seulement exister.
+    const size = await page.evaluate(() => {
       const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas');
-      return canvas !== null && canvas.width > 0 && canvas.height > 0;
+      if (canvas === null) return null;
+      return {
+        buffer: [canvas.width, canvas.height],
+        client: [canvas.clientWidth, canvas.clientHeight],
+        viewport: [window.innerWidth, window.innerHeight],
+      };
     });
-    expect(isPainted).toBe(true);
+    expect(size).not.toBeNull();
+    if (!size) return;
+    // Le canvas occupe tout le viewport (à 2 px près)…
+    expect(Math.abs(size.client[0]! - size.viewport[0]!)).toBeLessThanOrEqual(2);
+    expect(Math.abs(size.client[1]! - size.viewport[1]!)).toBeLessThanOrEqual(2);
+    // …et son tampon de dessin est au moins aussi grand (dpr ≥ 1).
+    expect(size.buffer[0]!).toBeGreaterThanOrEqual(size.client[0]! - 2);
+    expect(size.buffer[1]!).toBeGreaterThanOrEqual(size.client[1]! - 2);
   });
 
   test('déclare une PWA installable', async ({ page }) => {

@@ -215,7 +215,9 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding-bottom: calc(var(--space-12) + var(--safe-bottom));
+  /* Le libellé respire AU-DESSUS de la rangée de menu (hauteur tactile
+     comprise) : les deux se superposaient à 1920×1080 comme en portrait. */
+  padding-bottom: calc(var(--space-12) + var(--touch-min) + var(--safe-bottom));
   border: none;
   background: transparent;
   color: var(--color-ink);

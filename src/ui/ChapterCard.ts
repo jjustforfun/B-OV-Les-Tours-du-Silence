@@ -86,10 +86,10 @@ export class ChapterCard implements UIPanel {
   present(data: ChapterCardData): void {
     this.data = data;
     this.step = 'card';
+    // Le prologue n'a pas de numéro : la vertu affiche déjà « Prologue »,
+    // le kicker resterait un doublon mot pour mot (vu en QA phase 10).
     this.numberNode.textContent =
-      data.chapter === 0
-        ? i18n.t('virtues.prologue')
-        : i18n.t('ui.chapter', { number: data.chapter });
+      data.chapter === 0 ? '' : i18n.t('ui.chapter', { number: data.chapter });
     this.virtueNode.textContent = i18n.t(data.virtueKey);
     this.titleNode.textContent = i18n.t(data.titleKey);
     this.subtitleNode.textContent = i18n.t(data.subtitleKey);

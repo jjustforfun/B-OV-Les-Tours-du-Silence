@@ -71,9 +71,15 @@ export class I18n {
     for (const listener of this.listeners) listener();
   }
 
-  /** Traduit une clé. Les valeurs manquantes retombent sur le français, puis sur la clé. */
+  /**
+   * Traduit une clé. Les valeurs manquantes retombent sur le français, puis
+   * sur la clé. Une entrée encore marquée [À VÉRIFIER] n'est JAMAIS affichée
+   * (Definition of Done : « plus aucun [À VÉRIFIER] dans du contenu
+   * affiché ») : elle retombe sur le français jusqu'à validation par un
+   * locuteur natif — la donnée reste dans le dictionnaire, en attente.
+   */
   t(key: string, params?: Readonly<Record<string, string | number>>): string {
-    const template = this.dictionary[key] ?? this.fallback[key] ?? key;
+    const template = this.resolve(key) ?? key;
     if (!params) return template;
 
     return template.replace(/\{(\w+)\}/g, (match, name: string) => {
@@ -82,11 +88,24 @@ export class I18n {
     });
   }
 
-  /** Vrai si la clé est réellement traduite dans la langue courante. */
+  /** Vrai si la clé est réellement traduite (et validée) dans la langue courante. */
   has(key: string): boolean {
-    return this.dictionary[key] !== undefined;
+    const value = this.dictionary[key];
+    return value !== undefined && !value.includes(UNVERIFIED_MARK);
+  }
+
+  /** Valeur affichable : dictionnaire courant, puis français — jamais [À VÉRIFIER]. */
+  private resolve(key: string): string | undefined {
+    const current = this.dictionary[key];
+    if (current !== undefined && !current.includes(UNVERIFIED_MARK)) return current;
+    const fallback = this.fallback[key];
+    if (fallback !== undefined && !fallback.includes(UNVERIFIED_MARK)) return fallback;
+    return undefined;
   }
 }
+
+/** Marque des entrées en attente de relecture native (voir docs/CULTURE.md). */
+const UNVERIFIED_MARK = '[À VÉRIFIER]';
 
 export function isLocale(value: string | null): value is Locale {
   return value !== null && (LOCALES as readonly string[]).includes(value);

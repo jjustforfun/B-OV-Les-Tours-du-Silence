@@ -1262,3 +1262,84 @@ invisible au validateur d'impasses.
   mécanisme/état narratif, sans impasse.
 - Les futurs acteurs autonomes peuvent réutiliser ce contrat, à condition que
   leur complétion soit garantie et que leur état ne régresse pas.
+
+## ADR-030 : Harnais e2e et Lighthouse sans CDN Playwright (`BOV_CHROMIUM`)
+
+### Contexte
+
+Le bac à sable de QA n'atteint que registry.npmjs.org : ni le CDN Playwright
+(navigateurs), ni un GPU. Sans e2e exécutables, la phase 10 n'aurait été
+validée qu'en CI — or c'est précisément l'absence d'exécution locale qui a
+laissé passer le bug bloquant du canvas 1 × 1 (ADR-031).
+
+### Décision
+
+1. `playwright.config.ts` accepte deux variables d'environnement optionnelles :
+   `BOV_CHROMIUM` (chemin d'un binaire Chromium externe, ici
+   `@sparticuz/chromium`, livré par npm avec ses bibliothèques AL2023) et
+   `BOV_CHROMIUM_ARGS` (drapeaux, ici SwiftShader : rendu WebGL logiciel).
+   Sans ces variables, la configuration reste strictement celle de Playwright.
+2. La vidéo est coupée quand `BOV_CHROMIUM` est posé (le ffmpeg de Playwright
+   vient du même CDN inaccessible).
+3. Le même binaire sert à Lighthouse 11.7.1 via chrome-launcher (la
+   catégorie PWA disparaît de Lighthouse ≥ 12 : version épinglée).
+4. Les timeouts des tests tiennent compte du rendu logiciel : la chronologie
+   d'animation avance par frame committée, un fondu CSS de 900 ms peut durer
+   ~20 s sous SwiftShader (boot.spec, timeout 30 s documenté).
+
+### Alternatives considérées
+
+| Option                                  | Pourquoi écartée                                              |
+| --------------------------------------- | ------------------------------------------------------------- |
+| E2e uniquement en CI                    | A déjà masqué un bug bloquant ; boucle de correction trop lente |
+| Vendre un Chromium dans le dépôt        | ~150 Mo binaires dans git, licence et mises à jour à gérer     |
+| Puppeteer/chrome-headless-shell         | Deuxième harnais à maintenir, mêmes contraintes réseau         |
+
+### Conséquences
+
+- `pnpm test:e2e` tourne partout : CI (navigateurs Playwright officiels) et
+  bacs à sable restreints (`BOV_CHROMIUM`).
+- Le projet `mobile-390x844` (WebKit réel) reste réservé aux environnements
+  où WebKit s'installe ; les émulations Pixel 5 / iPhone 12 tournent sur
+  Chromium partout.
+
+## ADR-031 : Le post-traitement ne pilote jamais la géométrie du canvas
+
+### Contexte
+
+Bug bloquant découvert en QA finale : le jeu ne rendait qu'**un pixel** dans
+tout navigateur réel. Chaîne complète : `PostFX` naissait avec une taille
+interne de 1 × 1 avant la première `resize()` ; `EffectComposer.setSize(w, h)`
+appelé sans troisième argument relaie `renderer.setSize(w, h, updateStyle:
+true)`, qui écrit `width: 1px; height: 1px` **dans le style inline du
+canvas** ; `Renderer.resize()` relisait alors `canvas.clientWidth = 1` —
+valeur truthy, donc le repli `|| innerWidth` ne jouait jamais — et redonnait
+1 × 1 au composer. Point fixe indestructible. Les tests unitaires (jsdom) ne
+le voyaient pas, et l'ancien test e2e (`canvas.width > 0`) passait avec 1.
+
+### Décision
+
+1. La taille CSS du canvas appartient **exclusivement** à la feuille de style
+   (`#game-canvas { width: 100% … }`). Tout appel à `composer.setSize()` ou
+   `renderer.setSize()` passe explicitement `updateStyle: false`.
+2. `PostFX` s'initialise à la taille réelle du renderer
+   (`renderer.getSize(new Vector2())`), jamais à une taille par défaut.
+3. Le test e2e de démarrage exige que le tampon de dessin **couvre le
+   viewport** (client ≈ viewport ± 2 px, buffer ≥ client − 2 px) — « le canvas
+   existe » ne suffit plus.
+
+### Alternatives considérées
+
+| Option                                            | Pourquoi écartée                                                  |
+| ------------------------------------------------- | ------------------------------------------------------------------ |
+| Corriger seulement `Renderer.resize()` (`clientWidth` ≥ seuil) | Soigne le symptôme ; le style inline parasite resterait |
+| `!important` sur la règle CSS du canvas           | Guerre de spécificité fragile, cause réelle intacte                 |
+| Supprimer le post-traitement au boot puis l'attacher | Complexité de cycle de vie pour éviter une ligne d'API           |
+
+### Conséquences
+
+- Le style inline du canvas reste vide : une seule source de vérité (CSS),
+  `Renderer.resize()` lit des dimensions fiables.
+- Toute future passe de post-traitement doit respecter la règle n° 1 ; le
+  test de régression de `boot.spec.ts` l'attrapera sinon.
+- Leçon de process : un e2e jamais exécuté ne protège de rien — d'où l'ADR-030.
